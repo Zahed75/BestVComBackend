@@ -1,0 +1,52 @@
+version: '3'
+
+networks:
+  bestelectronics-production-network:
+    driver: bridge
+
+services:
+  bestelectronics_production_backend:
+    container_name: bestelectronics_production_backend
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile # Path to your Dockerfile for BestElectronics backend
+    networks:
+      - bestelectronics-production-network
+    env_file:
+      - .env # Environment variables for BestElectronics backend
+    volumes:
+      - .:/app
+    ports:
+      - '127.0.0.1:4000:8080' # New port for BestElectronics backend
+    depends_on:
+      - bestelectronics_production_mongo
+
+  bestelectronics_production_mongo:
+    container_name: bestelectronics_production_mongo
+    restart: always
+    image: mongo
+    ports:
+      - '7070:27017' # New port for MongoDB
+    networks:
+      - bestelectronics-production-network
+    volumes:
+      - /home/bestelectronics_persistent/mongodb:/data/db
+    env_file:
+      - .env
+
+  bestelectronics_production_mongo_express:
+    container_name: bestelectronics_production_mongo_express
+    image: mongo-express
+    restart: always
+    ports:
+      - '127.0.0.1:7071:7071' # New port for Mongo Express
+    networks:
+      - bestelectronics-production-network
+    env_file:
+      - .env
+    depends_on:
+      - bestelectronics_production_mongo
+
+volumes:
+  cache:

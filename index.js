@@ -9,5 +9,4 @@ const socketServer = socket(server, { cors: { origin: '*' } });
 server.listen(PORT, function () {
   console.log('Server running on port => ' + PORT);
 
- 
 });

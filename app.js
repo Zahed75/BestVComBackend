@@ -17,9 +17,8 @@ const { handleError } = require('./src/utility/errors.js');
 
 const app = new express();
 
-// Set trust proxy to true
-app.set('trust proxy', '127.0.0.1','103.191.51.223');
-
+// Trust proxy
+app.set('trust proxy', 1); // Trust the first proxy
 
 // Security Middleware Implement
 app.use(helmet());
@@ -27,7 +26,7 @@ app.use(mongoSanitize());
 app.use(xss());
 app.use(hpp());
 
-app.use('/images', express.static(path.join(__dirname, '/src/uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'src', 'modules', 'uploads')));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -37,12 +36,11 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
 
 // CORS CONFIGURATIONS
-
 const whitelist = [
   'http://localhost:3000',
   'http://localhost:3001',
-  'http://localhost:80',
-  'http://localhost:40',
+  'http://localhost:3004',
+  'http://localhost:3005',
   '*',
 ];
 const corsOptions = {
@@ -67,9 +65,6 @@ app.use(cors(corsOptions));
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 3000 });
 app.use(limiter);
 
-
-app.use(limiter);
-
 // Mongo DB Database Connection
 connectWithDB();
 
@@ -80,7 +75,7 @@ app.use(handleError);
 
 // Undefined Route Implement
 app.use('*', (req, res) => {
-  res.status(404).json({ status: 'fail', data: 'Undefined Route' });
+  res.status(404).json({ status: 'fail', data: 'Server is Okay, its Undefined Route' });
 });
 
 module.exports = app;
