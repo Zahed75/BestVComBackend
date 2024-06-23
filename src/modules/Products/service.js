@@ -79,6 +79,7 @@ async function generateProductCode(Product) {
 }
 
 
+
 const getProductByIdService = async (id) => {
   try {
     const product = await Product.findById({ _id: id });
@@ -88,6 +89,10 @@ const getProductByIdService = async (id) => {
     return { success: false, error: 'Failed to retreive products by code' };
   }
 }
+
+
+
+
 
 const getProductByCategoryId = async (categoryId) => {
   try {

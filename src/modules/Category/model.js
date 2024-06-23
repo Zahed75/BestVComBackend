@@ -25,6 +25,10 @@ const CategorySchema = new mongoose.Schema({
         
 
     },
+    slug:{
+        type:String,
+        unique:true 
+    },
     title:{
         type:String,
         max:[5000,"product descriptiopn should be under 100 characters"]

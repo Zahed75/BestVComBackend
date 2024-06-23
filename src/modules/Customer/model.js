@@ -1,5 +1,6 @@
 const mongoose=require('mongoose');
 const bcrypt=require("bcryptjs");
+const { max } = require('moment/moment');
 
 const CustomerSchema=new mongoose.Schema({
     email:{
@@ -52,7 +53,12 @@ const CustomerSchema=new mongoose.Schema({
     district:{
         type:String,
         max:[45,"District Should be at least 45 characters"],
+    },
+    zipCode:{
+        type:String,
+        max:[12 , 'Zip Code Should be at least 12 characters']
     }
+    
 
 
 })

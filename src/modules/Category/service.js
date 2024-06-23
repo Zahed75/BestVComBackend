@@ -2,7 +2,6 @@ const Category = require("../Category/model");
 const { BadRequest } = require("../../utility/errors");
 const productModel = require("../Products/model");
 const { generateSlug } = require('../../utility/slug');
-
 const addCategory = async (categoryData) => {
   const { parentCategory, ...restOfData } = categoryData;
 
@@ -15,12 +14,16 @@ const addCategory = async (categoryData) => {
     const newSubcategory = await Category.create({
       ...restOfData,
       parentCategory,
+      slug: generateSlug(categoryData.categoryName),
     });
 
     return newSubcategory;
   } else {
     // If no parentCategory is provided, create a new parent category
-    const newParentCategory = await Category.create(restOfData);
+    const newParentCategory = await Category.create({
+      ...restOfData,
+      slug: generateSlug(categoryData.categoryName),
+    });
     return newParentCategory;
   }
 };
@@ -32,11 +35,9 @@ const getAllCategory = async () => {
 
   // Create a map of all categories by their _id and initialize subCategories array
   allCategories.forEach((category) => {
-
     categoryMap[category._id] = category.toObject();
     categoryMap[category._id].subCategories = [];
     categoryMap[category._id].productCount = 0; // Initialize product count
-    categoryMap[category._id].slug = generateSlug(category.categoryName); // Add slug
   });
 
   // Count products for each category
@@ -60,7 +61,10 @@ const getAllCategory = async () => {
   const rootCategories = allCategories.filter(
     (category) => !category.parentCategory
   );
-  const result = rootCategories.map((category) => categoryMap[category._id]);
+  const result = rootCategories.map((category) => {
+    const { slug, ...rest } = categoryMap[category._id];
+    return { slug, ...rest };
+  });
 
   return result;
 };
@@ -113,7 +117,6 @@ const getCategoryById = async (categoryId) => {
       const categoryWithProductCount = {
         ...category,
         productCount: productCount,
-        slug: generateSlug(category.categoryName),
       };
 
       return { success: true, data: categoryWithProductCount };

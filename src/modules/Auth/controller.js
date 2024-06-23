@@ -3,10 +3,10 @@ const router = express.Router();
 const { validate } = require('../../middlewares/schemaValidation'); // Corrected import
 
 const {
-    HEAD_OFFICE,
-    BRANCH_ADMIN,
-    CUSTOMER
-}=require('../../config/constants');
+  HEAD_OFFICE,
+  BRANCH_ADMIN,
+  CUSTOMER
+} = require('../../config/constants');
 
 const authService = require('./service');
 const { adminValidate } = require('./request');
@@ -22,14 +22,14 @@ const { asyncHandler } = require('../../utility/common');
 
 // Register a new user
 
-const registerHandler = asyncHandler(async(req, res) => {
+const registerHandler = asyncHandler(async (req, res) => {
   const { email, phoneNumber, password, role } = req.body;
   const user = await authService.UserRegister(email, phoneNumber, password, role);
 
   res.status(200).json({
-      message: "Your account has been registered. Please check your email for the OTP.",
-      email: user.email,
-      user,
+    message: "Your account has been registered. Please check your email for the OTP.",
+    email: user.email,
+    user,
   });
 });
 
@@ -38,10 +38,10 @@ const registerHandler = asyncHandler(async(req, res) => {
 
 
 const addUsersHandler = asyncHandler(async (req, res) => {
-  const { email, firstName, lastName, phoneNumber, role, password, outletId } = req.body;
+  const { email, firstName, lastName, phoneNumber, role, password, outletId,profilePicture} = req.body;
 
   try {
-    const result = await authService.addUsers({ email, phoneNumber, firstName, lastName, password, role, outletId });
+    const result = await authService.addUsers({ email, phoneNumber, firstName, lastName, password, role, outletId, profilePicture });
 
     res.status(201).json({
       message: "Your account has been registered. Please Login!!",
@@ -59,22 +59,22 @@ const addUsersHandler = asyncHandler(async (req, res) => {
 
 // Verify OTP
 
-const otpVerifyHandler = asyncHandler(async(req,res)=>{
+const otpVerifyHandler = asyncHandler(async (req, res) => {
   const { email, otp } = req.body;
-  const verify=await authService.verifyOTP(email,otp)
-  
-    res.json({
-       message: 'OTP verified successfully. User activated.',
-       verify
-      });
+  const verify = await authService.verifyOTP(email, otp)
+
+  res.json({
+    message: 'OTP verified successfully. User activated.',
+    verify
+  });
 });
 
 
 
 //Resend OTP
 
-const resendOTPHandler = asyncHandler(async(req,res)=>{
-  
+const resendOTPHandler = asyncHandler(async (req, res) => {
+
   const { email } = req.body;
   const otpResend = await authService.resendOTP(email);
   res.status(200).json({
@@ -101,11 +101,11 @@ const expireOTP = async (req, res, next) => {
 
 //UserSignIn
 
-const signInHandler=asyncHandler(async(req,res)=>{
+const signInHandler = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const response = await authService.signIn(email, password);
   res.status(200).json({
-    messsage:"User signed in Successfully",
+    messsage: "User signed in Successfully",
     response
   });
 })
@@ -114,7 +114,7 @@ const signInHandler=asyncHandler(async(req,res)=>{
 
 //SignInUser
 
-const userSignInHandler= async (req, res, next) => {
+const userSignInHandler = async (req, res, next) => {
   const { email, password } = req.body;
   try {
     const user = await authService.signinUser(email, password);
@@ -132,12 +132,12 @@ const userSignInHandler= async (req, res, next) => {
 
 
 
-router.post('/adminRegister',registerHandler);
-router.post('/otpVerification',otpVerifyHandler);
-router.post('/otpResend',resendOTPHandler);
-router.post('/expireOTP',expireOTP);
-router.post('/signInAdmin',userSignInHandler)
-router.post('/userManage',authMiddleware,roleMiddleware([HEAD_OFFICE]),addUsersHandler);
+router.post('/adminRegister', registerHandler);
+router.post('/otpVerification', otpVerifyHandler);
+router.post('/otpResend', resendOTPHandler);
+router.post('/expireOTP', expireOTP);
+router.post('/signInAdmin', userSignInHandler)
+router.post('/userManage', authMiddleware, roleMiddleware([HEAD_OFFICE]), addUsersHandler);
 
 
 module.exports = router;

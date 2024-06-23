@@ -4,6 +4,7 @@ const orderService = require('../Order/service');
 const roleMiddleware = require('../../middlewares/roleMiddleware');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const { asyncHandler } = require('../../utility/common');
+const { BRANCH_ADMIN,HEAD_OFFICE,MANAGER,CUSTOMER, ADMIN} = require('../../config/constants');
 
 
 
@@ -46,6 +47,8 @@ const deleteOrder = asyncHandler(async (req, res) => {
 });
 
 
+
+
 const getAllOrders = asyncHandler(async (req, res) => {
     const orders = await orderService.getAllOrders();
     res.status(200).json({
@@ -53,6 +56,8 @@ const getAllOrders = asyncHandler(async (req, res) => {
         orders
     });
 });
+
+  
 
 
 
@@ -95,6 +100,8 @@ const getOrderByIdHandler =asyncHandler(async(req,res)=>{
 }
 })
 
+
+
 const getCustomerHistoryHandler = asyncHandler(async (req, res) => {
     const { customerId } = req.params;
     const orders = await orderService.getCustomerHistory(customerId);
@@ -106,6 +113,20 @@ const getCustomerHistoryHandler = asyncHandler(async (req, res) => {
 
 
 
+const updateOrderNoteByIdHandler = asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+    const { orderNote } = req.body;
+  
+    const {  order } = await orderService.updateOrderNoteById(orderId, orderNote);
+
+      res.status(200).json({
+        message: "Order note updated successfully",
+        order,
+      });
+    
+  });
+
+
 
 
 
@@ -114,9 +135,8 @@ router.get('/orders', getAllOrders);
 router.post('/orderCreate', createOrder);
 router.put('/:orderId', updateOrder);
 router.delete('/deleteOrder/:id',deleteOrder);
-router.put('/:id',updateOrderStatusHandler);
+router.put('/:id',authMiddleware,roleMiddleware([BRANCH_ADMIN,HEAD_OFFICE,ADMIN]),updateOrderStatusHandler);
 router.get('/getOrderById/:id',getOrderByIdHandler);
-
-
+router.put('/updateNote/:orderId', updateOrderNoteByIdHandler);
 
 module.exports = router;

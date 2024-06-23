@@ -18,15 +18,15 @@ const OrderSchema = new mongoose.Schema({
   orderStatus: {
     type: String,
     enum: [
-      'Order Received', 
-      'Order Confirmed', 
-      'Order Dispatched',
-      'Order Delivered',
-      'Order On-Hold',
-      'Order Cancelled',
-      'Order Spammed'
+      'Received', 
+      'Confirmed', 
+      'Dispatched',
+      'Delivered',
+      'On-Hold',
+      'Cancelled',
+      'Spammed'
     ],
-    default: "Order Received"
+    default: "Received"
   },
   deliveryAddress: {
     type: String,
@@ -70,6 +70,17 @@ const OrderSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  orderNote:{
+    type: String,
+    default:"Order Note",
+    max:[3000,'Greater Then Reserved']
+  },
+  customerIp:{
+    type:String,
+    max:[20,'Ip Address'],
+    default:""
+  },
+
   vatRate: Number
 }, { timestamps: true });
 

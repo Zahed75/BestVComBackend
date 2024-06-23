@@ -2,20 +2,34 @@ const OutletModel = require("./model");
 const userModel = require("../User/model");
 const { passEmailForOutlet } = require('../../utility/email');
 
-const outletCreateService = async (outletName, outletLocation, outletImage, branchAdmin) => {
+const outletCreateService = async (outletName, outletLocation, outletImage, outletManager, outletManagerEmail, outletManagerPhone) => {
   try {
-    if (!outletName || !outletLocation || !branchAdmin || !outletImage) {
+    if (!outletName || !outletLocation || !outletManager || !outletImage) {
       throw new Error('Outlet name, location, and branch admin with image are required');
     }
+    const managerInfo = await userModel.findById(outletManager);
+    if (!managerInfo) {
+      throw new Error('Outlet manager not found');
+    }
+    if (managerInfo.email !== outletManagerEmail || managerInfo.phoneNumber !== outletManagerPhone) {
+      throw new Error('Invalid outlet manager email or phone number');
+    }
+    const existingOutlet = await OutletModel.findOne({ outletName });
+    if (existingOutlet) {
+      throw new Error('Outlet with the same name already exists');
+    }
+    
     const newOutlet = await OutletModel.create({
       outletName,
       outletLocation,
       outletImage,
-      branchAdmin
+      outletManager,
+      outletManagerEmail,
+      outletManagerPhone
     });
     return newOutlet;
   } catch (error) {
-    console.error('Error in outletCreateService:', error.message);
+    console.error('Error in outletCreateService:', error.message); 
     throw new Error('Outlet creation failed: ' + error.message);
   }
 };

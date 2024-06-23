@@ -26,7 +26,9 @@ const OutletSchema= new mongoose.Schema({
     },
     outletManagerPhone:{
         type:String,
-        required:true
+        required:true,
+        max:[12,'Please Input valid Number'],
+        
     },
     }
  

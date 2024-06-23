@@ -56,6 +56,8 @@ const deleteProductHandler = asyncHandler(async (req, res) => {
         deleteProduct
     })
 })
+
+
 const getProductByIdHandler = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { success, data, error } = await productService.getProductByIdService(id);
@@ -66,6 +68,8 @@ const getProductByIdHandler = asyncHandler(async (req, res) => {
         res.status(500).json({ message: "fetchin product error", error: error })
     }
 })
+
+
 
 
 

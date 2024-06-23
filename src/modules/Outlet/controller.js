@@ -5,9 +5,9 @@ const { asyncHandler } = require('../../utility/common');
 const multerMiddleware = require('../../middlewares/multerMiddleware');
 
 const outletCreate = asyncHandler(async (req, res) => {
-  const { outletName, outletLocation, outletManager,outletImage } = req.body;
+  const { outletName, outletLocation, outletManager,outletImage,outletManagerEmail,outletManagerPhone} = req.body;
   // const outletImage = req.files['outletImage'] ? `/uploads/${req.files['outletImage'][0].filename}` : '';
-  const createdOutlet = await outletService.outletCreateService(outletName, outletLocation, outletImage, outletManager);
+  const createdOutlet = await outletService.outletCreateService(outletName, outletLocation, outletImage, outletManager,outletManagerEmail,outletManagerPhone);
   res.status(200).json({ createdOutlet });
 });
 
