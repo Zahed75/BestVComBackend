@@ -136,9 +136,6 @@ const getProductByCategoryId = async (categoryIds) => {
   }
 };
 
-module.exports = {
-  getProductByCategoryId,
-};
 
 
 
