@@ -131,6 +131,8 @@ const getProductByCategoryId = async (categoryId) => {
   }
 }
 
+
+
 const getProductByproductStatus = async () => {
   try {
     const products = await Product.find({ productStatus: "Published" });
@@ -148,6 +150,9 @@ const getProductByproductStatus = async () => {
     throw new Error('Failed to retrieve products by productStatus');
   }
 }
+
+
+
 
 
 const getProductBySlug = async(productSlug)=>{
