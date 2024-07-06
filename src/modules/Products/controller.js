@@ -74,20 +74,28 @@ const getProductByIdHandler = asyncHandler(async (req, res) => {
 
 
 const getProductByCategoryIdHandler = asyncHandler(async (req, res) => {
-    const { categoryId } = req.params;
-
-    const products = await productService.getProductByCategoryId(categoryId);
-    if (products.length === 0) {
+    const { categoryId } = req.params; // Extract categoryId from request parameters
+  
+    try {
+      const products = await productService.getProductByCategoryId(categoryId);
+  
+      if (products.length === 0) {
         return res.status(404).json({
-            message: "No products found for the specified category ID",
+          message: "No products found for the specified category ID",
         });
-    }
-
-    res.status(200).json({
+      }
+  
+      res.status(200).json({
         message: "Get All Products Fetched Successfully!",
         products
-    });
-});
+      });
+    } catch (err) {
+      res.status(500).json({
+        message: "An error occurred",
+        error: err.message
+      });
+    }
+  });
 
 const getProductByproductStatusHandler = asyncHandler(async (req, res) => {
 

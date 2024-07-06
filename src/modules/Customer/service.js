@@ -180,8 +180,14 @@ const updateCustomerService = async (customerId, customerData) => {
       customerData,
       { new: true }
     );
-    return updatedCustomer;
-  } catch (error) {
+    if (!updatedCustomer) {
+      throw new Error("Couldnt update customer", updatedCustomer)
+    }
+    else {
+      return updatedCustomer;
+    }
+  }
+  catch (error) {
     throw error;
   }
 };
@@ -191,7 +197,12 @@ const updateCustomerService = async (customerId, customerData) => {
 const getCustomerInfoById = async (id) => {
   try {
     const customer = await customerModel.findById(id);
-    return customer;
+    if (!customer) {
+      throw new Error("Couldnt update customer", updatedCustomer)
+    }
+    else {
+      return customer;
+    }
   } catch (error) {
     throw new Error('Error retrieving customer information');
   }

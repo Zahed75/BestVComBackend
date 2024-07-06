@@ -113,13 +113,18 @@ const getProductByIdService = async (id) => {
 
 
 
-
-const getProductByCategoryId = async (categoryId) => {
+const getProductByCategoryId = async (categoryIds) => {
   try {
-    const products = await Product.find({ categoryId: categoryId });
+    // Check if categoryIds is an array, if not, convert it to an array
+    if (!Array.isArray(categoryIds)) {
+      categoryIds = [categoryIds];
+    }
+
+    // Use the $in operator to find products with any of the specified categoryIds
+    const products = await Product.find({ categoryId: { $in: categoryIds } });
 
     if (!products || products.length === 0) {
-      console.log('No products found for categoryId:', categoryId);
+      console.log('No products found for categoryIds:', categoryIds);
       return [];
     }
 
@@ -129,7 +134,12 @@ const getProductByCategoryId = async (categoryId) => {
     console.error('Error in getProductByCategoryId:', error);
     throw new Error('Failed to retrieve products by category');
   }
-}
+};
+
+module.exports = {
+  getProductByCategoryId,
+};
+
 
 
 
@@ -149,6 +159,7 @@ const getProductByproductStatus = async () => {
     console.error('Error in getProductByproductStatus:', error);
     throw new Error('Failed to retrieve products by productStatus');
   }
+  //issue reolved
 }
 
 

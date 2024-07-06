@@ -2,11 +2,11 @@ const { required, types } = require('joi');
 const mongoose = require('mongoose');
 
 const ProductSchema = new mongoose.Schema({
-  categoryId: {
+  categoryId: [{
     type: mongoose.Types.ObjectId,
     required: true,
     ref: 'category' // Assuming  category model is named 'Category'
-  },
+  }],
   productName: {
     type: String,
     maxlength: 300,
@@ -62,9 +62,7 @@ const ProductSchema = new mongoose.Schema({
     },
 
     productTags: [
-
     ],
-
     productNotes: {
       type: String,
       maxlength: 1000

@@ -17,7 +17,6 @@ const totalSalesHandler = asyncHandler(async (req, res) => {
     });
 });
 
-//implemented total sales
 
 router.get("/totalSales", totalSalesHandler);
 module.exports = router;
