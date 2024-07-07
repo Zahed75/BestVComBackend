@@ -378,18 +378,37 @@ const updateOrderNoteById = async (orderId, orderNote) => {
   if (!updatedOrder) {
     throw new NotFound("Order not found");
   }
-  // // Send SMS to customer
-  // const smsText = getSMSText(orderStatus, `${order.firstName} ${order.lastName}`, {
-  //   orderId: order.orderId,
-  //   products: productDetails,
-  //   totalPrice: order.totalPrice,
-  //   discountAmount: order.discountAmount
-  // });
-  // console.log('Sending SMS:', smsText); // Log the SMS text for debugging
-
+  
   return { success: true, order: updatedOrder };
 
 };
+
+
+
+
+// chnage outletByOrderId
+
+
+const updateOutletByOrderId = async (orderId, outlet) => {
+  try {
+    const updatedOrder = await OrderModel.findByIdAndUpdate(
+      orderId,
+      { outlet },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      throw new Error('Order not found');
+    }
+
+    return updatedOrder;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
+
+
 
 
 
@@ -405,5 +424,6 @@ module.exports = {
   getOrderById,
   getCustomerHistory,
   updateOrderNoteById,
+  updateOutletByOrderId
  
 };
