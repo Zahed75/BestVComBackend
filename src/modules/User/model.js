@@ -8,7 +8,8 @@ const UserSchema = new mongoose.Schema({
   email: {
     type: String,
     unique: [true, 'your email must be unique/used already'],
-    required: [true, 'email must be required'],
+    // required: [true, 'email must be required'],
+    required:false
   },
 
   outlet: {
@@ -86,7 +87,7 @@ const UserSchema = new mongoose.Schema({
 }, { timestamps: true }
 );
 
-// Password Hash Function using Bycryptjs
+
 
 // Password Hash Function using Bycryptjs
 
@@ -104,7 +105,6 @@ UserSchema.methods = {
   },
 };
 
-//Validations
 //Validations
 UserSchema.path('phoneNumber').validate(function (value) {
   const regex = /^\d{13}$/; // regular expression to match 11 digits

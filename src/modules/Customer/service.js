@@ -77,6 +77,8 @@ const forgetInfoService = async (email) => {
   }
 };
 
+
+
 // Verify OTP
 const verifyOTP = async (email, otp) => {
   try {
@@ -180,14 +182,8 @@ const updateCustomerService = async (customerId, customerData) => {
       customerData,
       { new: true }
     );
-    if (!updatedCustomer) {
-      throw new Error("Couldnt update customer", updatedCustomer)
-    }
-    else {
-      return updatedCustomer;
-    }
-  }
-  catch (error) {
+    return updatedCustomer;
+  } catch (error) {
     throw error;
   }
 };
@@ -197,12 +193,7 @@ const updateCustomerService = async (customerId, customerData) => {
 const getCustomerInfoById = async (id) => {
   try {
     const customer = await customerModel.findById(id);
-    if (!customer) {
-      throw new Error("Couldnt update customer", updatedCustomer)
-    }
-    else {
-      return customer;
-    }
+    return customer;
   } catch (error) {
     throw new Error('Error retrieving customer information');
   }

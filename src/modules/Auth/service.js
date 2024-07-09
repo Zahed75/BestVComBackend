@@ -16,7 +16,8 @@ const bcrypt = require('bcryptjs');
 const { decrypt } = require('dotenv');
 
 
-
+const {convertTo4Digit } = require('../../utility/common');
+const sendSMS = require('../../utility/aamarPayOTP');
 
 
 
@@ -54,11 +55,72 @@ const UserRegister = async (email, phoneNumber, password, role, firstName, lastN
 
 
 
+const registerUserByPhoneNumber = async (phoneNumber) => {
+  const otp = generateOTP();
+
+  let user = await User.findOne({ phoneNumber });
+  if (!user) {
+    user = new User({ phoneNumber, otp, otpExpiry: Date.now() + 10 * 60000 });
+  } else {
+    user.otp = otp;
+    user.otpExpiry = Date.now() + 10 * 60000;
+  }
+  await user.save();
+
+  await sendSMS(phoneNumber, `Your OTP code is ${convertTo4Digit(otp)}`);
+
+  return user;
+};
+
+
+
+
+const verifyOTPByPhone = async (phoneNumber, otp) => {
+  const user = await User.findOne({ phoneNumber, otp });
+  if (!user) {
+    throw new BadRequest('Invalid OTP.');
+  }
+
+  // Clear OTP and set user as active and verified
+  user.otp = undefined;
+  user.otpExpiry = undefined;
+  user.isActive = true;
+  user.isVerified = true;
+  await user.save();
+
+  // Generate JWT token for user
+  const token = jwt.sign({ userId: user._id }, 'SecretKey12345', { expiresIn: '1h' });
+
+  return { user, token };
+};
+
+
+
+
+
+
+
+const resendOTPbyPhone = async (phoneNumber) => {
+  const user = await User.findOne({ phoneNumber });
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const otp = generateOTP();
+  user.otp = otp;
+  user.otpExpiry = Date.now() + 10 * 60000; // Extend OTP expiry by 10 minutes
+  await user.save();
+
+  await sendSMS(phoneNumber, `Your new OTP code is ${convertTo4Digit(otp)}`);
+
+  return user;
+};
+
+
+
 
 
 //User Creation
-
-
 const addUsers = async ({ email, phoneNumber, firstName, lastName, password, role, outletId, profilePicture, userName }) => {
   try {
     // Ensure a valid role is provided
@@ -283,7 +345,10 @@ module.exports = {
   getAllManagers,
   getUserById,
   deleteUserById,
-  updateUserById 
+  updateUserById,
+  registerUserByPhoneNumber,
+  verifyOTPByPhone,
+  resendOTPbyPhone
 };
 
 

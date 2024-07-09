@@ -37,6 +37,50 @@ const registerHandler = asyncHandler(async (req, res) => {
 
 
 
+// register UserByPhoneNumber
+
+const registerUserByPhoneHandler = asyncHandler(async(req,res)=>{
+  const { phoneNumber } = req.body;
+
+  const user = await authService.registerUserByPhoneNumber(phoneNumber);
+  res.status(200).json({ 
+    message: 'OTP sent to your phone number', 
+    userId: user._id 
+  });
+
+})
+
+
+
+// verify OTP By Phone Number
+const verifyOTPPhoneHandler = asyncHandler(async(req,res)=>{
+  const { phoneNumber, otp } = req.body;
+  const { user, token } = await authService.verifyOTPByPhone(phoneNumber, otp);
+  res.status(200).json({ 
+    message: 'OTP verified', 
+    token,
+    user
+   });
+ 
+})
+
+
+
+
+
+
+const resendOTPbyPhoneHandler = asyncHandler(async(req,res)=>{
+  const { phoneNumber } = req.body;
+
+  const user = await authService.resendOTPbyPhone(phoneNumber);
+  res.status(200).json({ message: 'New OTP sent to your phone number', userId: user._id });
+
+})
+
+
+
+
+
 
 const addUsersHandler = asyncHandler(async (req, res) => {
   const { email, phoneNumber, password, role, firstName, lastName, userName, profilePicture, outletId } = req.body;
@@ -186,4 +230,7 @@ router.get('/managers', getAllManagers);
 router.get('/users/:id',getUserByIdHandler);
 router.delete('/users/:userId', deleteUserByIdHandler);
 router.put('/users/:userId', updateUserByIdHandler);
+router.post('/phoneRegister',registerUserByPhoneHandler);
+router.post('/phoneOTP-Verify',verifyOTPPhoneHandler);
+router.post('/resendOTPByPhone',resendOTPbyPhoneHandler);
 module.exports = router;

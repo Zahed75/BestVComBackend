@@ -8,30 +8,192 @@ const sendSMS = require('../../utility/aamarPayOTP');
 const { getSMSText } = require('../../utility/getSMS');
 const { sendOrderInvoiceEmail } = require('../../utility/email');
 
-function calculateOrderValue(products, orderProducts) {
+
+
+
+
+
+// function calculateOrderValue(products, orderProducts) {
+//   return orderProducts.reduce((total, orderProduct) => {
+//     const product = products.find(p => p._id.equals(orderProduct._id));
+//     if (product && product.general && typeof product.general.regularPrice === 'number' && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
+//       return total + (product.general.regularPrice * orderProduct.quantity);
+//     } else {
+//       console.warn('Invalid product or quantity:', orderProduct);
+//       return total;
+//     }
+//   }, 0);
+// }
+
+
+
+// function calculateDiscount(coupon, totalPrice) {
+//   if (!coupon) {
+//     return 0;
+//   }
+
+//   if (coupon.discountType === 'percentage') {
+//     return (coupon.couponAmount / 100) * totalPrice;
+//   } else if (coupon.discountType === 'fixed') {
+//     return coupon.couponAmount;
+//   } else {
+//     return 0;
+//   }
+// }
+
+// const createOrder = async (orderData) => {
+//   try {
+//     // Generate custom orderId and orderTime
+//     const orderId = await generateCustomOrderId();
+//     const orderTime = formatOrderTime(new Date());
+
+//     // Destructure orderData
+//     const { 
+//       email, orderType, deliveryAddress, deliveryCharge = 0, 
+//       district, phoneNumber, paymentMethod, transactionId, 
+//       products, couponId, vatRate, firstName, lastName, customerIp,
+//       channel, outlet 
+//     } = orderData;
+
+//     // Find the customer by email
+//     const customer = await CustomerModel.findOne({ email }).lean().exec();
+//     if (!customer) {
+//       throw new Error('Customer not found');
+//     }
+
+//     // Validate products
+//     if (!Array.isArray(products) || products.length === 0) {
+//       throw new Error('No products provided');
+//     }
+
+//     const productIds = products.map(product => product._id);
+//     const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
+
+//     if (validProducts.length !== products.length) {
+//       throw new Error('Invalid product IDs');
+//     }
+
+//     // Calculate total price and apply discount if coupon provided
+//     const [totalPrice, discountAmount] = await Promise.all([
+//       calculateOrderValue(validProducts, products),
+//       couponId ? CouponModel.findById(couponId).then(coupon => {
+//         if (!coupon) throw new Error('Invalid coupon ID');
+//         return calculateDiscount(coupon, totalPrice);
+//       }) : 0
+//     ]);
+
+//     // Calculate VAT
+//     const vat = (vatRate / 100) * totalPrice;
+
+//     // Calculate final total price including discount and VAT
+//     const finalTotalPrice = totalPrice - discountAmount + vat + deliveryCharge;
+
+//     // Create new order
+//     const newOrder = new OrderModel({
+//       orderId,
+//       customer: customer._id,
+//       firstName,
+//       lastName,
+//       orderType,
+//       orderTime,
+//       deliveryAddress,
+//       orderStatus: 'Received',
+//       district,
+//       phoneNumber,
+//       paymentMethod,
+//       transactionId,
+//       products,
+//       coupon: couponId ? couponId : null,
+//       discountAmount,
+//       totalPrice: finalTotalPrice,
+//       vatRate,
+//       deliveryCharge,
+//       customerIp,
+//       channel,
+//       outlet
+//     });
+
+//     // Save the order to the database
+//     const savedOrder = await newOrder.save();
+
+//     if (!savedOrder.orderId) {
+//       console.error('orderId is missing from savedOrder:', savedOrder);
+//       throw new Error('Order creation failed: orderId is missing');
+//     }
+
+//     // Prepare products info for SMS
+//     const productInfoForSMS = savedOrder.products.map(product => {
+//       const validProduct = validProducts.find(p => p._id.equals(product._id));
+//       return {
+//         name: validProduct ? validProduct.productName : 'Unknown',
+//         quantity: product.quantity,
+//         price: validProduct ? validProduct.general.regularPrice : 0
+//       };
+//     });
+
+//     // Send SMS to customer
+//     const smsText = getSMSText('Received', `${firstName} ${lastName}`, {
+//       orderId: savedOrder.orderId,
+//       products: productInfoForSMS,
+//       totalPrice: savedOrder.totalPrice,
+//       discountAmount: savedOrder.discountAmount
+//     });
+
+//     console.log(smsText);
+//     await sendSMS(phoneNumber, smsText);
+
+//     // Send Email Invoice to customer in the background
+//     sendOrderInvoiceEmail(email, {
+//       orderId: savedOrder.orderId,
+//       firstName,
+//       lastName,
+//       email,
+//       deliveryAddress,
+//       phoneNumber,
+//       products: productInfoForSMS,
+//       totalPrice: finalTotalPrice,
+//       discountAmount,
+//       deliveryCharge,
+//       vatRate,
+//       vat
+//     }).catch(err => {
+//       console.error('Error sending order invoice email:', err);
+//     });
+
+//     return {
+//       message: "Order created successfully",
+//       createdOrder: {
+//         order: savedOrder,
+//         customerEmail: customer.email,
+//         totalOrderValue: finalTotalPrice
+//       }
+//     };
+
+//   } catch (error) {
+//     console.error("Error creating order:", error);
+//     throw error;
+//   }
+// };
+
+
+
+
+function calculateOrderValue(products, orderProducts, useMRP) {
   return orderProducts.reduce((total, orderProduct) => {
     const product = products.find(p => p._id.equals(orderProduct._id));
-    if (product && product.general && typeof product.general.regularPrice === 'number' && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
-      return total + (product.general.regularPrice * orderProduct.quantity);
+    if (product && product.general && typeof orderProduct.quantity === 'number') {
+      const price = useMRP ? product.general.regularPrice : product.general.salePrice;
+      if (typeof price === 'number' && price >= 0) {
+        return total + (price * orderProduct.quantity);
+      } else {
+        console.warn('Invalid price for product:', product._id, price);
+        return total;
+      }
     } else {
       console.warn('Invalid product or quantity:', orderProduct);
       return total;
     }
   }, 0);
-}
-
-function calculateDiscount(coupon, totalPrice) {
-  if (!coupon) {
-    return 0;
-  }
-
-  if (coupon.discountType === 'percentage') {
-    return (coupon.couponAmount / 100) * totalPrice;
-  } else if (coupon.discountType === 'fixed') {
-    return coupon.couponAmount;
-  } else {
-    return 0;
-  }
 }
 
 const createOrder = async (orderData) => {
@@ -67,19 +229,38 @@ const createOrder = async (orderData) => {
     }
 
     // Calculate total price and apply discount if coupon provided
-    const [totalPrice, discountAmount] = await Promise.all([
-      calculateOrderValue(validProducts, products),
-      couponId ? CouponModel.findById(couponId).then(coupon => {
-        if (!coupon) throw new Error('Invalid coupon ID');
-        return calculateDiscount(coupon, totalPrice);
-      }) : 0
-    ]);
+    let discountAmount = 0;
+    let coupon = null;
+
+    if (couponId) {
+      coupon = await CouponModel.findById(couponId).lean().exec();
+      if (!coupon) throw new Error('Invalid coupon ID');
+    }
+
+    const useMRP = coupon !== null;
+    const totalPrice = calculateOrderValue(validProducts, products, useMRP);
+
+    if (isNaN(totalPrice)) {
+      throw new Error('Total price calculation resulted in NaN');
+    }
+
+    if (coupon) {
+      discountAmount = calculateDiscount(coupon, totalPrice);
+    }
 
     // Calculate VAT
     const vat = (vatRate / 100) * totalPrice;
 
+    if (isNaN(vat)) {
+      throw new Error('VAT calculation resulted in NaN');
+    }
+
     // Calculate final total price including discount and VAT
     const finalTotalPrice = totalPrice - discountAmount + vat + deliveryCharge;
+
+    if (isNaN(finalTotalPrice)) {
+      throw new Error('Final total price calculation resulted in NaN');
+    }
 
     // Create new order
     const newOrder = new OrderModel({
@@ -120,7 +301,7 @@ const createOrder = async (orderData) => {
       return {
         name: validProduct ? validProduct.productName : 'Unknown',
         quantity: product.quantity,
-        price: validProduct ? validProduct.general.regularPrice : 0
+        price: validProduct ? (useMRP ? validProduct.general.regularPrice : validProduct.general.salePrice) : 0
       };
     });
 
@@ -386,9 +567,8 @@ const updateOrderNoteById = async (orderId, orderNote) => {
 
 
 
+
 // chnage outletByOrderId
-
-
 const updateOutletByOrderId = async (orderId, outlet) => {
   try {
     const updatedOrder = await OrderModel.findByIdAndUpdate(
@@ -406,7 +586,6 @@ const updateOutletByOrderId = async (orderId, outlet) => {
     throw new Error(error.message);
   }
 };
-
 
 
 

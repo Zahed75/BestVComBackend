@@ -139,7 +139,10 @@ const updateOrderNoteByIdHandler = asyncHandler(async (req, res) => {
   });
 
 
-  const updateOutletByOrderIdHandler = async (req, res) => {
+
+
+// change Outlet the OrderById
+const updateOutletByOrderIdHandler = async (req, res) => {
     const { orderId } = req.params;
     const { outlet } = req.body;
   
@@ -150,6 +153,9 @@ const updateOrderNoteByIdHandler = asyncHandler(async (req, res) => {
       res.status(500).json({ message: 'Error updating order', error: error.message });
     }
   };
+
+
+
 
 
 

@@ -17,13 +17,16 @@ const { error } = require('console');
 
 
 
+
+
+
 //getAllUser
 const getAllUsers=async(data)=>{
     const user=await User.find();
     return user;
 }
 
- 
+
 const userResetLink = async (email) => {
     const user = await User.findOne({ email });
     if (!user) {
