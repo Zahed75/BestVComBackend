@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const EventSchema = new mongoose.Schema({
     eventCatId:{
-        type:Number,
+        type:String,
     },
     title: {
         type: String,
