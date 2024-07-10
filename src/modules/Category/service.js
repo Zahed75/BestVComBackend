@@ -2,6 +2,12 @@ const Category = require("../Category/model");
 const { BadRequest } = require("../../utility/errors");
 const productModel = require("../Products/model");
 const { generateSlug } = require('../../utility/slug');
+
+
+
+
+
+
 const addCategory = async (categoryData) => {
   const { parentCategory, ...restOfData } = categoryData;
 
@@ -28,46 +34,68 @@ const addCategory = async (categoryData) => {
   }
 };
 
+
+
+
 const getAllCategory = async () => {
-  const allCategories = await Category.find();
-  const allProducts = await productModel.find();
-  const categoryMap = {};
+  try {
+    const allCategories = await Category.find();
+    const allProducts = await productModel.find();
+    const categoryMap = {};
 
-  // Create a map of all categories by their _id and initialize subCategories array
-  allCategories.forEach((category) => {
-    categoryMap[category._id] = category.toObject();
-    categoryMap[category._id].subCategories = [];
-    categoryMap[category._id].productCount = 0; // Initialize product count
-  });
+    // Debug: Log all categories fetched
+    console.log('All Categories:', allCategories);
 
-  // Count products for each category
-  allProducts.forEach((product) => {
-    if (categoryMap[product.categoryId]) {
-      categoryMap[product.categoryId].productCount++;
-    }
-  });
+    // Create a map of all categories by their _id and initialize subCategories array
+    allCategories.forEach((category) => {
+      categoryMap[category._id] = category.toObject();
+      categoryMap[category._id].subCategories = [];
+      categoryMap[category._id].productCount = 0; // Initialize product count
+    });
 
-  // Populate subCategories for each category
-  allCategories.forEach((category) => {
-    if (category.parentCategory) {
-      if (categoryMap[category.parentCategory]) {
-        categoryMap[category.parentCategory].subCategories.push(
-          categoryMap[category._id]
-        );
+    // Count products for each category
+    allProducts.forEach((product) => {
+      if (categoryMap[product.categoryId]) {
+        categoryMap[product.categoryId].productCount++;
       }
-    }
-  });
+    });
 
-  const rootCategories = allCategories.filter(
-    (category) => !category.parentCategory
-  );
-  const result = rootCategories.map((category) => {
-    const { slug, ...rest } = categoryMap[category._id];
-    return { slug, ...rest };
-  });
+    // Populate subCategories for each category
+    allCategories.forEach((category) => {
+      if (category.parentCategory && category.parentCategory !== "") {
+        if (categoryMap[category.parentCategory]) {
+          categoryMap[category.parentCategory].subCategories.push(
+            categoryMap[category._id]
+          );
+        }
+      }
+    });
 
-  return result;
+    const rootCategories = allCategories.filter(
+      (category) => !category.parentCategory || category.parentCategory === ""
+    );
+
+ 
+    console.log('Root Categories:', rootCategories);
+
+    const result = rootCategories.map((category) => {
+      const { slug, ...rest } = categoryMap[category._id];
+      return { slug, ...rest };
+    });
+
+    // Debug: Log final result
+    console.log('Final Category Result:', result);
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    throw error;
+  }
 };
+
+
+
+
 
 
 
@@ -83,8 +111,9 @@ const updateCategoryById = async (id, value) => {
   return category;
 };
 
-// delete category By ID
 
+
+// delete category By ID
 const deleteCategoryById = async (id) => {
   const category = await Category.findOneAndDelete({ _id: id });
   if (!category) {
@@ -92,6 +121,9 @@ const deleteCategoryById = async (id) => {
   }
   return category;
 };
+
+
+
 
 const getSubcategories = async (parentCategoryId) => {
   try {

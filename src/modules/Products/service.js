@@ -74,6 +74,9 @@ const deleteProductById = async (id) => {
 }
 
 
+
+
+
 // generate Product Codes
 async function generateProductCode(Product) {
   try {

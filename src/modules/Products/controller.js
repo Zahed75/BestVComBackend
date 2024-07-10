@@ -58,6 +58,9 @@ const deleteProductHandler = asyncHandler(async (req, res) => {
 })
 
 
+
+
+
 const getProductByIdHandler = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { success, data, error } = await productService.getProductByIdService(id);

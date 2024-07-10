@@ -25,6 +25,8 @@ const createCategoryHandler = asyncHandler(async (req, res) => {
 });
 
 
+
+
 // getAllSubcatgories
 
 const getAllCategoriesHandler = asyncHandler(async (req, res) => {
@@ -34,6 +36,10 @@ const getAllCategoriesHandler = asyncHandler(async (req, res) => {
         categories: allCategories
     });
 });
+
+
+
+
 
 // Update CategoryBy ID
 
@@ -118,7 +124,7 @@ router.get('/getAllCat', getAllCategoriesHandler);
 router.put('/updateCategory/:id', authMiddleware, roleMiddleware([HEAD_OFFICE]), updateCategoryHandler);
 router.delete('/deleteCategory/:id', authMiddleware, roleMiddleware([HEAD_OFFICE]), deleteCategoryHandler);
 router.get('/:parentCategory', getSubcategoriesHandler);
-router.get('/getCategoryById/:id', getCategoryByIdHandler);//auth and role must be added
+router.get('/getCategoryById/:id', getCategoryByIdHandler);
 router.get('/getProductByCatSlug/:slug',getProductByCategorySlugHandler);
 
 

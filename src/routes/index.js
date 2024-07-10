@@ -20,13 +20,16 @@ const reportingRoute = require('../modules/Reporting/controller');
 const wishListRoute = require('../modules/Wishlist/controller');
 const settingsRoute = require('../modules/settings/controller');
 const brandRoute = require('../modules/Brand/controller');
+const eventRoute = require('../modules/Events/controller');
+
+
 
 //EndPoint
+router.use('/event',eventRoute);
 router.use('/auth', authRoute);
 router.use('/user',userRoute);
 router.use('/outlet',outletRoute);
 router.use('/category',categoryRoute);
-
 router.use('/customer',customerRoute);
 
 router.use('/product',productRoute);
