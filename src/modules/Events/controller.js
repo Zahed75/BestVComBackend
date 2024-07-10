@@ -33,7 +33,21 @@ const getAllEvents = asyncHandler(async (req, res) => {
 
 
 
+const addAllEventsHandler = asyncHandler(async (req, res) => {
+    const events = req.body.events;
+    const createdEvents = await eventService.addAllEvents(events);
+    res.status(201).json({
+        message: 'Events added successfully',
+        events: createdEvents,
+    });
+});
+
+
+
+
+
 router.post('/create-event',createEventHandler);
 router.get('/getAll-events',getAllEvents);
+router.post('/addAll-events',addAllEventsHandler)
 
 module.exports = router;

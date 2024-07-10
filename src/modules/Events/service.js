@@ -10,12 +10,17 @@ const createEvent = async (eventData) => {
     return event;
 };
 
+
 const getAllEvents = async () => {
     return await EventModel.find().populate('categoriesId');
 };
 
 
 
+const addAllEvents = async (events) => {
+    const createdEvents = await EventModel.insertMany(events);
+    return createdEvents;
+};
 
 
 
@@ -25,5 +30,6 @@ const getAllEvents = async () => {
 
 module.exports = {
     createEvent,
-    getAllEvents 
+    getAllEvents,
+    addAllEvents 
 }
