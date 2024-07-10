@@ -22,11 +22,18 @@ const createEventHandler = asyncHandler(async (req, res) => {
 
 
 
+const getAllEvents = asyncHandler(async (req, res) => {
+    const events = await eventService.getAllEvents();
+    res.status(200).json({
+        message: 'Events fetched successfully',
+        events,
+    });
+});
 
 
 
 
 router.post('/create-event',createEventHandler);
-
+router.get('/getAll-events',getAllEvents);
 
 module.exports = router;
