@@ -43,11 +43,24 @@ const addAllEventsHandler = asyncHandler(async (req, res) => {
 });
 
 
+const updateCatEventIdByEventId = asyncHandler(async (req, res) => {
+    const { eventId, catEventId } = req.body;
+    const updatedEvent = await eventService.updateCatEventIdByEventId(eventId, catEventId);
+    res.status(200).json({
+        message: 'Event catEventId updated successfully',
+        event: updatedEvent,
+    });
+});
+
+
+
 
 
 
 router.post('/create-event',createEventHandler);
 router.get('/getAll-events',getAllEvents);
-router.post('/addAll-events',addAllEventsHandler)
+router.post('/addAll-events',addAllEventsHandler);
+router.patch('/updateCatEventId',updateCatEventIdByEventId); // New endpoint for updating catEventId
+
 
 module.exports = router;

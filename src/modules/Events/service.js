@@ -1,6 +1,6 @@
 const EventModel = require('../Events/model');
 const { BadRequest } = require('../../utility/errors');
-
+const tempEventModel = require('../tempEvent/model');
 
 
 
@@ -25,11 +25,23 @@ const addAllEvents = async (events) => {
 
 
 
+const updateCatEventIdByEventId = async (eventId, catEventId) => {
+    const event = await EventModel.findById(eventId);
+    if (!event) {
+        throw new Error('Event not found');
+    }
+    event.eventCatId = catEventId;
+    await event.save();
+    return event;
+};
+
+
 
 
 
 module.exports = {
     createEvent,
     getAllEvents,
-    addAllEvents 
+    addAllEvents,
+    updateCatEventIdByEventId
 }
