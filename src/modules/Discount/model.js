@@ -30,8 +30,10 @@ const CouponSchema = new mongoose.Schema({
         },
     },
     usageRestriction: {
-        minimumSpend: Number,
-        maximumSpend: Number,
+        
+        minimumSpend: String,
+        maximumSpend: String,
+
         individualUseOnly: {
             type: Boolean,
             default: false
