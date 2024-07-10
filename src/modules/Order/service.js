@@ -13,33 +13,33 @@ const { sendOrderInvoiceEmail } = require('../../utility/email');
 
 
 
-// function calculateOrderValue(products, orderProducts) {
-//   return orderProducts.reduce((total, orderProduct) => {
-//     const product = products.find(p => p._id.equals(orderProduct._id));
-//     if (product && product.general && typeof product.general.regularPrice === 'number' && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
-//       return total + (product.general.regularPrice * orderProduct.quantity);
-//     } else {
-//       console.warn('Invalid product or quantity:', orderProduct);
-//       return total;
-//     }
-//   }, 0);
-// }
+function calculateOrderValue(products, orderProducts) {
+  return orderProducts.reduce((total, orderProduct) => {
+    const product = products.find(p => p._id.equals(orderProduct._id));
+    if (product && product.general && typeof product.general.regularPrice === 'number' && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
+      return total + (product.general.regularPrice * orderProduct.quantity);
+    } else {
+      console.warn('Invalid product or quantity:', orderProduct);
+      return total;
+    }
+  }, 0);
+}
 
 
 
-// function calculateDiscount(coupon, totalPrice) {
-//   if (!coupon) {
-//     return 0;
-//   }
+function calculateDiscount(coupon, totalPrice) {
+  if (!coupon) {
+    return 0;
+  }
 
-//   if (coupon.discountType === 'percentage') {
-//     return (coupon.couponAmount / 100) * totalPrice;
-//   } else if (coupon.discountType === 'fixed') {
-//     return coupon.couponAmount;
-//   } else {
-//     return 0;
-//   }
-// }
+  if (coupon.discountType === 'percentage') {
+    return (coupon.couponAmount / 100) * totalPrice;
+  } else if (coupon.discountType === 'fixed') {
+    return coupon.couponAmount;
+  } else {
+    return 0;
+  }
+}
 
 // const createOrder = async (orderData) => {
 //   try {
@@ -178,24 +178,6 @@ const { sendOrderInvoiceEmail } = require('../../utility/email');
 
 
 
-function calculateOrderValue(products, orderProducts, useMRP) {
-  return orderProducts.reduce((total, orderProduct) => {
-    const product = products.find(p => p._id.equals(orderProduct._id));
-    if (product && product.general && typeof orderProduct.quantity === 'number') {
-      const price = useMRP ? product.general.regularPrice : product.general.salePrice;
-      if (typeof price === 'number' && price >= 0) {
-        return total + (price * orderProduct.quantity);
-      } else {
-        console.warn('Invalid price for product:', product._id, price);
-        return total;
-      }
-    } else {
-      console.warn('Invalid product or quantity:', orderProduct);
-      return total;
-    }
-  }, 0);
-}
-
 const createOrder = async (orderData) => {
   try {
     // Generate custom orderId and orderTime
@@ -206,7 +188,7 @@ const createOrder = async (orderData) => {
     const { 
       email, orderType, deliveryAddress, deliveryCharge = 0, 
       district, phoneNumber, paymentMethod, transactionId, 
-      products, couponId, vatRate, firstName, lastName, customerIp,
+      products, couponName, vatRate, firstName, lastName, customerIp,
       channel, outlet 
     } = orderData;
 
@@ -232,9 +214,9 @@ const createOrder = async (orderData) => {
     let discountAmount = 0;
     let coupon = null;
 
-    if (couponId) {
-      coupon = await CouponModel.findById(couponId).lean().exec();
-      if (!coupon) throw new Error('Invalid coupon ID');
+    if (couponName) {
+      coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
+      if (!coupon) throw new Error('Invalid coupon name');
     }
 
     const useMRP = coupon !== null;
@@ -277,7 +259,7 @@ const createOrder = async (orderData) => {
       paymentMethod,
       transactionId,
       products,
-      coupon: couponId ? couponId : null,
+      coupon: coupon ? coupon._id : null,
       discountAmount,
       totalPrice: finalTotalPrice,
       vatRate,
@@ -339,7 +321,8 @@ const createOrder = async (orderData) => {
       createdOrder: {
         order: savedOrder,
         customerEmail: customer.email,
-        totalOrderValue: finalTotalPrice
+        totalOrderValue: finalTotalPrice,
+        couponName: couponName || null
       }
     };
 
@@ -348,6 +331,10 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
+
+
+
+
 
 
 
