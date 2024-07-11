@@ -83,8 +83,9 @@ const getProductsByEventId = async (eventId) => {
                     url: event.url,
                     categoriesId: categoryId,
                     __v: event.__v,
+                    products: products
                 },
-                products: products
+               
             };
         } else {
             console.warn(`No categoryId found for event: ${event._id}`);
