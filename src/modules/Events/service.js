@@ -47,6 +47,16 @@ const updateCatEventIdByEventId = async (eventId, catEventId) => {
 };
 
 
+const getProductsByEventId = async (eventId) => {
+    const event = await EventModel.findById(eventId);
+    if (!event) {
+        throw new Error('Event not found');
+    }
+
+    const products = await ProductModel.find({ categoryId: event.categoriesId });
+    return products;
+};
+
 
 
 
@@ -54,5 +64,6 @@ module.exports = {
     createEvent,
     getAllEvents,
     addAllEvents,
-    updateCatEventIdByEventId
+    updateCatEventIdByEventId,
+    getProductsByEventId 
 }
