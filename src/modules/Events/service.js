@@ -1,4 +1,6 @@
 const EventModel = require('../Events/model');
+const CategoryModel = require('../Category/model'); // Import Category model
+const ProductModel = require('../Products/model');
 const { BadRequest } = require('../../utility/errors');
 const tempEventModel = require('../tempEvent/model');
 
@@ -12,7 +14,16 @@ const createEvent = async (eventData) => {
 
 
 const getAllEvents = async () => {
-    return await EventModel.find().populate('categoriesId');
+    const events = await EventModel.find().populate('categoriesId');
+
+    for (const event of events) {
+        if (event.categoriesId) {
+            const products = await ProductModel.find({ categoryId: event.categoriesId });
+            event._doc.products = products; // Adding products to the event document
+        }
+    }
+
+    return events;
 };
 
 

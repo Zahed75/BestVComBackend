@@ -5,7 +5,7 @@ const ProductSchema = new mongoose.Schema({
   categoryId: [{
     type: mongoose.Types.ObjectId,
     required: true,
-    ref: 'category' // Assuming  category model is named 'Category'
+    ref: 'category' 
   }],
   productName: {
     type: String,
@@ -114,6 +114,8 @@ const ProductSchema = new mongoose.Schema({
     weight: Number
   }
 });
+
+
 
 
 const ProductModel = mongoose.model('Product', ProductSchema);

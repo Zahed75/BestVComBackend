@@ -20,9 +20,8 @@ const EventSchema = new mongoose.Schema({
       
     },
     categoriesId: {
-       type: String,
-       max: 10000,
-       
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'category',
     },
     eventLists:{
         eventCatId:{
@@ -44,10 +43,9 @@ const EventSchema = new mongoose.Schema({
                 type: Date,
             },
             categoriesId: {
-                type: String,
-                max: 10000,
-                
-             },
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'category',
+            },
     }
 
 });
