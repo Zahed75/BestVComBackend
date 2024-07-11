@@ -89,6 +89,35 @@ const getProductsByEventId = async (eventId) => {
 
 
 
+// const getAllProductsAndEvents = async () => {
+//     try {
+//         const events = await EventModel.find().populate('categoriesId').exec();
+//         let allProductsAndEvents = [];
+
+//         for (let event of events) {
+//             const categoryId = event.categoriesId?._id.toString(); // Ensure categoryId is a string
+
+//             if (categoryId) {
+//                 const products = await ProductModel.find({ categoryId: categoryId }).exec();
+//                 allProductsAndEvents.push({
+//                     event: event,
+//                     products: products
+//                 });
+//             } else {
+//                 console.warn(`No categoryId found for event: ${event._id}`);
+//             }
+//         }
+
+//         return allProductsAndEvents;
+//     } catch (error) {
+//         console.error("Error fetching products and events:", error);
+//         throw new Error("Failed to fetch products and events");
+//     }
+// };
+
+
+
+
 const getAllProductsAndEvents = async () => {
     try {
         const events = await EventModel.find().populate('categoriesId').exec();
@@ -99,21 +128,28 @@ const getAllProductsAndEvents = async () => {
 
             if (categoryId) {
                 const products = await ProductModel.find({ categoryId: categoryId }).exec();
-                allProductsAndEvents.push({
-                    event: event,
-                    products: products
-                });
+                event = {
+                    ...event._doc,
+                    categoriesId: categoryId,
+                    products: products 
+                };
+                allProductsAndEvents.push(event);
             } else {
                 console.warn(`No categoryId found for event: ${event._id}`);
             }
         }
 
-        return allProductsAndEvents;
+        return allProductsAndEvents; // Return array directly
     } catch (error) {
         console.error("Error fetching products and events:", error);
         throw new Error("Failed to fetch products and events");
     }
 };
+
+
+
+
+
 
 
 

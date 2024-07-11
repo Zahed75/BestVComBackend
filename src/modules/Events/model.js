@@ -23,30 +23,30 @@ const EventSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'category',
     },
-    eventLists:{
-        eventCatId:{
-            type:String,
-        },
-            title: {
-                type: String,
-                max: 10000,
-            },
-            description: {
-                type: String,
-                max: 10000,
-            },
-            url: {
-                type: String,
-                max: 10000,
-            },
-            date: {
-                type: Date,
-            },
-            categoriesId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'category',
-            },
-    }
+    // eventLists:{
+    //     eventCatId:{
+    //         type:String,
+    //     },
+    //         title: {
+    //             type: String,
+    //             max: 10000,
+    //         },
+    //         description: {
+    //             type: String,
+    //             max: 10000,
+    //         },
+    //         url: {
+    //             type: String,
+    //             max: 10000,
+    //         },
+    //         date: {
+    //             type: Date,
+    //         },
+    //         categoriesId: {
+    //             type: mongoose.Schema.Types.ObjectId,
+    //             ref: 'category',
+    //         },
+    // }
 
 });
 
