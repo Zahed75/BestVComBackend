@@ -13,19 +13,6 @@ const createEvent = async (eventData) => {
 };
 
 
-// const getAllEvents = async () => {
-//     const events = await EventModel.find().populate('categoriesId');
-
-//     for (const event of events) {
-//         if (event.categoriesId) {
-//             const products = await ProductModel.find({ categoryId: event.categoriesId });
-//             event._doc.products = products; // Adding products to the event document
-//         }
-//     }
-
-//     return events;
-// };
-
 
 const getAllEvents = async () => {
     try {
@@ -75,45 +62,44 @@ const updateCatEventIdByEventId = async (eventId, catEventId) => {
     return event;
 };
 
-
+// services/eventsService.js
 const getProductsByEventId = async (eventId) => {
-    const event = await EventModel.findById(eventId);
-    if (!event) {
-        throw new Error('Event not found');
-    }
+    try {
+        const event = await EventModel.findById(eventId).populate('categoriesId').exec();
+        if (!event) {
+            throw new Error('Event not found');
+        }
 
-    const products = await ProductModel.find({ categoryId: event.categoriesId });
-    return products;
+        const categoryId = event.categoriesId?._id.toString(); // Ensure categoryId is a string
+
+        if (categoryId) {
+            const products = await ProductModel.find({ categoryId: categoryId }).exec();
+            return {
+                event: {
+                    _id: event._id,
+                    eventCatId: event.eventCatId,
+                    title: event.title,
+                    description: event.description,
+                    url: event.url,
+                    categoriesId: categoryId,
+                    __v: event.__v,
+                },
+                products: products
+            };
+        } else {
+            console.warn(`No categoryId found for event: ${event._id}`);
+            throw new Error('Category not found for event');
+        }
+    } catch (error) {
+        console.error("Error fetching products and event:", error);
+        throw new Error("Failed to fetch products and event");
+    }
 };
 
 
 
 
-// const getAllProductsAndEvents = async () => {
-//     try {
-//         const events = await EventModel.find().populate('categoriesId').exec();
-//         let allProductsAndEvents = [];
 
-//         for (let event of events) {
-//             const categoryId = event.categoriesId?._id.toString(); // Ensure categoryId is a string
-
-//             if (categoryId) {
-//                 const products = await ProductModel.find({ categoryId: categoryId }).exec();
-//                 allProductsAndEvents.push({
-//                     event: event,
-//                     products: products
-//                 });
-//             } else {
-//                 console.warn(`No categoryId found for event: ${event._id}`);
-//             }
-//         }
-
-//         return allProductsAndEvents;
-//     } catch (error) {
-//         console.error("Error fetching products and events:", error);
-//         throw new Error("Failed to fetch products and events");
-//     }
-// };
 
 
 

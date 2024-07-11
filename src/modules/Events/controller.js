@@ -55,15 +55,22 @@ const updateCatEventIdByEventId = asyncHandler(async (req, res) => {
 
 
 
-const getProductsByEventId = asyncHandler(async (req, res) => {
-    const { eventId } = req.params;
-    const products = await eventService.getProductsByEventId(eventId);
-    res.status(200).json({
-        message: 'Products fetched successfully',
-        products,
-    });
-});
-
+const getProductsByEventId = async (req, res) => {
+    try {
+        const { eventId } = req.params;
+        const result = await eventService.getProductsByEventId(eventId);
+        res.status(200).json({
+            message: 'Products fetched successfully',
+            result: {
+                event: result.event,
+                products: result.products,
+            },
+        });
+    } catch (error) {
+        console.error("Controller Error:", error.message);
+        res.status(500).json({ message: "Failed to fetch products and event" });
+    }
+};
 
 
 
