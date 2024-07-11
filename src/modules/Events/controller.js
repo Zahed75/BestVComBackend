@@ -42,6 +42,7 @@ const addAllEventsHandler = asyncHandler(async (req, res) => {
 });
 
 
+
 const updateCatEventIdByEventId = asyncHandler(async (req, res) => {
     const { eventId, catEventId } = req.body;
     const updatedEvent = await eventService.updateCatEventIdByEventId(eventId, catEventId);
@@ -50,6 +51,8 @@ const updateCatEventIdByEventId = asyncHandler(async (req, res) => {
         event: updatedEvent,
     });
 });
+
+
 
 
 const getProductsByEventId = asyncHandler(async (req, res) => {
@@ -64,12 +67,32 @@ const getProductsByEventId = asyncHandler(async (req, res) => {
 
 
 
+const getAllProductsAndEvents = async (req, res) => {
+    try {
+        const productsAndEvents = await eventService.getAllProductsAndEvents();
+        res.json({
+            message: "Products and Events fetched successfully",
+            productsAndEvents: productsAndEvents
+        });
+    } catch (error) {
+        console.error("Controller Error:", error.message);
+        res.status(500).json({ message: "Failed to fetch products and events" });
+    }
+};
+
+
+
+
+
+
+
 
 router.post('/create-event',createEventHandler);
 router.get('/getAll-events',getAllEvents);
 router.post('/addAll-events',addAllEventsHandler);
 router.patch('/updateCatEventId',updateCatEventIdByEventId); // New endpoint for updating catEventId
 router.get('/list/:eventId', getProductsByEventId);
+router.get('/products', getAllProductsAndEvents);
 
 
 module.exports = router;
