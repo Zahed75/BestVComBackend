@@ -4,7 +4,7 @@ const roleMiddleware = require('../../middlewares/roleMiddleware');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const { asyncHandler } = require('../../utility/common');
 const productService = require('./service');
-const { HEAD_OFFICE, BRANCH_ADMIN } = require('../../config/constants');
+const { HEAD_OFFICE, BRANCH_ADMIN,ADMIN,CUSTOMER } = require('../../config/constants');
 
 
 
@@ -133,7 +133,7 @@ const getProductBySlugHandler = asyncHandler(async (req, res) => {
 router.get('/getProductByproductStatus', getProductByproductStatusHandler);
 
 router.post('/addProduct', authMiddleware, roleMiddleware([HEAD_OFFICE, BRANCH_ADMIN]), addProductHandler);
-router.put('/updateProduct/:id', authMiddleware, roleMiddleware([HEAD_OFFICE, BRANCH_ADMIN]), updateProductByIdHandler);
+router.put('/updateProduct/:id',updateProductByIdHandler);
 router.get('/getAllProducts', getAllProductsHandler)
 router.delete('/deleteProduct/:id', authMiddleware, roleMiddleware([HEAD_OFFICE, BRANCH_ADMIN]), deleteProductHandler);
 router.get('/getProductById/:id', getProductByIdHandler);
