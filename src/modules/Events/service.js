@@ -62,7 +62,7 @@ const updateCatEventIdByEventId = async (eventId, catEventId) => {
     return event;
 };
 
-// services/eventsService.js
+
 const getProductsByEventId = async (eventId) => {
     try {
         const event = await EventModel.findById(eventId).populate('categoriesId').exec();
