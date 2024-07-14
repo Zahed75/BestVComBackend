@@ -166,18 +166,20 @@ const getProductByproductStatus = async () => {
 
 
 
-const getProductBySlug = async(productSlug)=>{
-  try{
-  const product = await Product.findOne({productSlug:productSlug});
-  if(!product){
-    console.log('No products found by slug :',productSlug)
+const getProductBySlug = async (productSlug) => {
+  try {
+    const product = await Product.findOne({ productSlug });
+    if (!product) {
+      console.log('No products found by slug:', productSlug);
+    }
+    return product;
+  } catch (err) {
+    console.error('Error finding product by slug', err.message);
+    throw new Error('Failed to retrieve product');
   }
-  return product;
-  }
-  catch(err){
-    console.error('Error finding product by slug',err.message);
-  }
-}
+};
+
+
 
 
 
@@ -190,5 +192,6 @@ module.exports = {
   getProductByIdService,
   getProductByCategoryId,
   getProductByproductStatus,
-  getProductBySlug
+  getProductBySlug,
+
 }

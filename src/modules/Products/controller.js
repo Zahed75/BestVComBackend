@@ -115,7 +115,7 @@ const getProductBySlugHandler = asyncHandler(async (req, res) => {
     const { productSlug } = req.params;
     const product = await productService.getProductBySlug(productSlug);
 
-    if (!product || product.length === 0) {
+    if (!product) {
         return res.status(404).json({
             message: "No products found for the specified slug",
         });
@@ -126,6 +126,8 @@ const getProductBySlugHandler = asyncHandler(async (req, res) => {
         product
     });
 });
+
+
 
 
 
