@@ -121,6 +121,22 @@ const getCustomerInfoByIdHandler = asyncHandler(async(req,res)=>{
 
 
 
+const getOrderHistoryByCustomerIdHandler = asyncHandler(async (req, res) => {
+  const { customerId } = req.params;
+  try {
+    const orders = await customerService.getOrderHistoryByCustomerId(customerId);
+    res.status(200).json({
+      message: 'Order history fetched successfully',
+      orders,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
+
 router.post('/createCustomer',createCustomerhandler);
 router.get('/getCustomer',authMiddleware,roleMiddleware([HEAD_OFFICE,BRANCH_ADMIN,MANAGER,ADMIN]),getAllCustomerhandler);
 router.post('/forgetCred',forgetCredentialshandler);
@@ -129,5 +145,6 @@ router.post('/expiredOtp',expireOTP);
 router.post('/customerSignIn',customerSignInHandler);
 router.put('/resetPassword',resetPassHandler);
 router.patch('/updateCustomer/:id',updateCustomerHandler);
-router.get('/info/:id',getCustomerInfoByIdHandler)
+router.get('/info/:id',getCustomerInfoByIdHandler);
+router.get('/order-history/:customerId', getOrderHistoryByCustomerIdHandler);
 module.exports = router;

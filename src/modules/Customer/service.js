@@ -2,7 +2,7 @@ const customerModel = require("../Customer/model");
 const { generateOTP } = require("../../utility/common");
 const { SendEmailUtility } = require("../../utility/email");
 const productModel = require("../Products/model");
-
+const Order = require('../Order/model');
 
 const {
   BadRequest,
@@ -203,6 +203,20 @@ const getCustomerInfoById = async (id) => {
 
 
 
+const getOrderHistoryByCustomerId = async (customerId) => {
+  try {
+    const orders = await Order.find({ customer: customerId }).populate('products._id');
+    if (!orders) {
+      throw new Error('No orders found for the specified customer');
+    }
+    return orders;
+  } catch (error) {
+    console.error('Error fetching order history:', error);
+    throw new Error('Failed to fetch order history');
+  }
+};
+
+
 
 
 module.exports = {
@@ -214,6 +228,7 @@ module.exports = {
   expireOTP,
   customerSignInService,
   resetPass,
-  getCustomerInfoById
+  getCustomerInfoById,
+  getOrderHistoryByCustomerId
 
 };
