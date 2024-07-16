@@ -5,6 +5,7 @@ const customerService = require('./service')
 const authMiddleware= require('../../middlewares/authMiddleware');
 const roleMiddleware= require('../../middlewares/roleMiddleware');
 const { HEAD_OFFICE,BRANCH_ADMIN, MANAGER,ADMIN } = require('../../config/constants');
+const Order = require('../Order/model');
 
 
 const createCustomerhandler = asyncHandler(async (req, res) => {
@@ -121,20 +122,7 @@ const getCustomerInfoByIdHandler = asyncHandler(async(req,res)=>{
 
 
 
-const getOrderHistoryByCustomerIdHandler = asyncHandler(async (req, res) => {
-  const { customerId } = req.params;
-  try {
-    const orders = await customerService.getOrderHistoryByCustomerId(customerId);
-    res.status(200).json({
-      message: 'Order history fetched successfully',
-      orders,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-});
+
 
 
 router.post('/createCustomer',createCustomerhandler);
@@ -146,5 +134,5 @@ router.post('/customerSignIn',customerSignInHandler);
 router.put('/resetPassword',resetPassHandler);
 router.patch('/updateCustomer/:id',updateCustomerHandler);
 router.get('/info/:id',getCustomerInfoByIdHandler);
-router.get('/order-history/:customerId', getOrderHistoryByCustomerIdHandler);
+
 module.exports = router;

@@ -41,140 +41,6 @@ function calculateDiscount(coupon, totalPrice) {
   }
 }
 
-// const createOrder = async (orderData) => {
-//   try {
-//     // Generate custom orderId and orderTime
-//     const orderId = await generateCustomOrderId();
-//     const orderTime = formatOrderTime(new Date());
-
-//     // Destructure orderData
-//     const { 
-//       email, orderType, deliveryAddress, deliveryCharge = 0, 
-//       district, phoneNumber, paymentMethod, transactionId, 
-//       products, couponId, vatRate, firstName, lastName, customerIp,
-//       channel, outlet 
-//     } = orderData;
-
-//     // Find the customer by email
-//     const customer = await CustomerModel.findOne({ email }).lean().exec();
-//     if (!customer) {
-//       throw new Error('Customer not found');
-//     }
-
-//     // Validate products
-//     if (!Array.isArray(products) || products.length === 0) {
-//       throw new Error('No products provided');
-//     }
-
-//     const productIds = products.map(product => product._id);
-//     const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
-
-//     if (validProducts.length !== products.length) {
-//       throw new Error('Invalid product IDs');
-//     }
-
-//     // Calculate total price and apply discount if coupon provided
-//     const [totalPrice, discountAmount] = await Promise.all([
-//       calculateOrderValue(validProducts, products),
-//       couponId ? CouponModel.findById(couponId).then(coupon => {
-//         if (!coupon) throw new Error('Invalid coupon ID');
-//         return calculateDiscount(coupon, totalPrice);
-//       }) : 0
-//     ]);
-
-//     // Calculate VAT
-//     const vat = (vatRate / 100) * totalPrice;
-
-//     // Calculate final total price including discount and VAT
-//     const finalTotalPrice = totalPrice - discountAmount + vat + deliveryCharge;
-
-//     // Create new order
-//     const newOrder = new OrderModel({
-//       orderId,
-//       customer: customer._id,
-//       firstName,
-//       lastName,
-//       orderType,
-//       orderTime,
-//       deliveryAddress,
-//       orderStatus: 'Received',
-//       district,
-//       phoneNumber,
-//       paymentMethod,
-//       transactionId,
-//       products,
-//       coupon: couponId ? couponId : null,
-//       discountAmount,
-//       totalPrice: finalTotalPrice,
-//       vatRate,
-//       deliveryCharge,
-//       customerIp,
-//       channel,
-//       outlet
-//     });
-
-//     // Save the order to the database
-//     const savedOrder = await newOrder.save();
-
-//     if (!savedOrder.orderId) {
-//       console.error('orderId is missing from savedOrder:', savedOrder);
-//       throw new Error('Order creation failed: orderId is missing');
-//     }
-
-//     // Prepare products info for SMS
-//     const productInfoForSMS = savedOrder.products.map(product => {
-//       const validProduct = validProducts.find(p => p._id.equals(product._id));
-//       return {
-//         name: validProduct ? validProduct.productName : 'Unknown',
-//         quantity: product.quantity,
-//         price: validProduct ? validProduct.general.regularPrice : 0
-//       };
-//     });
-
-//     // Send SMS to customer
-//     const smsText = getSMSText('Received', `${firstName} ${lastName}`, {
-//       orderId: savedOrder.orderId,
-//       products: productInfoForSMS,
-//       totalPrice: savedOrder.totalPrice,
-//       discountAmount: savedOrder.discountAmount
-//     });
-
-//     console.log(smsText);
-//     await sendSMS(phoneNumber, smsText);
-
-//     // Send Email Invoice to customer in the background
-//     sendOrderInvoiceEmail(email, {
-//       orderId: savedOrder.orderId,
-//       firstName,
-//       lastName,
-//       email,
-//       deliveryAddress,
-//       phoneNumber,
-//       products: productInfoForSMS,
-//       totalPrice: finalTotalPrice,
-//       discountAmount,
-//       deliveryCharge,
-//       vatRate,
-//       vat
-//     }).catch(err => {
-//       console.error('Error sending order invoice email:', err);
-//     });
-
-//     return {
-//       message: "Order created successfully",
-//       createdOrder: {
-//         order: savedOrder,
-//         customerEmail: customer.email,
-//         totalOrderValue: finalTotalPrice
-//       }
-//     };
-
-//   } catch (error) {
-//     console.error("Error creating order:", error);
-//     throw error;
-//   }
-// };
-
 
 
 
@@ -577,6 +443,52 @@ const updateOutletByOrderId = async (orderId, outlet) => {
 
 
 
+const getOrderHistoryByCustomerId = async (customerId) => {
+  try {
+    const orders = await OrderModel.find({ customer: customerId })
+      .populate('products._id', 'productName previousPrice offerPrice productImage') // Adjust the path based on your Product schema
+      .exec();
+
+    if (!orders) {
+      throw new Error('No orders found for this customer');
+    }
+
+    const orderHistory = orders.map(order => ({
+      orderId: order.orderId,
+      date: order.createdAt,
+      status: order.orderStatus,
+      total: order.totalPrice,
+      subtotal: order.totalPrice - (order.discountAmount || 0),
+      products: order.products.map(product => {
+        if (product._id) {
+          return {
+            productName: product._id.productName,
+            previousPrice: product._id.previousPrice,
+            offerPrice: product._id.offerPrice,
+            productImage: product._id.productImage,
+          };
+        }
+        return {
+          productName: 'Product not found',
+          previousPrice: 0,
+          offerPrice: 0,
+          productImage: 'image not available',
+        };
+      }),
+      paymentMethod: order.paymentMethod,
+      billingDetails: order.billingInfo, // Adjust based on your schema
+    }));
+
+    return orderHistory;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
+
+
 
 
 
@@ -590,6 +502,7 @@ module.exports = {
   getOrderById,
   getCustomerHistory,
   updateOrderNoteById,
-  updateOutletByOrderId
+  updateOutletByOrderId,
+  getOrderHistoryByCustomerId,
  
 };

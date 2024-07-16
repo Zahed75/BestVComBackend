@@ -158,6 +158,24 @@ const updateOutletByOrderIdHandler = async (req, res) => {
 
 
 
+  const getOrderHistory = async (req, res) => {
+    const { customerId } = req.params;
+  
+    try {
+      const orderHistory = await orderService.getOrderHistoryByCustomerId(customerId);
+  
+      res.status(200).json({
+        success: true,
+        data: orderHistory,
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  };
+
 
 
 
@@ -172,5 +190,7 @@ router.put('/:id',updateOrderStatusHandler);
 router.get('/getOrderById/:id',getOrderByIdHandler);
 router.put('/updateNote/:orderId', updateOrderNoteByIdHandler);
 router.put('/changeOutletInfo/:orderId',updateOutletByOrderIdHandler);
+router.get('/order-history/:customerId', getOrderHistory);
+
 
 module.exports = router;
