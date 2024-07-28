@@ -454,6 +454,13 @@ const getOrderHistoryByCustomerId = async (customerId) => {
       throw new Error('No orders found for this customer');
     }
 
+    const customer = await CustomerModel.findById(customerId).exec();
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
+
+    const billingInfo = customer.billingInfo; // Access the billingInfo directly
+
     const orderHistory = orders.map(order => ({
       orderId: order.orderId,
       date: order.createdAt,
@@ -467,8 +474,8 @@ const getOrderHistoryByCustomerId = async (customerId) => {
             productName: product._id.productName,
             productImage: product._id.productImage,
             quantity: product.quantity,
-            productPrice: productPrice || 0, // Ensure productPrice is included
-            regularPrice: product._id.general.regularPrice || 0, // Include regular price
+            productPrice: productPrice || 0,
+            regularPrice: product._id.general.regularPrice || 0,
           };
         }
         return {
@@ -476,11 +483,19 @@ const getOrderHistoryByCustomerId = async (customerId) => {
           productImage: 'image not available',
           quantity: product.quantity,
           productPrice: 0,
-          regularPrice: 0, // Ensure regularPrice is included
+          regularPrice: 0,
         };
       }),
       paymentMethod: order.paymentMethod,
-      billingDetails: order.billingInfo, // Adjust based on your schema
+      billingDetails: billingInfo ? {
+        firstName: billingInfo.firstName,
+        lastName: billingInfo.lastName,
+        fullAddress: billingInfo.fullAddress,
+        phoneNumber: billingInfo.phoneNumber,
+        email: billingInfo.email,
+        zipCode: billingInfo.zipCode,
+        district: billingInfo.district,
+      } : null, // Include billing details if available, otherwise null
     }));
 
     return orderHistory;
@@ -488,6 +503,12 @@ const getOrderHistoryByCustomerId = async (customerId) => {
     throw error;
   }
 };
+
+
+
+
+
+
 
 
 
