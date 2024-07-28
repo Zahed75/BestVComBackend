@@ -157,7 +157,6 @@ const updateOutletByOrderIdHandler = async (req, res) => {
 
 
 
-
   const getOrderHistory = async (req, res) => {
     const { customerId } = req.params;
   
@@ -175,6 +174,7 @@ const updateOutletByOrderIdHandler = async (req, res) => {
       });
     }
   };
+
   
 
 

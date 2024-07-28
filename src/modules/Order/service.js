@@ -443,14 +443,13 @@ const updateOutletByOrderId = async (orderId, outlet) => {
 
 
 
-
 const getOrderHistoryByCustomerId = async (customerId) => {
   try {
     const orders = await OrderModel.find({ customer: customerId })
-      .populate('products._id', 'productName previousPrice offerPrice productImage') // Adjust the path based on your Product schema
+      .populate('products._id', 'productName general.productImage general.regularPrice general.salePrice') // Adjust the path based on your Product schema
       .exec();
 
-    if (!orders) {
+    if (!orders || orders.length === 0) {
       throw new Error('No orders found for this customer');
     }
 
@@ -462,19 +461,16 @@ const getOrderHistoryByCustomerId = async (customerId) => {
       subtotal: order.totalPrice - (order.discountAmount || 0),
       products: order.products.map(product => {
         if (product._id) {
+          const productPrice = product._id.general.salePrice || product._id.general.regularPrice;
           return {
             productName: product._id.productName,
-            previousPrice: product._id.previousPrice,
-            offerPrice: product._id.offerPrice,
             productImage: product._id.productImage,
             quantity: product.quantity,
-            productPrice: product._id.offerPrice || product._id.previousPrice,
+            productPrice: productPrice || 0, // Ensure productPrice is included
           };
         }
         return {
           productName: 'Product not found',
-          previousPrice: 0,
-          offerPrice: 0,
           productImage: 'image not available',
           quantity: product.quantity,
           productPrice: 0,
@@ -489,6 +485,17 @@ const getOrderHistoryByCustomerId = async (customerId) => {
     throw error;
   }
 };
+
+
+
+
+
+
+
+
+
+
+
 
 
 
