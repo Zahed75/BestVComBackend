@@ -443,10 +443,11 @@ const updateOutletByOrderId = async (orderId, outlet) => {
 
 
 
+
 const getOrderHistoryByCustomerId = async (customerId) => {
   try {
     const orders = await OrderModel.find({ customer: customerId })
-      .populate('products._id', 'productName general.productImage general.regularPrice general.salePrice') // Adjust the path based on your Product schema
+      .populate('products._id', 'productName productImage general') // Adjust the path based on your Product schema
       .exec();
 
     if (!orders || orders.length === 0) {
@@ -467,6 +468,7 @@ const getOrderHistoryByCustomerId = async (customerId) => {
             productImage: product._id.productImage,
             quantity: product.quantity,
             productPrice: productPrice || 0, // Ensure productPrice is included
+            regularPrice: product._id.general.regularPrice || 0, // Include regular price
           };
         }
         return {
@@ -474,6 +476,7 @@ const getOrderHistoryByCustomerId = async (customerId) => {
           productImage: 'image not available',
           quantity: product.quantity,
           productPrice: 0,
+          regularPrice: 0, // Ensure regularPrice is included
         };
       }),
       paymentMethod: order.paymentMethod,
@@ -485,6 +488,8 @@ const getOrderHistoryByCustomerId = async (customerId) => {
     throw error;
   }
 };
+
+
 
 
 
