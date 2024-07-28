@@ -443,6 +443,7 @@ const updateOutletByOrderId = async (orderId, outlet) => {
 
 
 
+
 const getOrderHistoryByCustomerId = async (customerId) => {
   try {
     const orders = await OrderModel.find({ customer: customerId })
@@ -466,6 +467,8 @@ const getOrderHistoryByCustomerId = async (customerId) => {
             previousPrice: product._id.previousPrice,
             offerPrice: product._id.offerPrice,
             productImage: product._id.productImage,
+            quantity: product.quantity,
+            productPrice: product._id.offerPrice || product._id.previousPrice,
           };
         }
         return {
@@ -473,6 +476,8 @@ const getOrderHistoryByCustomerId = async (customerId) => {
           previousPrice: 0,
           offerPrice: 0,
           productImage: 'image not available',
+          quantity: product.quantity,
+          productPrice: 0,
         };
       }),
       paymentMethod: order.paymentMethod,
@@ -484,6 +489,8 @@ const getOrderHistoryByCustomerId = async (customerId) => {
     throw error;
   }
 };
+
+
 
 
 
