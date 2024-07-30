@@ -443,7 +443,6 @@ const updateOutletByOrderId = async (orderId, outlet) => {
 
 
 
-
 const getOrderHistoryByCustomerId = async (customerId) => {
   try {
     const orders = await OrderModel.find({ customer: customerId })
@@ -459,23 +458,19 @@ const getOrderHistoryByCustomerId = async (customerId) => {
       throw new Error('Customer not found');
     }
 
-    const billingInfo = customer.billingInfo; // Access the billingInfo directly
+    const billingInfo = customer.billingInfo;
 
-    const orderHistory = orders.map(order => ({
-      orderId: order.orderId,
-      date: order.createdAt,
-      status: order.orderStatus,
-      total: order.totalPrice,
-      subtotal: order.totalPrice - (order.discountAmount || 0),
-      products: order.products.map(product => {
+    const orderHistory = orders.map(order => {
+      const products = order.products.map(product => {
         if (product._id) {
-          const productPrice = product._id.general.salePrice || product._id.general.regularPrice;
+          const regularPrice = product._id.general.regularPrice || 0;
+          const productPrice = product._id.general.salePrice || regularPrice;
           return {
             productName: product._id.productName,
             productImage: product._id.productImage,
             quantity: product.quantity,
-            productPrice: productPrice || 0,
-            regularPrice: product._id.general.regularPrice || 0,
+            productPrice: productPrice * product.quantity,
+            regularPrice: regularPrice * product.quantity,
           };
         }
         return {
@@ -485,23 +480,44 @@ const getOrderHistoryByCustomerId = async (customerId) => {
           productPrice: 0,
           regularPrice: 0,
         };
-      }),
-      paymentMethod: order.paymentMethod,
-      billingDetails: billingInfo ? {
-        firstName: billingInfo.firstName,
-        lastName: billingInfo.lastName,
-        fullAddress: billingInfo.fullAddress,
-        phoneNumber: billingInfo.phoneNumber,
-        email: billingInfo.email,
-        zipCode: billingInfo.zipCode,
-        district: billingInfo.district,
-      } : null, // Include billing details if available, otherwise null
-    }));
+      });
+
+      const total = products.reduce((acc, product) => acc + product.productPrice, 0);
+      const regularTotal = products.reduce((acc, product) => acc + product.regularPrice, 0);
+      const discount = regularTotal - total;
+      const VAT = (total * 0.15); // Assuming VAT is 15%
+      const subtotal = total + VAT;
+
+      return {
+        orderId: order.orderId,
+        date: order.createdAt,
+        status: order.orderStatus,
+        total,
+        subtotal,
+        discount,
+        VAT,
+        products,
+        paymentMethod: order.paymentMethod,
+        billingDetails: billingInfo ? {
+          firstName: billingInfo.firstName,
+          lastName: billingInfo.lastName,
+          fullAddress: billingInfo.fullAddress,
+          phoneNumber: billingInfo.phoneNumber,
+          email: billingInfo.email,
+          zipCode: billingInfo.zipCode,
+          district: billingInfo.district,
+        } : null,
+      };
+    });
 
     return orderHistory;
   } catch (error) {
     throw error;
   }
+};
+
+module.exports = {
+  getOrderHistoryByCustomerId,
 };
 
 
