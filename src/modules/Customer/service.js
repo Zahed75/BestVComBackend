@@ -39,13 +39,10 @@ const customerCreateService = async (customerInfo) => {
 
 
 const getAllCustomerService = async () => {
-  try {
+ 
     const newCustomer = await customerModel.find();
-    return { customer: newCustomer };
-  } catch (error) {
-    console.error(error);
-    return { customer: null };
-  }
+    return newCustomer;
+  
 };
 
 
@@ -141,6 +138,7 @@ const customerSignInService = async (email, password) => {
     throw error;
   }
 };
+
 
 const resetPass = async (email, newPassword) => {
   try {
