@@ -19,9 +19,11 @@ const CustomerSchema = new mongoose.Schema({
     type: String,
     max: [200, "City Should be at least 200 characters"]
   },
+  
   profilePicture: {
     type: String,
   },
+
   userName: {
     type: String,
     max: [15, "UserName Should be at least 15 characters"],

@@ -4,7 +4,41 @@ const { generateSlug } = require('../../utility/slug');
 const { BadRequest } = require('../../utility/errors');
 
 
+
+
+
 // addProduct
+// const addProduct = async (productData) => {
+//   try {
+//     const { productName } = productData;
+//     let productSlug = generateSlug(productName);
+//     const existingProduct = await Product.findOne({ productSlug });
+
+//     if (existingProduct) {
+//       let counter = 2;
+//       let newSlug;
+//       do {
+//         newSlug = `${productSlug}-${counter}`;
+//         counter++;
+//       } while (await Product.findOne({ productSlug: newSlug }));
+
+//       productSlug = newSlug;
+//     }
+//     const productCode = await generateProductCode(Product);
+
+//     const newProduct = await Product.create({ ...productData, productCode, productSlug });
+
+//     if (!newProduct) {
+//       throw new BadRequest('Could not create product');
+//     }
+//     return newProduct;
+//   } catch (error) {
+//     console.error("Error adding product:", error);
+//     throw new Error('Failed to add product');
+//   }
+// };
+
+
 const addProduct = async (productData) => {
   try {
     const { productName } = productData;
@@ -34,6 +68,9 @@ const addProduct = async (productData) => {
     throw new Error('Failed to add product');
   }
 };
+
+
+
 
 
 
