@@ -43,10 +43,10 @@ const ProductSchema = new Schema({
   },
   
   // Updated to support dynamic key-value pairs
-  productSpecification: {
-    type: Map,
-    of: String
-  },
+  productSpecification: [{
+    key: { type: String },
+    value: { type: String }
+  }],
   
   seo: {
     productTitle: {
