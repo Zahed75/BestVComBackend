@@ -65,8 +65,8 @@ const ProductSchema = new Schema({
   },
   productShortDescription: {
     type: String,
-    maxlength: 2000
   },
+  
   general: {
     regularPrice: {
       type: Number,
