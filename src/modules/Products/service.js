@@ -184,20 +184,18 @@ const getProductByproductStatus = async () => {
   try {
     const products = await Product.find({ productStatus: "Published" });
     if (!products || products.length === 0) {
-      console.log('No products found for productStatus:', productStatus);
+      console.log('No products found for productStatus: Published');
       return [];
-    }
-    else {
+    } else {
       console.log('Products found:', products.length);
       return products;
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error in getProductByproductStatus:', error);
     throw new Error('Failed to retrieve products by productStatus');
   }
-  //issue reolved
-}
+};
+
 
 
 

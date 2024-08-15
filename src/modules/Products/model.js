@@ -105,7 +105,7 @@ ProductSchema.pre('save', function(next) {
     this.date = new Date().toISOString();
   }
   next();
-});
+},{ timestamps: true });
 
 const ProductModel = mongoose.model('Product', ProductSchema);
 
