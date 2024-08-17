@@ -5,38 +5,7 @@ const { BadRequest } = require('../../utility/errors');
 
 
 
-
-
-// addProduct
-// const addProduct = async (productData) => {
-//   try {
-//     const { productName } = productData;
-//     let productSlug = generateSlug(productName);
-//     const existingProduct = await Product.findOne({ productSlug });
-
-//     if (existingProduct) {
-//       let counter = 2;
-//       let newSlug;
-//       do {
-//         newSlug = `${productSlug}-${counter}`;
-//         counter++;
-//       } while (await Product.findOne({ productSlug: newSlug }));
-
-//       productSlug = newSlug;
-//     }
-//     const productCode = await generateProductCode(Product);
-
-//     const newProduct = await Product.create({ ...productData, productCode, productSlug });
-
-//     if (!newProduct) {
-//       throw new BadRequest('Could not create product');
-//     }
-//     return newProduct;
-//   } catch (error) {
-//     console.error("Error adding product:", error);
-//     throw new Error('Failed to add product');
-//   }
-// };
+// addProducts
 
 
 const addProduct = async (productData) => {
@@ -55,12 +24,14 @@ const addProduct = async (productData) => {
 
       productSlug = newSlug;
     }
+
     const productCode = await generateProductCode(Product);
 
+    // Create the product with Mongoose, `createdAt` will be automatically set
     const newProduct = await Product.create({ ...productData, productCode, productSlug });
 
     if (!newProduct) {
-      throw new BadRequest('Could not create product');
+      throw new Error('Could not create product');
     }
     return newProduct;
   } catch (error) {
@@ -215,6 +186,51 @@ const getProductBySlug = async (productSlug) => {
 };
 
 
+// src/modules/Products/service.js
+
+const updateProductSpecification = async (productId, productSpecification) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      { $set: { productSpecification } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProduct) {
+      throw new Error('Product not found');
+    }
+
+    return updatedProduct;
+  } catch (error) {
+    console.error('Error updating product specification:', error);
+    throw new Error('Failed to update product specification');
+  }
+};
+
+
+
+const deleteProductSpecification = async (productId, specificationId) => {
+  try {
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: productId },
+      { $pull: { productSpecification: { _id: specificationId } } },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedProduct) {
+      throw new Error('Product or Specification not found');
+    }
+
+    return updatedProduct;
+  } catch (error) {
+    console.error("Error deleting product specification:", error);
+    throw new Error('Failed to delete product specification');
+  }
+};
+
+
+
+
 
 
 
@@ -228,5 +244,7 @@ module.exports = {
   getProductByCategoryId,
   getProductByproductStatus,
   getProductBySlug,
+  updateProductSpecification,
+  deleteProductSpecification
 
 }
