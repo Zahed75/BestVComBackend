@@ -27,22 +27,12 @@ function calculateOrderValue(products, orderProducts) {
 
 
 
-function calculateDiscount(coupon, totalPrice) {
-  if (!coupon) {
-    return 0;
+const calculateDiscount = (coupon, totalPrice) => {
+  if (coupon.general.discountType === 'percentage') {
+    return (coupon.general.couponAmount / 100) * totalPrice;
   }
-
-  if (coupon.discountType === 'percentage') {
-    return (coupon.couponAmount / 100) * totalPrice;
-  } else if (coupon.discountType === 'fixed') {
-    return coupon.couponAmount;
-  } else {
-    return 0;
-  }
-}
-
-
-
+  return 0;
+};
 
 const createOrder = async (orderData) => {
   try {
@@ -76,35 +66,37 @@ const createOrder = async (orderData) => {
       throw new Error('Invalid product IDs');
     }
 
-    // Calculate total price and apply discount if coupon provided
-    let discountAmount = 0;
-    let coupon = null;
-
-    if (couponName) {
-      coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
-      if (!coupon) throw new Error('Invalid coupon name');
-    }
-
-    const useMRP = coupon !== null;
-    const totalPrice = calculateOrderValue(validProducts, products, useMRP);
+    // Calculate total price based on MRP
+    const totalPrice = calculateOrderValue(validProducts, products);
 
     if (isNaN(totalPrice)) {
       throw new Error('Total price calculation resulted in NaN');
     }
 
-    if (coupon) {
+    let discountAmount = 0;
+    let coupon = null;
+    if (couponName) {
+      coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
+      if (!coupon) throw new Error('Invalid coupon name');
+      
+      // Validate coupon expiration
+      if (new Date() > new Date(coupon.general.couponExpiry)) {
+        throw new Error('Coupon has expired');
+      }
+      
+      // Calculate discount
       discountAmount = calculateDiscount(coupon, totalPrice);
     }
 
-    // Calculate VAT
-    const vat = (vatRate / 100) * totalPrice;
+    // Calculate VAT (5% fixed rate)
+    const vat = (5 / 100) * totalPrice;
 
     if (isNaN(vat)) {
       throw new Error('VAT calculation resulted in NaN');
     }
 
-    // Calculate final total price including discount and VAT
-    const finalTotalPrice = totalPrice - discountAmount + vat + deliveryCharge;
+    // Calculate final total price including discount and delivery charge
+    const finalTotalPrice = totalPrice - discountAmount + deliveryCharge;
 
     if (isNaN(finalTotalPrice)) {
       throw new Error('Final total price calculation resulted in NaN');
@@ -128,7 +120,7 @@ const createOrder = async (orderData) => {
       coupon: coupon ? coupon._id : null,
       discountAmount,
       totalPrice: finalTotalPrice,
-      vatRate,
+      vatRate: 5, // Fixed VAT rate
       deliveryCharge,
       customerIp,
       channel,
@@ -149,7 +141,7 @@ const createOrder = async (orderData) => {
       return {
         name: validProduct ? validProduct.productName : 'Unknown',
         quantity: product.quantity,
-        price: validProduct ? (useMRP ? validProduct.general.regularPrice : validProduct.general.salePrice) : 0
+        price: validProduct ? validProduct.general.regularPrice : 0
       };
     });
 
@@ -176,7 +168,7 @@ const createOrder = async (orderData) => {
       totalPrice: finalTotalPrice,
       discountAmount,
       deliveryCharge,
-      vatRate,
+      vatRate: 5, // Fixed VAT rate
       vat
     }).catch(err => {
       console.error('Error sending order invoice email:', err);
@@ -197,6 +189,9 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
+
+
+
 
 
 

@@ -96,11 +96,11 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData) => {
       deliveryAddress: orderData.deliveryAddress,
       phoneNumber: orderData.phoneNumber,
       products: orderData.products,
-      subtotal: orderData.totalPrice - orderData.vatRate,
+      subtotal: orderData.totalPrice - orderData.discountAmount - orderData.deliveryCharge,  // Corrected subtotal calculation
       discount: orderData.discountAmount,
       deliveryCharge: orderData.deliveryCharge,
       vatRate: orderData.vatRate,
-      vat: (orderData.vatRate / 100) * orderData.totalPrice,
+      vat: orderData.vat,  // VAT should be directly provided
       total: orderData.totalPrice,
     };
 

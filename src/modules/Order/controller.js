@@ -16,12 +16,12 @@ const { BRANCH_ADMIN,HEAD_OFFICE,MANAGER,CUSTOMER, ADMIN} = require('../../confi
 
 
 const createOrder = asyncHandler(async (req, res) => {
-    const orderData = req.body;
-    const order = await orderService.createOrder(orderData); // Get total order value from the service
-    res.status(200).json({
-        message: "Order created successfully",
-        order
-    });
+  const orderData = req.body;
+  const order = await orderService.createOrder(orderData);
+  res.status(200).json({
+      message: "Order created successfully",
+      order
+  });
 });
 
 

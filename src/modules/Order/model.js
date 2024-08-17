@@ -102,7 +102,8 @@ const OrderSchema = new mongoose.Schema({
       default:""
     },
 
-  vatRate: Number,
+  // vatRate: Number,
+
   orderLogs: [{
     status: {
       type: Number,
