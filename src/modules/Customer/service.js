@@ -328,6 +328,27 @@ const loginCustomer = async (customer) => {
 
 
 
+const resendCustomerOTP = async (customer) => {
+  const { phoneNumber } = customer;
+
+  const isCustomer = await customerModel.findOne({ phoneNumber });
+
+  if (!isCustomer)
+    throw new NotFound(
+      "You do not have an account with this phone number. Please register"
+    );
+
+  const otp = generateOTP();
+  const message = `সম্মানিত গ্রাহক,\nচার সংখ্যার ওটিপি (OTP): ${toBengaliNum(
+    otp
+  )} ব্যবহার করে আপনার মোবাইল নম্বর ভেরিফিকেশন করুন। -BestElectronics`;
+  isCustomer.otp = otp;
+  await sendSMS(message, phoneNumber);
+
+  await isCustomer.save();
+
+  return isCustomer;
+};
 
 
 
@@ -347,6 +368,7 @@ module.exports = {
   getCustomerInfoById,
   registerCustomerByPhoneNumber,
   verifyCustomerOTP,
-  loginCustomer
+  loginCustomer,
+  resendCustomerOTP
 
 };

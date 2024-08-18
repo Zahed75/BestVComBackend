@@ -185,6 +185,20 @@ const customerOTPSigninHandler = async (req, res, next) => {
 };
 
 
+const customerResendOTPHandler = async (req, res, next) => {
+  try {
+    const customer = await customerService.resendCustomerOTP(req.body);
+
+    res.status(200).json({
+      message: "OTP resent to your phone number",
+      customer,
+    });
+  } catch (err) {
+    next(err, req, res);
+  }
+};
+
+
 
 router.post('/createCustomer',createCustomerhandler);
 router.get('/getCustomer',roleMiddleware([HEAD_OFFICE]),getAllCustomerhandler);
@@ -202,4 +216,5 @@ router.post('/verifyPhoneOtp',customerVerifyOTPHandler)
 
 router.post('/loginPhoneOTP',customerOTPSigninHandler)
 
+router.post('/resendPhoneOTP',customerResendOTPHandler)
 module.exports = router;
