@@ -188,16 +188,21 @@ const getProductBySlug = async (productSlug) => {
 
 // src/modules/Products/service.js
 
-const updateProductSpecification = async (productId, productSpecification) => {
+const updateProductSpecification = async (productId, specId, newKeyValue) => {
   try {
-    const updatedProduct = await Product.findByIdAndUpdate(
-      productId,
-      { $set: { productSpecification } },
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: productId, 'productSpecification._id': specId },
+      {
+        $set: {
+          'productSpecification.$.key': newKeyValue.key,
+          'productSpecification.$.value': newKeyValue.value,
+        }
+      },
       { new: true, runValidators: true }
     );
 
     if (!updatedProduct) {
-      throw new Error('Product not found');
+      throw new Error('Product or specification not found');
     }
 
     return updatedProduct;
@@ -206,6 +211,8 @@ const updateProductSpecification = async (productId, productSpecification) => {
     throw new Error('Failed to update product specification');
   }
 };
+
+
 
 
 

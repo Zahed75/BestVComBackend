@@ -131,22 +131,29 @@ const getProductBySlugHandler = asyncHandler(async (req, res) => {
 
 
 const updateProductSpecificationHandler = asyncHandler(async (req, res) => {
-    const { productId } = req.params;
-    const { productSpecification } = req.body;
-  
-    const updatedProduct = await productService.updateProductSpecification(productId, productSpecification);
-  
+  const { productId, specId } = req.params;
+  const { key, value } = req.body;
+
+  try {
+    const updatedProduct = await productService.updateProductSpecification(
+      productId, 
+      specId, 
+      { key, value }
+    );
+
     if (!updatedProduct) {
-      return res.status(404).json({
-        message: 'Product not found',
-      });
+      return res.status(404).json({ message: 'Product or specification not found' });
     }
-  
-    res.status(200).json({
+
+    return res.status(200).json({
       message: 'Product specification updated successfully!',
       product: updatedProduct,
     });
-  });
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+});
+
 
 
 
@@ -179,7 +186,7 @@ router.get('/getProductById/:id', getProductByIdHandler);
 router.get('/getProductByCategoryId/:categoryId', getProductByCategoryIdHandler);
 router.get('/getProductBySlugHandler/:productSlug', getProductBySlugHandler);
 
-router.patch('/:productId/specification', updateProductSpecificationHandler);
+router.patch('/:productId/specification/:specId', updateProductSpecificationHandler);
 
 router.delete('/:productId/specification/:specificationId', deleteProductSpecificationHandler);
 
