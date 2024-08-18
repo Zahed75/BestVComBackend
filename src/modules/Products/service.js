@@ -238,6 +238,26 @@ const deleteProductSpecification = async (productId, specificationId) => {
 
 
 
+const addProductSpecifications = async (productId, newSpecifications) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      { $push: { productSpecification: { $each: newSpecifications } } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProduct) {
+      throw new Error('Product not found');
+    }
+
+    return updatedProduct;
+  } catch (error) {
+    console.error('Error adding product specifications:', error);
+    throw new Error('Failed to add product specifications');
+  }
+};
+
+
 
 
 
@@ -252,6 +272,7 @@ module.exports = {
   getProductByproductStatus,
   getProductBySlug,
   updateProductSpecification,
-  deleteProductSpecification
+  deleteProductSpecification,
+  addProductSpecifications
 
 }

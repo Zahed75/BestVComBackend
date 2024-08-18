@@ -172,6 +172,22 @@ const updateProductSpecificationHandler = asyncHandler(async (req, res) => {
   
   
   
+  const addProductSpecificationsHandler = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+    const { productSpecification } = req.body;
+  
+    const updatedProduct = await productService.addProductSpecifications(productId, productSpecification);
+  
+    if (!updatedProduct) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+  
+    res.status(200).json({
+      message: 'Product specifications added successfully!',
+      product: updatedProduct,
+    });
+  })
+
 
 
 
@@ -190,6 +206,7 @@ router.patch('/:productId/specification/:specId', updateProductSpecificationHand
 
 router.delete('/:productId/specification/:specificationId', deleteProductSpecificationHandler);
 
+router.post('/:productId/addSpecifications', addProductSpecificationsHandler);
 
 
 module.exports = router;
