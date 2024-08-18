@@ -3,6 +3,8 @@ const { generateOTP } = require("../../utility/common");
 const { SendEmailUtility } = require("../../utility/email");
 const productModel = require("../Products/model");
 const Order = require('../Order/model');
+const toBengaliNum = require("number-to-bengali");
+const sendSMS = require("../../utility/aamarPayOTP");
 
 const {
   BadRequest,
@@ -12,6 +14,9 @@ const {
 } = require("../../utility/errors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { CUSTOMER } = require("../../config/constants");
+
+const createToken = require("../../utility/createToken");
 
 const customerCreateService = async (customerInfo) => {
   try {
@@ -200,6 +205,131 @@ const getCustomerInfoById = async (id) => {
 
 
 
+// services/customerService.js
+
+const registerCustomerByPhoneNumber = async (customer) => {
+  const { phoneNumber, firstName } = customer;
+
+  if (!phoneNumber || !firstName) {
+    throw new BadRequest("First name and phone number are required");
+  }
+
+  const existingCustomer = await customerModel.findOne({ phoneNumber });
+  const otp = generateOTP();
+  const message = `(BestElectronics) সম্মানিত গ্রাহক, চার সংখ্যার ওটিপি: ${toBengaliNum(
+    otp
+  )} ব্যবহার করে আপনার মোবাইল নম্বর ভেরিফিকেশন করুন।`;
+
+  if (existingCustomer) {
+    if (existingCustomer.isValid) {
+      throw new BadRequest("You already have an account with this phone number. Please login");
+    } else {
+      // Update existing customer with new OTP
+      const updatedCustomer = await customerModel.findOneAndUpdate(
+        { phoneNumber },
+        { otp },
+        { new: true }
+      );
+
+      console.log("Sending SMS to:", phoneNumber);  // Debug log
+      console.log("Message:", message);  // Debug log
+
+      await sendSMS(phoneNumber, message);
+
+      return updatedCustomer;
+    }
+  }
+
+  // Create a new customer
+  const newCustomer = new customerModel({
+    phoneNumber,
+    firstName,
+    otp
+  });
+
+  await newCustomer.save();
+
+  console.log("Sending SMS to:", phoneNumber);  // Debug log
+  console.log("Message:", message);  // Debug log
+
+  await sendSMS(phoneNumber, message);
+
+  return newCustomer;
+};
+
+
+// verify customer OTP
+
+const verifyCustomerOTP = async (customer) => {
+  const { phoneNumber, otp } = customer;
+
+  const isCustomer = await customerModel.findOne({ phoneNumber })
+
+  if (!isCustomer)
+    throw new NotFound(
+      "You do not have an account with this phone number. Please register"
+    );
+
+  if (Number(otp) !== isCustomer.otp) throw new BadRequest("Invalid OTP code");
+
+  isCustomer.otp = undefined;
+  isCustomer.isValid = true;
+
+  const accessToken = createToken(
+    {
+      userId: isCustomer._id,
+      role: CUSTOMER,
+    },
+    { expiresIn: "360d" }
+  );
+
+  //customer refresh Token
+  const refreshToken = createToken(
+    {
+      userId: isCustomer._id,
+      role: CUSTOMER,
+    },
+    { expiresIn: "360d" }
+  );
+
+  isCustomer.refreshToken = refreshToken;
+
+  await isCustomer.save();
+
+  isCustomer.refreshToken = undefined;
+
+  return { customer: isCustomer, accessToken, refreshToken };
+};
+
+
+
+
+const loginCustomer = async (customer) => {
+  const { phoneNumber } = customer;
+
+  const customerExist = await customerModel.findOne({ phoneNumber })
+  if (!customerExist)
+    throw new NotFound(
+      "You do not have an account with this phone number. Please register"
+    );
+  const otp = generateOTP();
+  const message = `সম্মানিত গ্রাহক,\nচার সংখ্যার ওটিপি (OTP): ${toBengaliNum(
+    otp
+  )} ব্যবহার করে আপনার মোবাইল নম্বর ভেরিফিকেশন করুন। -BestElectronics`;
+
+  customerExist.otp = otp;
+  await sendSMS(message, phoneNumber);
+
+  await customerExist.save();
+
+  return customerExist;
+};
+
+
+
+
+
+
 
 
 
@@ -215,6 +345,8 @@ module.exports = {
   customerSignInService,
   resetPass,
   getCustomerInfoById,
- 
+  registerCustomerByPhoneNumber,
+  verifyCustomerOTP,
+  loginCustomer
 
 };

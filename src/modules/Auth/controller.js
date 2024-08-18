@@ -220,6 +220,10 @@ const updateUserByIdHandler = asyncHandler(async (req, res) => {
 
 
 
+
+
+
+
 router.post('/adminRegister', registerHandler);
 router.post('/otpVerification', otpVerifyHandler);
 router.post('/otpResend', resendOTPHandler);
@@ -233,4 +237,7 @@ router.put('/users/:userId', updateUserByIdHandler);
 router.post('/phoneRegister',registerUserByPhoneHandler);
 router.post('/phoneOTP-Verify',verifyOTPPhoneHandler);
 router.post('/resendOTPByPhone',resendOTPbyPhoneHandler);
+
+
+
 module.exports = router;

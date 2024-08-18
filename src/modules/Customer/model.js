@@ -3,41 +3,38 @@ const bcrypt = require("bcryptjs");
 
 const CustomerSchema = new mongoose.Schema({
   email: {
-    type: String,
-    unique: true,
-    required: [true, 'Email must be provided'],
+    type: String
   },
   firstName: {
     type: String,
-    max: [15, "FirstName Should be at least 15 characters"],
-  },
-  lastName: {
-    type: String,
-    max: [12, "LastName Should be at least 12 characters"]
-  },
-  city: {
-    type: String,
-    max: [200, "City Should be at least 200 characters"]
-  },
-  
-  profilePicture: {
-    type: String,
-  },
-
-  userName: {
-    type: String,
-    max: [15, "UserName Should be at least 15 characters"],
-    default: ""
+    max: [15, "FirstName should be at most 15 characters"],
+    required: [true, "FirstName is required"]
   },
   phoneNumber: {
     type: String,
-    max: [13, "Phone Number Should be at least 13 characters"],
-    required: [true, "Please Enter a valid phone number"],
+    max: [13, "Phone Number should be at most 13 characters"],
+    required: [true, "Please enter a valid phone number"],
     unique: true
+  },
+  lastName: {
+    type: String,
+    max: [12, "LastName should be at most 12 characters"]
+  },
+  city: {
+    type: String,
+    max: [200, "City should be at most 200 characters"]
+  },
+  profilePicture: {
+    type: String,
+  },
+  userName: {
+    type: String,
+    max: [15, "UserName should be at most 15 characters"],
+    default: ""
   },
   changedPhoneNumber: {
     type: String,
-    max: [14, "Changed Phone Number Should be at least 14 characters"],
+    max: [14, "Changed Phone Number should be at most 14 characters"],
   },
   isValid: {
     type: Boolean,
@@ -51,11 +48,11 @@ const CustomerSchema = new mongoose.Schema({
   },
   address: {
     type: String,
-    max: [120, "Address Should be at least 120 characters"],
+    max: [120, "Address should be at most 120 characters"],
   },
   zipCode: {
     type: String,
-    max: [12, 'Zip Code Should be at least 12 characters']
+    max: [12, 'Zip Code should be at most 12 characters']
   },
   isActive: {
     type: Boolean
@@ -71,64 +68,62 @@ const CustomerSchema = new mongoose.Schema({
   billingInfo: {
     district: {
       type: String,
-      max: [45, "District Should be at least 45 characters"],
+      max: [45, "District should be at most 45 characters"],
     },
     firstName: {
       type: String,
-      max: [15, "FirstName Should be at least 15 characters"],
+      max: [15, "FirstName should be at most 15 characters"],
     },
     lastName: {
       type: String,
-      max: [12, "LastName Should be at least 12 characters"]
+      max: [12, "LastName should be at most 12 characters"]
     },
     fullAddress: {
       type: String,
-      max: [220, "Full Address Should be at least 220 characters"]
+      max: [220, "Full Address should be at most 220 characters"]
     },
     phoneNumber: {
       type: String,
-      max: [13, "Phone Number Should be at least 13 characters"],
+      max: [13, "Phone Number should be at most 13 characters"],
     },
     email: {
       type: String,
     },
     zipCode: {
       type: String,
-      max: [12, 'Zip Code Should be at least 12 characters']
+      max: [12, 'Zip Code should be at most 12 characters']
     }
   },
   shippingInfo: {
     district: {
       type: String,
-      max: [45, "District Should be at least 45 characters"],
+      max: [45, "District should be at most 45 characters"],
     },
     firstName: {
       type: String,
-      max: [15, "FirstName Should be at least 15 characters"],
+      max: [15, "FirstName should be at most 15 characters"],
     },
     lastName: {
       type: String,
-      max: [12, "LastName Should be at least 12 characters"]
+      max: [12, "LastName should be at most 12 characters"]
     },
     fullAddress: {
       type: String,
-      max: [220, "Full Address Should be at least 220 characters"]
+      max: [220, "Full Address should be at most 220 characters"]
     },
     phoneNumber: {
       type: String,
-      max: [13, "Phone Number Should be at least 13 characters"],
+      max: [13, "Phone Number should be at most 13 characters"],
     },
     email: {
       type: String,
     },
     zipCode: {
       type: String,
-      max: [12, 'Zip Code Should be at least 12 characters']
+      max: [12, 'Zip Code should be at most 12 characters']
     }
   }
 });
-
-
 
 // Password Hash Function using Bcryptjs
 CustomerSchema.pre('save', async function hashPassword(next) {

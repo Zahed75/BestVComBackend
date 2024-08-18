@@ -348,7 +348,8 @@ module.exports = {
   updateUserById,
   registerUserByPhoneNumber,
   verifyOTPByPhone,
-  resendOTPbyPhone
+  resendOTPbyPhone,
+  
 };
 
 

@@ -4,7 +4,7 @@ const { asyncHandler } =require('../../utility/common');
 const customerService = require('./service')
 const authMiddleware= require('../../middlewares/authMiddleware');
 const roleMiddleware= require('../../middlewares/roleMiddleware');
-const { HEAD_OFFICE,BRANCH_ADMIN, MANAGER,ADMIN } = require('../../config/constants');
+const { HEAD_OFFICE,BRANCH_ADMIN, MANAGER,ADMIN, CUSTOMER } = require('../../config/constants');
 
 
 
@@ -124,6 +124,65 @@ const getCustomerInfoByIdHandler = asyncHandler(async(req,res)=>{
 
 
 
+const registerCustomerByPhoneNumber = asyncHandler(async (req, res) => {
+  const { firstName, phoneNumber } = req.body;
+
+  // Validate input
+  if (!firstName || !phoneNumber) {
+    return res.status(400).json({ message: "First name and phone number are required" });
+  }
+
+  try {
+    const result = await customerService.registerCustomerByPhoneNumber({ firstName, phoneNumber });
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+});
+
+
+
+
+
+const customerVerifyOTPHandler = async (req, res, next) => {
+  try {
+    const { customer, accessToken, refreshToken } =
+      await customerService.verifyCustomerOTP(req.body);
+
+    res.cookie("currentUserRole", CUSTOMER, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    res.cookie("jwt", refreshToken, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    res.status(200).json({
+      message: "OTP verification successful",
+      user: customer,
+      accessToken,
+      refreshToken,
+    });
+  } catch (err) {
+    next(err, req, res);
+  }
+};
+
+
+const customerOTPSigninHandler = async (req, res, next) => {
+  try {
+    const customer = await customerService.loginCustomer(req.body);
+
+    res.status(200).json({
+      message: "OTP send to your phone number",
+      customer,
+    });
+  } catch (err) {
+    next(err, req, res);
+  }
+};
 
 
 
@@ -136,5 +195,11 @@ router.post('/customerSignIn',customerSignInHandler);
 router.put('/resetPassword',resetPassHandler);
 router.patch('/updateCustomer/:id',updateCustomerHandler);
 router.get('/info/:id',getCustomerInfoByIdHandler);
+
+router.post('/registerByPhone',registerCustomerByPhoneNumber);
+
+router.post('/verifyPhoneOtp',customerVerifyOTPHandler)
+
+router.post('/loginPhoneOTP',customerOTPSigninHandler)
 
 module.exports = router;
