@@ -231,9 +231,6 @@ const registerCustomerByPhoneNumber = async (customer) => {
         { new: true }
       );
 
-      console.log("Sending SMS to:", phoneNumber);  // Debug log
-      console.log("Message:", message);  // Debug log
-
       await sendSMS(phoneNumber, message);
 
       return updatedCustomer;
@@ -248,9 +245,6 @@ const registerCustomerByPhoneNumber = async (customer) => {
   });
 
   await newCustomer.save();
-
-  console.log("Sending SMS to:", phoneNumber);  // Debug log
-  console.log("Message:", message);  // Debug log
 
   await sendSMS(phoneNumber, message);
 
@@ -300,6 +294,7 @@ const verifyCustomerOTP = async (customer) => {
 
   return { customer: isCustomer, accessToken, refreshToken };
 };
+
 
 
 
