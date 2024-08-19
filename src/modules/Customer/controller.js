@@ -159,19 +159,25 @@ const customerVerifyOTPHandler = async (req, res, next) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    // Include the tokens inside the user object in the response
     res.status(200).json({
       message: "OTP verification successful",
       user: {
-        ...customer.toObject(), // Convert Mongoose document to plain JavaScript object
-        accessToken,            // Include accessToken inside user object
-        refreshToken            // Include refreshToken inside user object
+        userId: customer._id,  // Changing _id to userId
+        firstName: customer.firstName,
+        phoneNumber: customer.phoneNumber,
+        userName: customer.userName,
+        isValid: customer.isValid,
+        wishList: customer.wishList,
+        __v: customer.__v,
+        accessToken,
+        refreshToken,
       },
     });
   } catch (err) {
     next(err, req, res);
   }
 };
+
 
 
 
@@ -188,6 +194,8 @@ const customerOTPSigninHandler = async (req, res, next) => {
     next(err, req, res);
   }
 };
+
+
 
 
 const customerResendOTPHandler = async (req, res, next) => {
