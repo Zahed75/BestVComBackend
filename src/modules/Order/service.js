@@ -236,14 +236,14 @@ const getAllOrders = async () => {
     }).populate({
       path: 'customer',
       model: 'customer',
-      select: 'email phoneNumber district address'
+      select: 'firstName lastName email phoneNumber district address' // Add firstName and lastName here
     });
 
     const formattedOrders = orders.map(order => {
       return {
         ...order.toObject(),
-        customerFirstName: order.customer.firstName,
-        customerLastName: order.customer.lastName,
+        customerFirstName: order.customer?.firstName || "", // Handle potential null
+        customerLastName: order.customer?.lastName || "", // Handle potential null
         products: order.products.map(productItem => {
           const productDetails = productItem._id;
           return productDetails ? {
@@ -273,6 +273,7 @@ const getAllOrders = async () => {
     throw error;
   }
 };
+
 
 
 

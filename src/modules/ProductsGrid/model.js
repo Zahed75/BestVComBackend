@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const EventSchema = new mongoose.Schema({
+const GridSchema = new mongoose.Schema({
     eventCatId:{
         type:String,
     },
@@ -27,6 +27,6 @@ const EventSchema = new mongoose.Schema({
 
 });
 
-const EventModel = mongoose.model('Event', EventSchema);
+const GridModel = mongoose.model('Event', GridSchema);
 
-module.exports = EventModel;
+module.exports = GridModel;

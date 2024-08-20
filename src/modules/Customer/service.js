@@ -299,6 +299,8 @@ const verifyCustomerOTP = async (customer) => {
 
 
 
+
+
 const loginCustomer = async (customer) => {
   const { phoneNumber } = customer;
 
@@ -319,6 +321,8 @@ const loginCustomer = async (customer) => {
 
   return customerExist;
 };
+
+
 
 
 

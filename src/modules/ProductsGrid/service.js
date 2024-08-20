@@ -1,13 +1,13 @@
-const EventModel = require('../Events/model');
+const GridModel = require('../ProductsGrid/model');
 const CategoryModel = require('../Category/model'); // Import Category model
 const ProductModel = require('../Products/model');
 const { BadRequest } = require('../../utility/errors');
-const tempEventModel = require('../tempEvent/model');
+// const tempGridModel = require('../tempEvent/model');
 const mongoose = require('mongoose');
 
 
 const createEvent = async (eventData) => {
-    const event = new EventModel(eventData);
+    const event = new GridModel(eventData);
     await event.save();
     return event;
 };
@@ -16,7 +16,7 @@ const createEvent = async (eventData) => {
 
 const getAllEvents = async () => {
     try {
-        const events = await EventModel.find().populate('categoriesId').exec();
+        const events = await GridModel.find().populate('categoriesId').exec();
 
         const eventsWithProducts = await Promise.all(events.map(async (event) => {
             if (event.categoriesId && event.categoriesId._id) {
@@ -45,7 +45,7 @@ const getAllEvents = async () => {
 
 
 const addAllEvents = async (events) => {
-    const createdEvents = await EventModel.insertMany(events);
+    const createdEvents = await GridModel.insertMany(events);
     return createdEvents;
 };
 
@@ -53,7 +53,7 @@ const addAllEvents = async (events) => {
 
 
 const updateCatEventIdByEventId = async (eventId, catEventId) => {
-    const event = await EventModel.findById(eventId);
+    const event = await GridModel.findById(eventId);
     if (!event) {
         throw new Error('Event not found');
     }
@@ -65,7 +65,7 @@ const updateCatEventIdByEventId = async (eventId, catEventId) => {
 
 const getProductsByEventId = async (eventId) => {
     try {
-        const event = await EventModel.findById(eventId).populate('categoriesId').exec();
+        const event = await GridModel.findById(eventId).populate('categoriesId').exec();
         if (!event) {
             throw new Error('Event not found');
         }
@@ -107,7 +107,7 @@ const getProductsByEventId = async (eventId) => {
 
 const getAllProductsAndEvents = async () => {
     try {
-        const events = await EventModel.find().populate('categoriesId').exec();
+        const events = await GridModel.find().populate('categoriesId').exec();
         let allProductsAndEvents = [];
 
         for (let event of events) {
