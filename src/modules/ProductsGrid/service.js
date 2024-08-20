@@ -6,150 +6,124 @@ const { BadRequest } = require('../../utility/errors');
 const mongoose = require('mongoose');
 
 
-const createEvent = async (eventData) => {
-    const event = new GridModel(eventData);
-    await event.save();
-    return event;
-};
 
 
 
-const getAllEvents = async () => {
+const createProductGrid = async (data) => {
     try {
-        const events = await GridModel.find().populate('categoriesId').exec();
-
-        const eventsWithProducts = await Promise.all(events.map(async (event) => {
-            if (event.categoriesId && event.categoriesId._id) {
-                const categoryId = event.categoriesId._id; // Assuming event.categoriesId._id is already an ObjectId
-                const products = await ProductModel.find({ categoryId: categoryId }).exec();
-                return {
-                    ...event._doc,
-                    products: products
-                };
-            } else {
-                return {
-                    ...event._doc,
-                    products: []
-                };
-            }
-        }));
-
-        return { message: "Events fetched successfully", events: eventsWithProducts };
+      const newGrid = new GridModel(data);
+      await newGrid.save();
+  
+      const populatedGrid = await GridModel.findById(newGrid._id)
+        .populate({
+          path: 'filterCategories',
+          select: 'categoryName'
+        })
+        .populate({
+          path: 'selectProducts',
+          select: 'productName'
+        });
+  
+      return populatedGrid;
     } catch (error) {
-        console.error("Error fetching events:", error);
-        throw error;
+      throw new Error('Failed to create product grid: ' + error.message);
     }
-};
+  };
+  
 
+  // Add this function to your existing service file
 
-
-
-const addAllEvents = async (events) => {
-    const createdEvents = await GridModel.insertMany(events);
-    return createdEvents;
-};
-
-
-
-
-const updateCatEventIdByEventId = async (eventId, catEventId) => {
-    const event = await GridModel.findById(eventId);
-    if (!event) {
-        throw new Error('Event not found');
-    }
-    event.eventCatId = catEventId;
-    await event.save();
-    return event;
-};
-
-
-const getProductsByEventId = async (eventId) => {
+const getProductGridById = async (gridId) => {
     try {
-        const event = await GridModel.findById(eventId).populate('categoriesId').exec();
-        if (!event) {
-            throw new Error('Event not found');
-        }
-
-        const categoryId = event.categoriesId?._id.toString(); // Ensure categoryId is a string
-
-        if (categoryId) {
-            const products = await ProductModel.find({ categoryId: categoryId }).exec();
-            return {
-                event: {
-                    _id: event._id,
-                    eventCatId: event.eventCatId,
-                    title: event.title,
-                    description: event.description,
-                    url: event.url,
-                    categoriesId: categoryId,
-                    __v: event.__v,
-                    products: products
-                },
-               
-            };
-        } else {
-            console.warn(`No categoryId found for event: ${event._id}`);
-            throw new Error('Category not found for event');
-        }
+      const grid = await GridModel.findById(gridId)
+        .populate({
+          path: 'filterCategories',
+          select: 'categoryName'
+        })
+        .populate({
+          path: 'selectProducts',
+          select: 'productName'
+        });
+  
+      if (!grid) {
+        throw new Error('Grid not found');
+      }
+  
+      return grid;
     } catch (error) {
-        console.error("Error fetching products and event:", error);
-        throw new Error("Failed to fetch products and event");
+      throw new Error('Failed to retrieve product grid: ' + error.message);
     }
-};
+  };
+  
+ 
+  
 
 
 
-
-
-
-
-
-
-const getAllProductsAndEvents = async () => {
+const getAllProductGrids = async () => {
     try {
-        const events = await GridModel.find().populate('categoriesId').exec();
-        let allProductsAndEvents = [];
-
-        for (let event of events) {
-            const categoryId = event.categoriesId?._id.toString(); // Ensure categoryId is a string
-
-            if (categoryId) {
-                const products = await ProductModel.find({ categoryId: categoryId }).exec();
-                event = {
-                    ...event._doc,
-                    categoriesId: categoryId,
-                    products: products 
-                };
-                allProductsAndEvents.push(event);
-            } else {
-                console.warn(`No categoryId found for event: ${event._id}`);
-            }
-        }
-
-        return allProductsAndEvents; // Return array directly
+      const grids = await GridModel.find()
+        .populate({
+          path: 'filterCategories',
+          select: 'categoryName'
+        })
+        .populate({
+          path: 'selectProducts',
+          select: 'productName'
+        });
+  
+      return grids;
     } catch (error) {
-        console.error("Error fetching products and events:", error);
-        throw new Error("Failed to fetch products and events");
+      throw new Error('Failed to retrieve product grids: ' + error.message);
     }
-};
+  };
+
+
+  const updateProductGridById = async (gridId, updateData) => {
+
+      const updatedGrid = await GridModel.findByIdAndUpdate(
+        gridId,
+        { $set: updateData },
+        { new: true }
+      )
+      .populate({
+        path: 'filterCategories',
+        select: 'categoryName'
+      })
+      .populate({
+        path: 'selectProducts',
+        select: 'productName'
+      });
+  
+      if (!updatedGrid) {
+        throw new Error('Product grid not found');
+      }
+  
+      return updatedGrid;
+   
+  };
 
 
 
-
-
-
-
-
-
+const deleteProductGridById = async (gridId) => {
+    try {
+      const deletedGrid = await GridModel.findByIdAndDelete(gridId);
+      if (!deletedGrid) {
+        throw new Error('Product grid not found');
+      }
+      return deletedGrid;
+    } catch (error) {
+      throw new Error('Failed to delete product grid: ' + error.message);
+    }
+  };
 
 
 
 module.exports = {
-    createEvent,
-    getAllEvents,
-    addAllEvents,
-    updateCatEventIdByEventId,
-    getProductsByEventId,
-    getAllProductsAndEvents,
+  createProductGrid,
+  getProductGridById,
+  getAllProductGrids,
+  updateProductGridById,
+  deleteProductGridById
 
 }
