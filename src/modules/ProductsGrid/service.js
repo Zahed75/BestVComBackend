@@ -60,7 +60,7 @@ const getProductGridById = async (gridId) => {
 
 
 
-const getAllProductGrids = async () => {
+  const getAllProductGrids = async () => {
     try {
       const grids = await GridModel.find()
         .populate({
@@ -69,7 +69,7 @@ const getAllProductGrids = async () => {
         })
         .populate({
           path: 'selectProducts',
-          select: 'productName'
+          select: 'productName productImage productStatus general.salePrice general.regularPrice',
         });
   
       return grids;
@@ -77,6 +77,7 @@ const getAllProductGrids = async () => {
       throw new Error('Failed to retrieve product grids: ' + error.message);
     }
   };
+  
 
 
   const updateProductGridById = async (gridId, updateData) => {

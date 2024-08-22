@@ -41,15 +41,21 @@ const getProductGridById = asyncHandler(async (req, res) => {
   
 
   const getAllProductGrids = asyncHandler(async (req, res) => {
-  
+    try {
       const grids = await productGridService.getAllProductGrids();
   
       res.status(200).json({
         message: 'Product grids retrieved successfully',
         grids: grids
       });
-   
+    } catch (error) {
+      res.status(500).json({
+        message: 'Failed to retrieve product grids',
+        error: error.message
+      });
+    }
   });
+  
 
 
   const updateProductGridById = asyncHandler(async (req, res) => {
