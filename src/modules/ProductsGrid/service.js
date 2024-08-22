@@ -59,7 +59,6 @@ const getProductGridById = async (gridId) => {
   
 
 
-
   const getAllProductGrids = async () => {
     try {
       const grids = await GridModel.find()
@@ -69,7 +68,11 @@ const getProductGridById = async (gridId) => {
         })
         .populate({
           path: 'selectProducts',
-          select: 'productName productImage productStatus general.salePrice general.regularPrice',
+          populate: {
+            path: 'categoryId', // Ensure category information is also populated within the product
+            select: 'categoryName'
+          },
+          select: 'productName productImage productStatus inventory general', // Select the fields you need
         });
   
       return grids;
@@ -77,6 +80,7 @@ const getProductGridById = async (gridId) => {
       throw new Error('Failed to retrieve product grids: ' + error.message);
     }
   };
+  
   
 
 

@@ -73,12 +73,12 @@ const ProductSchema = new Schema({
     stockManagement: Boolean,
     stockStatus: {
       type: String,
-      enum: ['In Stock', 'Out of Stock', 'On Backorder']
+      enum: ['In Stock', 'Out of Stock', 'On Backorder'],
     },
     soldIndividually: Boolean,
     inventoryStatus: {
       type: String,
-      enum: ['Only Online', 'Only Offline', 'Online & Offline']
+      enum: ['Only Online', 'Only Offline', 'Online & Offline'],
     }
   },
   shipping: {
