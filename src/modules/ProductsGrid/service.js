@@ -33,33 +33,40 @@ const createProductGrid = async (data) => {
 
 
 
-  //ProductsInfo by Product Grid
-  const getProductGridById = async (gridId) => {
-    try {
-        const grid = await GridModel.findById(gridId)
-            .populate({
-                path: 'filterCategories',
-                select: 'categoryName'
-            })
-            .populate({
-                path: 'selectProducts',
-                select: 'productName productSlug productBrand productCode productImage productGallery productVideos productStatus productDescription productSpecification seo productShortDescription general inventory shipping',
-                populate: {
-                    path: 'categoryId',
-                    select: 'categoryName'
-                }
-            }).exec();
 
-        if (!grid) {
-            throw new Error('Grid not found');
+
+// ProductsInfo by Product Grid
+const getProductGridById = async (gridId) => {
+  try {
+    // Fetch the grid and populate filterCategories and selectProducts
+    const grid = await GridModel.findById(gridId)
+      .populate({
+        path: 'filterCategories',
+        select: 'categoryName'
+      })
+      .populate({
+        path: 'selectProducts',
+        select: 'productName productSlug productBrand productCode productImage productGallery productVideos productStatus productDescription productSpecification seo productShortDescription general inventory shipping',
+        populate: {
+          path: 'categoryId',
+          select: 'categoryName'
         }
+      })
+      .exec();
 
-        console.log('Populated Grid:', JSON.stringify(grid, null, 2)); // Add this line to inspect the populated data
-
-        return grid;
-    } catch (error) {
-        throw new Error('Failed to retrieve product grid: ' + error.message);
+    if (!grid) {
+      throw new Error('Grid not found');
     }
+
+    // Ensure that selectProducts is an array
+    if (!Array.isArray(grid.selectProducts)) {
+      grid.selectProducts = [];
+    }
+
+    return grid;
+  } catch (error) {
+    throw new Error('Failed to retrieve product grid: ' + error.message);
+  }
 };
 
 

@@ -26,22 +26,23 @@ const createProductGrid = asyncHandler(async (req, res) => {
 
 
 
-  const getProductGridById = asyncHandler(async (req, res) => {
-    try {
-        const { gridId } = req.params;
-        const grid = await productGridService.getProductGridById(gridId);
+const getProductGridById = asyncHandler(async (req, res) => {
+  try {
+    const { gridId } = req.params;
+    const grid = await productGridService.getProductGridById(gridId);
 
-        res.status(200).json({
-            message: 'Product grid retrieved successfully',
-            grid: grid
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: 'Failed to retrieve product grid',
-            error: error.message
-        });
-    }
+    res.status(200).json({
+      message: 'Product grid retrieved successfully',
+      grid: grid
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Failed to retrieve product grid',
+      error: error.message
+    });
+  }
 });
+
 
   
   
