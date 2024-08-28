@@ -101,29 +101,70 @@ const getProductGridById = async (gridId) => {
 
 
 
+
   const updateProductGridById = async (gridId, updateData) => {
 
-      const updatedGrid = await GridModel.findByIdAndUpdate(
-        gridId,
-        { $set: updateData },
-        { new: true }
-      )
-      .populate({
-        path: 'filterCategories',
-        select: 'categoryName'
-      })
-      .populate({
-        path: 'selectProducts',
-        select: 'productName'
-      });
+      // Find the grid to be updated
+      const gridToUpdate = await GridModel.findById(gridId);
   
-      if (!updatedGrid) {
+      if (!gridToUpdate) {
         throw new Error('Product grid not found');
       }
   
-      return updatedGrid;
+      // Check if the ordersBy field is being updated
+      if (updateData.ordersBy !== undefined && updateData.ordersBy !== gridToUpdate.ordersBy) {
+        const newOrder = updateData.ordersBy;
+        const oldOrder = gridToUpdate.ordersBy;
+  
+        // Update ordersBy for other grids accordingly
+        if (oldOrder < newOrder) {
+          // Decrement the order of grids between oldOrder and newOrder
+          await GridModel.updateMany(
+            { ordersBy: { $gt: oldOrder, $lte: newOrder } },
+            { $inc: { ordersBy: -1 } }
+          );
+        } else if (oldOrder > newOrder) {
+          // Increment the order of grids between newOrder and oldOrder
+          await GridModel.updateMany(
+            { ordersBy: { $gte: newOrder, $lt: oldOrder } },
+            { $inc: { ordersBy: 1 } }
+          );
+        }
+  
+        // Apply the new ordersBy value to the grid being updated
+        gridToUpdate.ordersBy = newOrder;
+      }
+  
+      // Apply other updates in the updateData object
+      Object.keys(updateData).forEach((key) => {
+        if (key !== 'ordersBy') {
+          gridToUpdate[key] = updateData[key];
+        }
+      });
+  
+      // Save the updated grid
+      const updatedGrid = await gridToUpdate.save();
+  
+      // Re-fetch and populate the grid to return the updated object
+      const populatedGrid = await GridModel.findById(gridId)
+        .populate({
+          path: 'filterCategories',
+          select: 'categoryName',
+        })
+        .populate({
+          path: 'selectProducts',
+          select: 'productName',
+        });
+  
+      return populatedGrid;
+  
    
   };
+  
+
+  
+
+  
 
 
 

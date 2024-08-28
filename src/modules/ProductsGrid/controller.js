@@ -68,7 +68,7 @@ const getProductGridById = asyncHandler(async (req, res) => {
 
 
   const updateProductGridById = asyncHandler(async (req, res) => {
-
+    try {
       const { id } = req.params;
       const updateData = req.body;
   
@@ -78,8 +78,19 @@ const getProductGridById = asyncHandler(async (req, res) => {
         message: 'Product grid updated successfully',
         grid: updatedGrid
       });
-   
+    } catch (error) {
+      res.status(500).json({
+        message: 'Failed to update product grid',
+        error: error.message
+      });
+    }
   });
+  
+
+
+
+
+
 
 
   const deleteProductGridById = asyncHandler(async (req, res) => {
@@ -99,11 +110,11 @@ const getProductGridById = asyncHandler(async (req, res) => {
 
 
 
+router.patch('/productGrids/:id',updateProductGridById);
 
 router.post('/createGrid', createProductGrid);
 router.get('/productGrid/:gridId',getProductGridById);
 router.get('/allProductGrids',getAllProductGrids);
-router.put('/productGrids/:id',updateProductGridById);
 router.delete('/deleteGrids/:id',deleteProductGridById);
 
 
