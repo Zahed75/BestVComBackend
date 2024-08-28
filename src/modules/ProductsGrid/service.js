@@ -31,33 +31,43 @@ const createProductGrid = async (data) => {
   };
   
 
-  // Add this function to your existing service file
 
-const getProductGridById = async (gridId) => {
+
+  //ProductsInfo by Product Grid
+  const getProductGridById = async (gridId) => {
     try {
-      const grid = await GridModel.findById(gridId)
-        .populate({
-          path: 'filterCategories',
-          select: 'categoryName'
-        })
-        .populate({
-          path: 'selectProducts',
-          select: 'productName'
-        });
-  
-      if (!grid) {
-        throw new Error('Grid not found');
-      }
-  
-      return grid;
+        const grid = await GridModel.findById(gridId)
+            .populate({
+                path: 'filterCategories',
+                select: 'categoryName'
+            })
+            .populate({
+                path: 'selectProducts',
+                select: 'productName productSlug productBrand productCode productImage productGallery productVideos productStatus productDescription productSpecification seo productShortDescription general inventory shipping',
+                populate: {
+                    path: 'categoryId',
+                    select: 'categoryName'
+                }
+            }).exec();
+
+        if (!grid) {
+            throw new Error('Grid not found');
+        }
+
+        console.log('Populated Grid:', JSON.stringify(grid, null, 2)); // Add this line to inspect the populated data
+
+        return grid;
     } catch (error) {
-      throw new Error('Failed to retrieve product grid: ' + error.message);
+        throw new Error('Failed to retrieve product grid: ' + error.message);
     }
-  };
+};
+
+
+
   
  
-  
 
+  
 
   const getAllProductGrids = async () => {
     try {
@@ -69,10 +79,10 @@ const getProductGridById = async (gridId) => {
         .populate({
           path: 'selectProducts',
           populate: {
-            path: 'categoryId', // Ensure category information is also populated within the product
+            path: 'categoryId', // Populate the category information within the product
             select: 'categoryName'
           },
-          select: 'productName productImage productStatus inventory general', // Select the fields you need
+          select: 'productName productImage productStatus inventory general', // Select the fields you need from the Product model
         });
   
       return grids;
@@ -81,7 +91,7 @@ const getProductGridById = async (gridId) => {
     }
   };
   
-  
+
 
 
   const updateProductGridById = async (gridId, updateData) => {
