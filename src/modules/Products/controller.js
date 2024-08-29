@@ -130,6 +130,8 @@ const getProductBySlugHandler = asyncHandler(async (req, res) => {
 });
 
 
+
+
 const updateProductSpecificationHandler = asyncHandler(async (req, res) => {
   const { productId, specId } = req.params;
   const { key, value } = req.body;
@@ -153,6 +155,7 @@ const updateProductSpecificationHandler = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: error.message });
   }
 });
+
 
 
 
@@ -191,9 +194,30 @@ const updateProductSpecificationHandler = asyncHandler(async (req, res) => {
 
 
 
+  const changeProductSpecificationsHandler = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+    const { productSpecification } = req.body;
+  
+    const updatedProduct = await productService.changeProductSpecifications(productId, productSpecification);
+  
+    if (!updatedProduct) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+  
+    res.status(200).json({
+      message: 'Product specifications updated successfully!',
+      product: updatedProduct,
+    });
+  });
+  
 
+
+
+
+
+
+  
 router.get('/getProductByproductStatus', getProductByproductStatusHandler);
-
 router.post('/addProduct', authMiddleware, roleMiddleware([HEAD_OFFICE, BRANCH_ADMIN]), addProductHandler);
 router.put('/updateProduct/:id',updateProductByIdHandler);
 router.get('/getAllProducts', getAllProductsHandler)
@@ -201,12 +225,12 @@ router.delete('/deleteProduct/:id', authMiddleware, roleMiddleware([HEAD_OFFICE,
 router.get('/getProductById/:id', getProductByIdHandler);
 router.get('/getProductByCategoryId/:categoryId', getProductByCategoryIdHandler);
 router.get('/getProductBySlugHandler/:productSlug', getProductBySlugHandler);
-
 router.patch('/:productId/specification/:specId', updateProductSpecificationHandler);
-
 router.delete('/:productId/specification/:specificationId', deleteProductSpecificationHandler);
-
 router.post('/:productId/addSpecifications', addProductSpecificationsHandler);
+
+router.put('/:productId/changeSpecifications', changeProductSpecificationsHandler);
+
 
 
 module.exports = router;

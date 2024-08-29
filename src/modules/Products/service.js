@@ -186,7 +186,7 @@ const getProductBySlug = async (productSlug) => {
 };
 
 
-// src/modules/Products/service.js
+
 
 const updateProductSpecification = async (productId, specId, newKeyValue) => {
   try {
@@ -260,6 +260,29 @@ const addProductSpecifications = async (productId, newSpecifications) => {
 
 
 
+const changeProductSpecifications = async (productId, newSpecifications) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      { productSpecification: newSpecifications }, // Replace the entire specification array
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProduct) {
+      throw new Error('Product not found');
+    }
+
+    return updatedProduct;
+  } catch (error) {
+    console.error('Error updating product specifications:', error);
+    throw new Error('Failed to update product specifications');
+  }
+};
+
+
+
+
+
 
 
 module.exports = {
@@ -273,6 +296,7 @@ module.exports = {
   getProductBySlug,
   updateProductSpecification,
   deleteProductSpecification,
-  addProductSpecifications
+  addProductSpecifications,
+  changeProductSpecifications
 
 }
