@@ -8,8 +8,7 @@ const sendSMS = require('../../utility/aamarPayOTP');
 const { getSMSText } = require('../../utility/getSMS');
 const { sendOrderInvoiceEmail } = require('../../utility/email');
 
-
-
+const { generateInvoicePDF }= require('../../utility/invoice');
 
 
 
@@ -146,33 +145,48 @@ const createOrder = async (orderData) => {
     });
 
     // Send SMS to customer
-    // const smsText = getSMSText('Received', `${firstName} ${lastName}`, {
-    //   orderId: savedOrder.orderId,
-    //   products: productInfoForSMS,
-    //   totalPrice: savedOrder.totalPrice,
-    //   discountAmount: savedOrder.discountAmount
-    // });
-
-    // console.log(smsText);
-    // await sendSMS(phoneNumber, smsText);
-
-    // Send Email Invoice to customer in the background
-    sendOrderInvoiceEmail(email, {
+    const smsText = getSMSText('Received', `${firstName} ${lastName}`, {
       orderId: savedOrder.orderId,
-      firstName,
-      lastName,
-      email,
-      deliveryAddress,
-      phoneNumber,
       products: productInfoForSMS,
-      totalPrice: finalTotalPrice,
-      discountAmount,
-      deliveryCharge,
-      vatRate: 5, // Fixed VAT rate
-      vat
-    }).catch(err => {
-      console.error('Error sending order invoice email:', err);
+      totalPrice: savedOrder.totalPrice,
+      discountAmount: savedOrder.discountAmount
     });
+
+    console.log(smsText);
+    await sendSMS(phoneNumber, smsText);
+
+
+ // Generate PDF invoice
+ const pdfPath = await generateInvoicePDF({
+  orderId: savedOrder.orderId,
+  firstName,
+  lastName,
+  email,
+  deliveryAddress,
+  phoneNumber,
+  products: productInfoForSMS,
+  totalPrice: finalTotalPrice,
+  discountAmount,
+  deliveryCharge,
+  vatRate: 5, // Fixed VAT rate
+  vat
+});
+
+// Send Email Invoice to customer with PDF attachment
+await sendOrderInvoiceEmail(email, {
+  orderId: savedOrder.orderId,
+  firstName,
+  lastName,
+  email,
+  deliveryAddress,
+  phoneNumber,
+  products: productInfoForSMS,
+  totalPrice: finalTotalPrice,
+  discountAmount,
+  deliveryCharge,
+  vatRate: 5, // Fixed VAT rate
+  vat
+}, pdfPath);
 
     return {
       message: "Order created successfully",
@@ -189,9 +203,6 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
-
-
-
 
 
 
