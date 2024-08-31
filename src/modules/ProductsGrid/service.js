@@ -2,34 +2,51 @@ const GridModel = require('../ProductsGrid/model');
 const CategoryModel = require('../Category/model'); // Import Category model
 const ProductModel = require('../Products/model');
 const { BadRequest } = require('../../utility/errors');
-// const tempGridModel = require('../tempEvent/model');
 const mongoose = require('mongoose');
 
 
 
 
 
+const getNextOrdersBy = async () => {
+  try {
+    const maxOrdersBy = await GridModel.findOne({})
+      .sort({ ordersBy: -1 })
+      .select('ordersBy')
+      .exec();
+    
+    return maxOrdersBy ? maxOrdersBy.ordersBy + 1 : 1;
+  } catch (error) {
+    throw new Error('Failed to get next ordersBy value: ' + error.message);
+  }
+};
+
 const createProductGrid = async (data) => {
-    try {
-      const newGrid = new GridModel(data);
-      await newGrid.save();
-  
-      const populatedGrid = await GridModel.findById(newGrid._id)
-        .populate({
-          path: 'filterCategories',
-          select: 'categoryName'
-        })
-        .populate({
-          path: 'selectProducts',
-          select: 'productName'
-        });
-  
-      return populatedGrid;
-    } catch (error) {
-      throw new Error('Failed to create product grid: ' + error.message);
-    }
-  };
-  
+  try {
+    // Get the next available ordersBy value
+    const nextOrdersBy = await getNextOrdersBy();
+
+    // Add the ordersBy value to the grid data
+    data.ordersBy = nextOrdersBy;
+
+    const newGrid = new GridModel(data);
+    await newGrid.save();
+
+    const populatedGrid = await GridModel.findById(newGrid._id)
+      .populate({
+        path: 'filterCategories',
+        select: 'categoryName'
+      })
+      .populate({
+        path: 'selectProducts',
+        select: 'productName'
+      });
+
+    return populatedGrid;
+  } catch (error) {
+    throw new Error('Failed to create product grid: ' + error.message);
+  }
+}
 
 
 

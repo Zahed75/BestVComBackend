@@ -12,17 +12,21 @@ const { HEAD_OFFICE, BRANCH_ADMIN } = require('../../config/constants');
 
 
 const createProductGrid = asyncHandler(async (req, res) => {
-   
-      const gridData = req.body;
-      const createdGrid = await productGridService.createProductGrid(gridData);
-  
-      res.status(201).json({
-        message: 'Product grid created successfully',
-        grid: createdGrid
-      });
-    
-    
-  });
+  try {
+    const gridData = req.body;
+    const createdGrid = await productGridService.createProductGrid(gridData);
+
+    res.status(201).json({
+      message: 'Product grid created successfully',
+      grid: createdGrid
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Failed to create product grid',
+      error: error.message
+    });
+  }
+});
 
 
   const getProductGridById = asyncHandler(async (req, res) => {
