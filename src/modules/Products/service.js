@@ -3,7 +3,7 @@ const { generateSlug } = require('../../utility/slug');
 
 const { BadRequest } = require('../../utility/errors');
 
-
+const CategoryModel = require('../Category/model');
 
 // addProducts
 
@@ -284,6 +284,50 @@ const changeProductSpecifications = async (productId, newSpecifications) => {
 
 
 
+const getFilteredProducts = async (filterOptions) => {
+  try {
+    let query = {};
+
+    // Handle category filter
+    if (filterOptions.CategoryModel && filterOptions.CategoryModel.length > 0) {
+      const categoryIds = filterOptions.CategoryModel.map(id => mongoose.Types.ObjectId(id));
+      query.categoryId = { $in: categoryIds };
+    }
+
+    // Handle price filter
+    if (filterOptions.minPrice || filterOptions.maxPrice) {
+      query['general.regularPrice'] = {};
+      if (filterOptions.minPrice) {
+        query['general.regularPrice'].$gte = parseFloat(filterOptions.minPrice);
+      }
+      if (filterOptions.maxPrice) {
+        query['general.regularPrice'].$lte = parseFloat(filterOptions.maxPrice);
+      }
+    }
+
+    // Handle brand filter
+    if (filterOptions.brand) {
+      query.productBrand = filterOptions.brand;
+    }
+
+    console.log("Executing MongoDB Query:", query); // Debugging line
+
+    const products = await Product.find(query).exec();
+
+    if (products.length > 0) {
+      return { success: true, data: products };
+    } else {
+      return { success: false, message: "No products found matching the criteria" };
+    }
+  } catch (error) {
+    console.error("Error in getFilteredProducts:", error);
+    return { success: false, message: "Error fetching filtered products" };
+  }
+};
+
+
+
+
 
 module.exports = {
   addProduct,
@@ -297,6 +341,7 @@ module.exports = {
   updateProductSpecification,
   deleteProductSpecification,
   addProductSpecifications,
-  changeProductSpecifications
+  changeProductSpecifications,
+  getFilteredProducts
 
 }

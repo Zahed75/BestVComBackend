@@ -7,8 +7,7 @@ const { generateCustomOrderId, formatOrderTime } = require('../../utility/custom
 const sendSMS = require('../../utility/aamarPayOTP');
 const { getSMSText } = require('../../utility/getSMS');
 const { sendOrderInvoiceEmail } = require('../../utility/email');
-
-const { generateInvoicePDF }= require('../../utility/invoice');
+const { generateInvoicePDF } = require('../../utility/invoice');
 
 
 
@@ -23,8 +22,6 @@ function calculateOrderValue(products, orderProducts) {
     }
   }, 0);
 }
-
-
 
 const calculateDiscount = (coupon, totalPrice) => {
   if (coupon.general.discountType === 'percentage') {
@@ -50,37 +47,37 @@ const createOrder = async (orderData) => {
     // Find the customer by email
     const customer = await CustomerModel.findOne({ email }).lean().exec();
     if (!customer) {
-      throw new Error('Customer not found');
+      throw new NotFound('Customer not found');
     }
 
     // Validate products
     if (!Array.isArray(products) || products.length === 0) {
-      throw new Error('No products provided');
+      throw new BadRequest('No products provided');
     }
 
     const productIds = products.map(product => product._id);
     const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
 
     if (validProducts.length !== products.length) {
-      throw new Error('Invalid product IDs');
+      throw new BadRequest('Invalid product IDs');
     }
 
     // Calculate total price based on MRP
     const totalPrice = calculateOrderValue(validProducts, products);
 
     if (isNaN(totalPrice)) {
-      throw new Error('Total price calculation resulted in NaN');
+      throw new BadRequest('Total price calculation resulted in NaN');
     }
 
     let discountAmount = 0;
     let coupon = null;
     if (couponName) {
       coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
-      if (!coupon) throw new Error('Invalid coupon name');
+      if (!coupon) throw new BadRequest('Invalid coupon name');
       
       // Validate coupon expiration
       if (new Date() > new Date(coupon.general.couponExpiry)) {
-        throw new Error('Coupon has expired');
+        throw new BadRequest('Coupon has expired');
       }
       
       // Calculate discount
@@ -91,14 +88,14 @@ const createOrder = async (orderData) => {
     const vat = (5 / 100) * totalPrice;
 
     if (isNaN(vat)) {
-      throw new Error('VAT calculation resulted in NaN');
+      throw new BadRequest('VAT calculation resulted in NaN');
     }
 
     // Calculate final total price including discount and delivery charge
     const finalTotalPrice = totalPrice - discountAmount + deliveryCharge;
 
     if (isNaN(finalTotalPrice)) {
-      throw new Error('Final total price calculation resulted in NaN');
+      throw new BadRequest('Final total price calculation resulted in NaN');
     }
 
     // Create new order
@@ -145,48 +142,47 @@ const createOrder = async (orderData) => {
     });
 
     // Send SMS to customer
-    const smsText = getSMSText('Received', `${firstName} ${lastName}`, {
+    // const smsText = getSMSText('Received', `${firstName} ${lastName}`, {
+    //   orderId: savedOrder.orderId,
+    //   products: productInfoForSMS,
+    //   totalPrice: savedOrder.totalPrice,
+    //   discountAmount: savedOrder.discountAmount
+    // });
+
+    // console.log(smsText);
+    // await sendSMS(phoneNumber, smsText);
+
+    // Generate PDF invoice
+    const pdfPath = await generateInvoicePDF({
       orderId: savedOrder.orderId,
+      firstName,
+      lastName,
+      email,
+      deliveryAddress,
+      phoneNumber,
       products: productInfoForSMS,
-      totalPrice: savedOrder.totalPrice,
-      discountAmount: savedOrder.discountAmount
-    });
+      totalPrice: finalTotalPrice,
+      discountAmount,
+      deliveryCharge,
+      vatRate: 5, // Fixed VAT rate
+      vat
+    }, customer);
 
-    console.log(smsText);
-    await sendSMS(phoneNumber, smsText);
-
-
- // Generate PDF invoice
- const pdfPath = await generateInvoicePDF({
-  orderId: savedOrder.orderId,
-  firstName,
-  lastName,
-  email,
-  deliveryAddress,
-  phoneNumber,
-  products: productInfoForSMS,
-  totalPrice: finalTotalPrice,
-  discountAmount,
-  deliveryCharge,
-  vatRate: 5, // Fixed VAT rate
-  vat
-});
-
-// Send Email Invoice to customer with PDF attachment
-await sendOrderInvoiceEmail(email, {
-  orderId: savedOrder.orderId,
-  firstName,
-  lastName,
-  email,
-  deliveryAddress,
-  phoneNumber,
-  products: productInfoForSMS,
-  totalPrice: finalTotalPrice,
-  discountAmount,
-  deliveryCharge,
-  vatRate: 5, // Fixed VAT rate
-  vat
-}, pdfPath);
+    // Send Email Invoice to customer with PDF attachment
+    await sendOrderInvoiceEmail(email, {
+      orderId: savedOrder.orderId,
+      firstName,
+      lastName,
+      email,
+      deliveryAddress,
+      phoneNumber,
+      products: productInfoForSMS,
+      totalPrice: finalTotalPrice,
+      discountAmount,
+      deliveryCharge,
+      vatRate: 5, // Fixed VAT rate
+      vat
+    }, pdfPath);
 
     return {
       message: "Order created successfully",
@@ -203,7 +199,6 @@ await sendOrderInvoiceEmail(email, {
     throw error;
   }
 };
-
 
 
 

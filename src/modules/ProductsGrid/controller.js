@@ -25,45 +25,73 @@ const createProductGrid = asyncHandler(async (req, res) => {
   });
 
 
+  const getProductGridById = asyncHandler(async (req, res) => {
+    try {
+      const { gridId } = req.params;
+      const grid = await productGridService.getProductGridById(gridId);
+  
+      res.status(200).json({
+        message: 'Product grid retrieved successfully',
+        grid: grid
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: 'Failed to retrieve product grid',
+        error: error.message
+      });
+    }
+  });
+  
 
-const getProductGridById = asyncHandler(async (req, res) => {
+
+  
+  
+
+
+
+const getAllProductGrids = asyncHandler(async (req, res) => {
   try {
-    const { gridId } = req.params;
-    const grid = await productGridService.getProductGridById(gridId);
+    const grids = await productGridService.getAllProductGrids();
 
     res.status(200).json({
-      message: 'Product grid retrieved successfully',
-      grid: grid
+      message: 'Product grids retrieved successfully',
+      grids: grids.map(grid => ({
+        ...grid.toObject(),
+        selectProducts: grid.selectProducts.map(product => ({
+          seo: {
+            productTitle: product.seo?.productTitle || '',
+            prodDescription: product.seo?.prodDescription || '',
+            productTags: product.seo?.productTags || [],
+            productNotes: product.seo?.productNotes || ''
+          },
+          general: product.general || {},
+          inventory: product.inventory || {},
+          shipping: product.shipping || {},
+          _id: product._id,
+          categoryId: product.categoryId.map(cat => cat._id),
+          productName: product.productName,
+          productSlug: product.productSlug,
+          productBrand: product.productBrand,
+          productCode: product.productCode,
+          productImage: product.productImage,
+          productGallery: product.productGallery,
+          productVideos: product.productVideos,
+          productStatus: product.productStatus,
+          productSpecification: product.productSpecification || [],
+          productShortDescription: product.productShortDescription,
+          createdAt: product.createdAt,
+          updatedAt: product.updatedAt
+        }))
+      }))
     });
   } catch (error) {
     res.status(500).json({
-      message: 'Failed to retrieve product grid',
+      message: 'Failed to retrieve product grids',
       error: error.message
     });
   }
 });
 
-
-  
-  
-
-
-
-  const getAllProductGrids = asyncHandler(async (req, res) => {
-    try {
-      const grids = await productGridService.getAllProductGrids();
-  
-      res.status(200).json({
-        message: 'Product grids retrieved successfully',
-        grids: grids
-      });
-    } catch (error) {
-      res.status(500).json({
-        message: 'Failed to retrieve product grids',
-        error: error.message
-      });
-    }
-  });
   
 
 

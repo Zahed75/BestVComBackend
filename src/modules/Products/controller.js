@@ -214,6 +214,34 @@ const updateProductSpecificationHandler = asyncHandler(async (req, res) => {
 
 
 
+  const filterProducts = async (req, res) => {
+    try {
+      // Extract query parameters and handle defaults
+      const filterOptions = {
+        categories: req.query.categories ? req.query.categories.split(',') : [],
+        minPrice: req.query.minPrice || null,
+        maxPrice: req.query.maxPrice || null,
+        brand: req.query.brand || null
+      };
+  
+      console.log("Filter Options:", filterOptions); // Debugging line
+  
+      const result = await productService.getFilteredProducts(filterOptions);
+  
+      res.status(result.success ? 200 : 404).json(result);
+    } catch (error) {
+      console.error("Error in filterProducts:", error);
+      res.status(500).json({ success: false, message: "Error fetching filtered products" });
+    }
+  };
+
+
+
+
+
+
+
+
 
 
   
@@ -232,5 +260,7 @@ router.post('/:productId/addSpecifications', addProductSpecificationsHandler);
 router.put('/:productId/changeSpecifications', changeProductSpecificationsHandler);
 
 
+router.get('/Productfilters', filterProducts);
 
 module.exports = router;
+

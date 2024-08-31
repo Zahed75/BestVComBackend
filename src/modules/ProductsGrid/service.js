@@ -33,8 +33,6 @@ const createProductGrid = async (data) => {
 
 
 
-
-
 // ProductsInfo by Product Grid
 const getProductGridById = async (gridId) => {
   try {
@@ -71,33 +69,37 @@ const getProductGridById = async (gridId) => {
 
 
 
+
   
  
 
-  
-
-  const getAllProductGrids = async () => {
-    try {
-      const grids = await GridModel.find()
-        .populate({
-          path: 'filterCategories',
-          select: 'categoryName'
-        })
-        .populate({
-          path: 'selectProducts',
-          populate: {
-            path: 'categoryId', // Populate the category information within the product
+const getAllProductGrids = async () => {
+  try {
+    const grids = await GridModel.find()
+      .populate({
+        path: 'filterCategories',
+        select: 'categoryName'
+      })
+      .populate({
+        path: 'selectProducts',
+        populate: [
+          {
+            path: 'categoryId',
             select: 'categoryName'
           },
-          select: 'productName productImage productStatus inventory general', // Select the fields you need from the Product model
-        });
-  
-      return grids;
-    } catch (error) {
-      throw new Error('Failed to retrieve product grids: ' + error.message);
-    }
-  };
-  
+          {
+            path: 'productSpecification'
+          }
+        ],
+        select: 'productName productSlug productBrand productCode productImage productGallery productVideos productStatus seo general inventory shipping productShortDescription createdAt updatedAt'
+      });
+
+    return grids;
+  } catch (error) {
+    throw new Error('Failed to retrieve product grids: ' + error.message);
+  }
+};
+
 
 
 

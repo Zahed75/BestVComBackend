@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        h1, h2, h3 {
+            margin: 0;
+            padding: 0;
+        }
+        .invoice-header, .invoice-footer {
+            border-bottom: 2px solid #ddd;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+        .invoice-footer {
+            border-top: 2px solid #ddd;
+            margin-top: 20px;
+            padding-top: 10px;
+        }
+        .invoice-to, .invoice-from {
+            margin-bottom: 20px;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .items-table th, .items-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .items-table th {
+            background-color: #f4f4f4;
+        }
+        .total-section {
+            margin-top: 20px;
+        }
+        .terms, .payment-method {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="invoice-header">
+            <h1>Invoice</h1>
+            <p>Invoice Number: <%= invoiceData.invoiceNumber %></p>
+            <p>Invoice Date: <%= invoiceData.invoiceDate %></p>
+        </div>
+
+        <div class="invoice-to">
+            <h2>Invoice To</h2>
+            <p><%= invoiceData.client.name %></p>
+            <p><%= invoiceData.client.company %></p>
+            <p><%= invoiceData.client.email %></p>
+            <p><%= invoiceData.client.address %></p>
+        </div>
+
+        <div class="invoice-from">
+            <h2>Invoice From</h2>
+            <p><%= invoiceData.company.name %></p>
+            <p><%= invoiceData.company.company %></p>
+            <p><%= invoiceData.company.email %></p>
+            <p><%= invoiceData.company.address %></p>
+        </div>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Item</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% invoiceData.items.forEach((item, index) => { %>
+                    <tr>
+                        <td><%= index + 1 %></td>
+                        <td><%= item.item %></td>
+                        <td><%= item.description %></td>
+                        <td><%= item.price %></td>
+                        <td><%= item.quantity %></td>
+                        <td><%= item.total %></td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+
+        <div class="total-section">
+            <p><strong>SubTotal:</strong> <%= invoiceData.subtotal %></p>
+            <p><strong>Tax:</strong> <%= invoiceData.tax %></p>
+            <p><strong>Grand Total:</strong> <%= invoiceData.total %></p>
+        </div>
+
+        <div class="terms">
+            <h3>Terms & Conditions</h3>
+            <p>Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been typesetting industry. Lorem Ipsum.</p>
+        </div>
+
+        <div class="payment-method">
+            <h3>Payment Method</h3>
+            <p>Account No: 00 123 647 840</p>
+            <p>Account Name: John Doe</p>
+            <p>Branch Name: XYZ</p>
+            <p>Contact: +00 123 647 840</p>
+            <p>Email: info@themevessel.com</p>
+        </div>
+
+        <div class="invoice-footer">
+            <p>Thank you for your business!</p>
+        </div>
+    </div>
+</body>
+</html>
