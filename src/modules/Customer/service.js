@@ -18,6 +18,9 @@ const { CUSTOMER } = require("../../config/constants");
 
 const createToken = require("../../utility/createToken");
 
+
+
+
 const customerCreateService = async (customerInfo) => {
   try {
     // Generate OTP
@@ -237,7 +240,6 @@ const registerCustomerByPhoneNumber = async (customer) => {
     }
   }
 
-  // Create a new customer
   const newCustomer = new customerModel({
     phoneNumber,
     firstName,
@@ -250,6 +252,13 @@ const registerCustomerByPhoneNumber = async (customer) => {
 
   return newCustomer;
 };
+
+
+
+
+
+
+
 
 
 // verify customer OTP

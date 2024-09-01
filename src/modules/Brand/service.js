@@ -22,15 +22,41 @@ const addBrand = async (brandData) => {
     }
 }
 
+
+
+
 const getAllBrands = async () => {
     try {
-        const allBrands = await brandModel.find();
-        return allBrands;
+     
+      const allBrands = await brandModel.aggregate([
+        {
+          $lookup: {
+            from: 'products', 
+            localField: '_id', 
+            foreignField: 'productBrand', 
+            as: 'products'
+          }
+        },
+        {
+          $project: {
+            name: 1,
+            title: 1,
+            description: 1,
+            productCount: { $size: '$products' } // Count the number of products
+          }
+        }
+      ]);
+  
+      return allBrands;
     } catch (err) {
-        console.log(err);
-        throw new Error('Failed to retrieve brands: ' + err.message);
+      console.log(err);
+      throw new Error('Failed to retrieve brands: ' + err.message);
     }
-}
+  };
+  
+
+
+
 
 const getBrandById = async (brandId) => {
     try {
@@ -46,6 +72,8 @@ const getBrandById = async (brandId) => {
     }
 
 }
+
+
 
 const updateBrandById = async (id, value) => { 
     try{

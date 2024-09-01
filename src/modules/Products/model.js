@@ -7,6 +7,13 @@ const ProductSchema = new Schema({
     required: true,
     ref: 'category'
   }],
+
+  productBrand: {
+    type: mongoose.Types.ObjectId,
+    ref: 'Brand', // Make sure this is correct
+    required: true
+  },
+    
   productName: {
     type: String,
     maxlength: 300,

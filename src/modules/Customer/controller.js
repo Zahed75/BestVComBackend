@@ -124,6 +124,7 @@ const getCustomerInfoByIdHandler = asyncHandler(async(req,res)=>{
 
 
 
+
 const registerCustomerByPhoneNumber = asyncHandler(async (req, res) => {
   const { firstName, phoneNumber } = req.body;
 
@@ -139,6 +140,8 @@ const registerCustomerByPhoneNumber = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: error.message });
   }
 });
+
+
 
 
 
