@@ -183,6 +183,11 @@ const resetPass = async (email, newPassword) => {
 
 const updateCustomerService = async (customerId, customerData) => {
   try {
+    // Ensure that profilePicture is always a string
+    if (!customerData.profilePicture || typeof customerData.profilePicture !== 'string') {
+      customerData.profilePicture = '';
+    }
+
     const updatedCustomer = await customerModel.findByIdAndUpdate(
       customerId,
       customerData,

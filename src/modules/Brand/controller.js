@@ -5,6 +5,11 @@ const { asyncHandler } = require('../../utility/common');
 
 const brandService = require('./service');
 
+
+
+
+
+
 // create Brand
 const createBrandHandler = asyncHandler(async (req, res) => {
     const brand = await brandService.addBrand(req.body);
@@ -13,6 +18,9 @@ const createBrandHandler = asyncHandler(async (req, res) => {
         brand
     });
 });
+
+
+
 
 const getAllBrandsHandler = asyncHandler(async (req, res) => {
     const allBrands = await brandService.getAllBrands();
@@ -23,6 +31,9 @@ const getAllBrandsHandler = asyncHandler(async (req, res) => {
 }
 )
 
+
+
+
 const getBrandByIdHandler = asyncHandler(async (req, res) => { 
     const { id } = req.params;
     const brand = await brandService.getBrandById(id);
@@ -31,6 +42,7 @@ const getBrandByIdHandler = asyncHandler(async (req, res) => {
         brand
     });
 })
+
 
 const updateBrandHandler = asyncHandler(async (req, res) => {
     const { id } = req.params;

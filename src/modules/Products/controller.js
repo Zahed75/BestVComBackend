@@ -113,6 +113,7 @@ const getProductByproductStatusHandler = asyncHandler(async (req, res) => {
 
 
 
+
 const getProductBySlugHandler = asyncHandler(async (req, res) => {
     const { productSlug } = req.params;
     const product = await productService.getProductBySlug(productSlug);
