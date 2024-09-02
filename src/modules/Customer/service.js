@@ -201,6 +201,7 @@ const updateCustomerService = async (customerId, customerData) => {
 
 
 
+
 const getCustomerInfoById = async (id) => {
   try {
     const customer = await customerModel.findById(id);
@@ -318,19 +319,29 @@ const verifyCustomerOTP = async (customer) => {
 const loginCustomer = async (customer) => {
   const { phoneNumber } = customer;
 
-  const customerExist = await customerModel.findOne({ phoneNumber })
-  if (!customerExist)
+  const customerExist = await customerModel.findOne({ phoneNumber });
+  
+  if (!customerExist) {
     throw new NotFound(
-      "You do not have an account with this phone number. Please register"
+      "You do not have an account with this phone number. Please register."
     );
+  }
+
+  // Generate OTP
   const otp = generateOTP();
+
+  // Create message in Bengali
   const message = `সম্মানিত গ্রাহক,\nচার সংখ্যার ওটিপি (OTP): ${toBengaliNum(
     otp
   )} ব্যবহার করে আপনার মোবাইল নম্বর ভেরিফিকেশন করুন। -BestElectronics`;
 
+  // Save OTP to customer document
   customerExist.otp = otp;
-  await sendSMS(message, phoneNumber);
+  
+  // Send SMS: Ensure the correct order of arguments
+  await sendSMS(phoneNumber, message);
 
+  // Save the customer with the updated OTP
   await customerExist.save();
 
   return customerExist;
@@ -346,18 +357,27 @@ const resendCustomerOTP = async (customer) => {
 
   const isCustomer = await customerModel.findOne({ phoneNumber });
 
-  if (!isCustomer)
+  if (!isCustomer) {
     throw new NotFound(
-      "You do not have an account with this phone number. Please register"
+      "You do not have an account with this phone number. Please register."
     );
+  }
 
+  // Generate OTP
   const otp = generateOTP();
+  
+  // Create message in Bengali
   const message = `সম্মানিত গ্রাহক,\nচার সংখ্যার ওটিপি (OTP): ${toBengaliNum(
     otp
   )} ব্যবহার করে আপনার মোবাইল নম্বর ভেরিফিকেশন করুন। -BestElectronics`;
+  
+  // Save OTP to customer document
   isCustomer.otp = otp;
-  await sendSMS(message, phoneNumber);
+  
+  // Send SMS: Ensure the correct order of arguments
+  await sendSMS(phoneNumber, message);
 
+  // Save the customer with the updated OTP
   await isCustomer.save();
 
   return isCustomer;

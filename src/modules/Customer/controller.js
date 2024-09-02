@@ -190,13 +190,14 @@ const customerOTPSigninHandler = async (req, res, next) => {
     const customer = await customerService.loginCustomer(req.body);
 
     res.status(200).json({
-      message: "OTP send to your phone number",
+      message: "OTP sent to your phone number",
       customer,
     });
   } catch (err) {
-    next(err, req, res);
+    next(err);
   }
 };
+
 
 
 
@@ -210,9 +211,12 @@ const customerResendOTPHandler = async (req, res, next) => {
       customer,
     });
   } catch (err) {
-    next(err, req, res);
+    next(err);
   }
 };
+
+
+
 
 
 
