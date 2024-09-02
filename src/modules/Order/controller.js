@@ -67,23 +67,23 @@ const getAllOrders = asyncHandler(async (req, res) => {
   
 
 
-
 const updateOrderStatusHandler = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const { orderStatus } = req.body;
-  
-    if (!orderStatus || typeof orderStatus !== 'string') {
-      return res.status(400).json({ error: 'Invalid orderStatus' });
-    }
-  
-    const order = await orderService.updateOrderStatus(id, orderStatus);
-  
-    res.status(200).json({
-      message: 'Order status updated and SMS sent successfully',
-      order,
-    });
+  const { id } = req.params;
+  const { orderStatus } = req.body;
+
+  if (!orderStatus || typeof orderStatus !== 'string') {
+    return res.status(400).json({ error: 'Invalid orderStatus' });
+  }
+
+  const order = await orderService.updateOrderStatus(id, orderStatus);
+
+  res.status(200).json({
+    message: 'Order status updated and SMS sent successfully',
+    order,
   });
-  
+});
+
+
 
 
 

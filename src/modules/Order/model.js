@@ -8,16 +8,18 @@ const OrderSchema = new mongoose.Schema({
   customer: {
     type: mongoose.Types.ObjectId,
     required: true,
-    ref: 'customer'
+    ref: 'Customer'
   },
   customerIp: {
     type: String
   },
+
   orderType: {
     type: String,
     enum: ["Delivery", "Pickup", "Online"],
     required: true
   },
+
   firstName: {
     type: String,
     max: [232, 'First Name Should be less than 232 characters']
@@ -70,7 +72,7 @@ const OrderSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
       required: true,
-      quantity: Number
+    
     },
 
     quantity: {

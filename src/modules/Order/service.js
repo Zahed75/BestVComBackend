@@ -320,33 +320,37 @@ const getAllOrders = async () => {
 
 // Update Order Status
 
-  const updateOrderStatus = async (id, orderStatus) => {
-    // Find and update the order, and populate the products field
-    const order = await OrderModel.findByIdAndUpdate(
-      id,
-      { orderStatus },
-      { new: true }
-    ).populate({
-      path: 'products._id',
-      select: 'name price'
-    });
-  
-    // Check if the order was found
-    if (!order) {
-      throw new Error('Order not found');
-    }
-  
-    // Prepare SMS details
-    const customerName = `${order.firstName} ${order.lastName}`;
-    const customerPhone = order.phoneNumber;
-    const message = getSMSText(orderStatus, customerName, order);
-  
-    // Send SMS to customer
-    await sendSMS(customerPhone, message);
-  
-    return order;
-  };
-  
+
+const updateOrderStatus = async (id, orderStatus) => {
+  // Find and update the order, and populate the products field
+  const order = await OrderModel.findByIdAndUpdate(
+    id,
+    { orderStatus },
+    { new: true }
+  ).populate({
+    path: 'products._id',
+    select: 'productName general.salePrice', // Select appropriate fields
+  });
+
+  // Check if the order was found
+  if (!order) {
+    throw new Error('Order not found');
+  }
+
+  // Prepare SMS details
+  const customerName = `${order.firstName} ${order.lastName}`;
+  const customerPhone = order.phoneNumber;
+  const message = getSMSText(orderStatus, customerName, order);
+
+  console.log(message);
+  // Send SMS to customer
+  await sendSMS(customerPhone, message);
+
+  return order;
+};
+
+
+
  
   
 
