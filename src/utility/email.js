@@ -77,58 +77,10 @@ handlebars.registerHelper('multiply', function(a, b) {
   return a * b;
 });
 
-// Function to send order invoice email
-exports.sendOrderInvoiceEmail = async (EmailTo, orderData) => {
-  try {
-    // Read the HTML template file
-    const templatePath = path.join(__dirname, '../templates/order.html');
-    const htmlTemplate = await readHTMLFile(templatePath);
-
-    // Compile Handlebars template
-    const template = handlebars.compile(htmlTemplate);
-
-    // Prepare data to inject into template
-    const replacements = {
-      orderId: orderData.orderId,
-      orderDate: new Date().toLocaleDateString(),  // Example date formatting
-      customerName: orderData.firstName + ' ' + orderData.lastName,
-      customerEmail: orderData.email,
-      deliveryAddress: orderData.deliveryAddress,
-      phoneNumber: orderData.phoneNumber,
-      products: orderData.products,
-      subtotal: orderData.totalPrice - orderData.discountAmount - orderData.deliveryCharge,  // Corrected subtotal calculation
-      discount: orderData.discountAmount,
-      deliveryCharge: orderData.deliveryCharge,
-      vatRate: orderData.vatRate,
-      vat: orderData.vat,  // VAT should be directly provided
-      total: orderData.totalPrice,
-    };
-
-    // Replace placeholders with actual data in the template
-    const emailHtml = template(replacements);
-
-    // Setup email options
-    const mailOptions = {
-      from: 'BestElectronics-Technologies <tech.syscomatic@gmail.com>',
-      to: EmailTo,
-      subject: 'Your Order Invoice',
-      html: emailHtml,
-    };
-
-    // Send email using Nodemailer
-    const info = await transporter.sendMail(mailOptions);
-    console.log('Order invoice email sent:', info);
-
-    return info;
-  } catch (error) {
-    console.error('Error sending order invoice email:', error);
-    throw error;
-  }
-};
 
 
-// invoice generate
 
+// send Email Invoice
 exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
   try {
     // Log the order data for debugging
@@ -175,15 +127,15 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
       to: EmailTo,
       subject: 'Your Order Invoice',
       html: emailHtml,
+      attachments: [
+        {
+          filename: 'bel.png',
+          path: path.join(__dirname, '../public/images/bel.png'),
+          cid: 'logo'  // Content-ID for embedding
+        },
+        ...(pdfPath ? [{ filename: path.basename(pdfPath), path: pdfPath }] : [])
+      ]
     };
-
-    // Attach PDF if provided
-    if (pdfPath) {
-      mailOptions.attachments = [{
-        filename: path.basename(pdfPath),
-        path: pdfPath
-      }];
-    }
 
     // Send email using Nodemailer
     const info = await transporter.sendMail(mailOptions);

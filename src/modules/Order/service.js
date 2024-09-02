@@ -7,8 +7,6 @@ const { generateCustomOrderId, formatOrderTime } = require('../../utility/custom
 const sendSMS = require('../../utility/aamarPayOTP');
 const { getSMSText } = require('../../utility/getSMS');
 const { sendOrderInvoiceEmail } = require('../../utility/email');
-const { generateInvoicePDF } = require('../../utility/invoice');
-
 
 
 function calculateOrderValue(products, orderProducts) {
@@ -37,24 +35,31 @@ const createOrder = async (orderData) => {
     const orderTime = formatOrderTime(new Date());
 
     // Destructure orderData
-    const { 
-      email, orderType, deliveryAddress, deliveryCharge = 0, 
-      district, phoneNumber, paymentMethod, transactionId, 
+    const {
+      email, orderType, deliveryAddress, deliveryCharge = 0,
+      district, phoneNumber, paymentMethod, transactionId,
       products, couponName, vatRate, firstName, lastName, customerIp,
-      channel, outlet 
+      channel, outlet
     } = orderData;
 
-    // Find the customer by either email or phoneNumber
+    // Find the customer by email or phone number
     const customer = await CustomerModel.findOne({
       $or: [
-        { email: email },
-        { phoneNumber: phoneNumber }
+        { email },
+        { phoneNumber }
       ]
     }).lean().exec();
 
     if (!customer) {
       throw new NotFound('Customer not found');
     }
+
+    // Set firstName and lastName from customer if not provided in the request
+    const customerFirstName = firstName || customer.firstName;
+    const customerLastName = lastName || customer.lastName;
+
+    // Use phoneNumber from the request, or fallback to customer's phoneNumber
+    const customerPhoneNumber = phoneNumber || customer.phoneNumber;
 
     // Validate products
     if (!Array.isArray(products) || products.length === 0) {
@@ -108,14 +113,14 @@ const createOrder = async (orderData) => {
     const newOrder = new OrderModel({
       orderId,
       customer: customer._id,
-      firstName,
-      lastName,
+      firstName: customerFirstName,
+      lastName: customerLastName,
       orderType,
       orderTime,
       deliveryAddress,
       orderStatus: 'Received',
       district,
-      phoneNumber,
+      phoneNumber: customerPhoneNumber,
       paymentMethod,
       transactionId,
       products,
@@ -148,7 +153,7 @@ const createOrder = async (orderData) => {
     });
 
     // Send SMS to customer
-    const smsText = getSMSText('Received', `${firstName} ${lastName}`, {
+    const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
       orderId: savedOrder.orderId,
       products: productInfoForSMS,
       totalPrice: savedOrder.totalPrice,
@@ -156,39 +161,23 @@ const createOrder = async (orderData) => {
     });
 
     console.log(smsText);
-    await sendSMS(phoneNumber, smsText);
-
-    // Generate PDF invoice
-    const pdfPath = await generateInvoicePDF({
-      orderId: savedOrder.orderId,
-      firstName,
-      lastName,
-      email,
-      deliveryAddress,
-      phoneNumber,
-      products: productInfoForSMS,
-      totalPrice: finalTotalPrice,
-      discountAmount,
-      deliveryCharge,
-      vatRate: 5, // Fixed VAT rate
-      vat
-    }, customer);
+    await sendSMS(customerPhoneNumber, smsText);
 
     // Send Email Invoice to customer with PDF attachment
     await sendOrderInvoiceEmail(email, {
       orderId: savedOrder.orderId,
-      firstName,
-      lastName,
+      firstName: customerFirstName,
+      lastName: customerLastName,
       email,
       deliveryAddress,
-      phoneNumber,
+      phoneNumber: customerPhoneNumber,
       products: productInfoForSMS,
       totalPrice: finalTotalPrice,
       discountAmount,
       deliveryCharge,
       vatRate: 5, // Fixed VAT rate
       vat
-    }, pdfPath);
+    });
 
     return {
       message: "Order created successfully",
@@ -205,6 +194,8 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
+
+
 
 
 

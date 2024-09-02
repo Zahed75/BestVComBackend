@@ -1,156 +1,133 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Invoice</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f4;
-        }
-        .container {
-            width: 80%;
-            margin: 20px auto;
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .header img {
-            max-width: 250px; /* Increased logo size */
-            height: auto; /* Maintain aspect ratio */
-        }
-        .order-details {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .order-details th, .order-details td {
-            border: 1px solid #dddddd;
-            text-align: left;
-            padding: 8px;
-        }
-        .order-details th {
-            background-color: #f2f2f2;
-        }
-        .order-summary {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        .order-summary th, .order-summary td {
-            text-align: left;
-            padding: 8px;
-        }
-        .order-summary th {
-            width: 80%;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 0.9em;
-            color: #777777;
-        }
-        .total {
-            font-weight: bold;
-        }
-    </style>
+  <title>Order Invoice</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    .container {
+      width: 80%;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logo img {
+      width: 400px;
+    }
+    .header, .footer {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .total-row {
+      font-weight: bold;
+    }
+    .total-row td {
+      text-align: right;
+    }
+    .footer p {
+      margin: 10px 0;
+      font-size: 14px;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <img src="https://drive.google.com/uc?export=view&id=1iA534h7YVE_a8R7aaJqM762t5fbwZQCV" alt="Best Electronics Ltd Logo">
-            <h2>Order Details</h2>
-        </div>
-
-        <table class="order-details">
-            <tr>
-                <th>Order ID:</th>
-                <td>BEL-20240829-3640</td>
-            </tr>
-            <tr>
-                <th>Order Date:</th>
-                <td>8/29/2024</td>
-            </tr>
-            <tr>
-                <th>Customer Name:</th>
-                <td>Zahed Hasan</td>
-            </tr>
-            <tr>
-                <th>Delivery Address:</th>
-                <td>123 Street, City</td>
-            </tr>
-            <tr>
-                <th>Phone Number:</th>
-                <td>8801611814937</td>
-            </tr>
-            <tr>
-                <th>Payment Method:</th>
-                <td>Cash On Delivery</td>
-            </tr>
-            <tr>
-                <th>Shipping Method:</th>
-                <td>Standard Delivery</td>
-            </tr>
-            <tr>
-                <th>Tracking Number:</th>
-                <td>N/A</td>
-            </tr>
-        </table>
-
-        <h3>Order Summary</h3>
-        <table class="order-summary">
-            <tr>
-                <th>Product Name</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>Total</th>
-            </tr>
-            <tr>
-                <td>Conion window AC-3</td>
-                <td>1</td>
-                <td>70,000</td>
-                <td>70,000</td>
-            </tr>
-            <tr>
-                <td>Conion window AC-2</td>
-                <td>1</td>
-                <td>70,000</td>
-                <td>70,000</td>
-            </tr>
-            <tr>
-                <th>Subtotal:</th>
-                <td colspan="3">140,000</td>
-            </tr>
-            <tr>
-                <th>Discount:</th>
-                <td colspan="3">42,000</td>
-            </tr>
-            <tr>
-                <th>Delivery Charge:</th>
-                <td colspan="3">10</td>
-            </tr>
-            <tr>
-                <th>VAT (inclusive, 5%):</th>
-                <td colspan="3">Included</td>
-            </tr>
-            <tr>
-                <th class="total">Total:</th>
-                <td colspan="3" class="total">98,010</td>
-            </tr>
-        </table>
-
-        <div class="footer">
-            <p>Thank you for shopping with Best Electronics Ltd!</p>
-            <p>If you have any questions about your order, feel free to contact our customer service team.</p>
-        </div>
+  <div class="container">
+    <div class="logo">
+      <img src="cid:logo" alt="Best Electronics Ltd">
     </div>
+    <h1>Order Invoice</h1>
+    
+    <div class="header">
+      <p><strong>Order ID:</strong> {{orderId}}</p>
+      <p><strong>Order Date:</strong> {{orderDate}}</p>
+    </div>
+
+    <div>
+      <p><strong>Customer Name:</strong> {{customerName}}</p>
+      <p><strong>Delivery Address:</strong> {{deliveryAddress}}</p>
+      <p><strong>Phone Number:</strong> {{phoneNumber}}</p>
+      <p><strong>Payment Method:</strong> {{paymentMethod}}</p>
+      <p><strong>Shipping Method:</strong> {{shippingMethod}}</p>
+      <p><strong>Tracking Number:</strong> {{trackingNumber}}</p>
+    </div>
+
+    <h2>Order Summary</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Product Name</th>
+          <th>Quantity</th>
+          <th>Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#each products}}
+        <tr>
+          <td>{{this.name}}</td>
+          <td>{{this.quantity}}</td>
+          <td>{{this.price}}</td>
+          <td>{{this.total}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="3">Subtotal:</td>
+          <td>{{subtotal}}</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="3">Discount:</td>
+          <td>{{discount}}</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="3">Delivery Charge:</td>
+          <td>{{deliveryCharge}}</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="3">VAT (inclusive, 5%):</td>
+          <td>Included</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="3">Total:</td>
+          <td>{{total}}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="footer">
+      <p>Thank you for shopping with us!</p>
+    </div>
+  </div>
 </body>
 </html>
