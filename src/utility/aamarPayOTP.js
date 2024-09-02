@@ -12,7 +12,7 @@ const sendSMS = async (receiver, message) => {
         'Authorization': `Token dbf5ae53b49fdf65ac01f09ef7385686ac42ea4d`
       }
     });
-
+   
     return response.data;
   } catch (error) {
     console.error('Error sending SMS:', error.message);

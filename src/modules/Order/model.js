@@ -43,9 +43,11 @@ const OrderSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+
   deliveryCharge: {
     type: Number,
   },
+
   district: {
     type: String,
     required: true
@@ -62,12 +64,15 @@ const OrderSchema = new mongoose.Schema({
     ]
   },
   transactionId: String,
+
   products: [{
     _id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
-      required: true
+      required: true,
+      quantity: Number
     },
+
     quantity: {
       type: Number,
       required: true
@@ -85,7 +90,7 @@ const OrderSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  
+
   orderNote: {
     type: String,
     default: "Order Note",
