@@ -129,11 +129,10 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData) => {
 
 // invoice generate
 
-exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath) => {
+exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
   try {
-    // Log PDF path and filename
-    console.log('PDF Path:', pdfPath);
-    console.log('Filename:', path.basename(pdfPath));
+    // Log the order data for debugging
+    console.log('Order Data:', orderData);
 
     // Read the HTML template file
     const templatePath = path.join(__dirname, '../templates/order.html');
@@ -142,22 +141,30 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath) => {
     // Compile Handlebars template
     const template = handlebars.compile(htmlTemplate);
 
-    // Prepare data to inject into template
+    // Prepare data to inject into the template
     const replacements = {
       orderId: orderData.orderId,
-      orderDate: new Date().toLocaleDateString(),
-      customerName: orderData.firstName + ' ' + orderData.lastName,
+      orderDate: new Date().toLocaleDateString(),  // Format the order date as needed
+      customerName: `${orderData.firstName} ${orderData.lastName}`,  // Combine first and last name
       customerEmail: orderData.email,
       deliveryAddress: orderData.deliveryAddress,
       phoneNumber: orderData.phoneNumber,
-      products: orderData.products,
-      subtotal: orderData.totalPrice - orderData.discountAmount - orderData.deliveryCharge,
-      discount: orderData.discountAmount,
-      deliveryCharge: orderData.deliveryCharge,
-      vatRate: orderData.vatRate,
-      vat: orderData.vat,
-      total: orderData.totalPrice,
+      products: orderData.products.map(product => ({
+        name: product.name,
+        quantity: product.quantity,
+        price: product.price,
+        total: product.quantity * product.price
+      })),
+      subtotal: (orderData.totalPrice - orderData.discountAmount - orderData.deliveryCharge).toFixed(2),  // Corrected subtotal calculation
+      discount: orderData.discountAmount.toFixed(2),
+      deliveryCharge: orderData.deliveryCharge.toFixed(2),
+      vatRate: orderData.vatRate.toFixed(2),
+      vat: orderData.vat.toFixed(2),  // VAT should be directly provided
+      total: orderData.totalPrice.toFixed(2),
     };
+
+    // Log the replacements data for debugging
+    console.log('Replacements Data:', replacements);
 
     // Replace placeholders with actual data in the template
     const emailHtml = template(replacements);
@@ -168,20 +175,24 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath) => {
       to: EmailTo,
       subject: 'Your Order Invoice',
       html: emailHtml,
-      attachments: [
-        {
-          filename: path.basename(pdfPath),
-          path: pdfPath
-        }
-      ]
     };
+
+    // Attach PDF if provided
+    if (pdfPath) {
+      mailOptions.attachments = [{
+        filename: path.basename(pdfPath),
+        path: pdfPath
+      }];
+    }
 
     // Send email using Nodemailer
     const info = await transporter.sendMail(mailOptions);
     console.log('Order invoice email sent:', info);
 
     // Remove the PDF file after sending the email
-    fs.unlinkSync(pdfPath);
+    if (pdfPath) {
+      fs.unlinkSync(pdfPath);
+    }
 
     return info;
   } catch (error) {

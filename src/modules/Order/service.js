@@ -44,8 +44,14 @@ const createOrder = async (orderData) => {
       channel, outlet 
     } = orderData;
 
-    // Find the customer by email
-    const customer = await CustomerModel.findOne({ email }).lean().exec();
+    // Find the customer by either email or phoneNumber
+    const customer = await CustomerModel.findOne({
+      $or: [
+        { email: email },
+        { phoneNumber: phoneNumber }
+      ]
+    }).lean().exec();
+
     if (!customer) {
       throw new NotFound('Customer not found');
     }
@@ -142,15 +148,15 @@ const createOrder = async (orderData) => {
     });
 
     // Send SMS to customer
-    // const smsText = getSMSText('Received', `${firstName} ${lastName}`, {
-    //   orderId: savedOrder.orderId,
-    //   products: productInfoForSMS,
-    //   totalPrice: savedOrder.totalPrice,
-    //   discountAmount: savedOrder.discountAmount
-    // });
+    const smsText = getSMSText('Received', `${firstName} ${lastName}`, {
+      orderId: savedOrder.orderId,
+      products: productInfoForSMS,
+      totalPrice: savedOrder.totalPrice,
+      discountAmount: savedOrder.discountAmount
+    });
 
-    // console.log(smsText);
-    // await sendSMS(phoneNumber, smsText);
+    console.log(smsText);
+    await sendSMS(phoneNumber, smsText);
 
     // Generate PDF invoice
     const pdfPath = await generateInvoicePDF({
