@@ -9,11 +9,25 @@ const { getSMSText } = require('../../utility/getSMS');
 const { sendOrderInvoiceEmail } = require('../../utility/email');
 
 
-function calculateOrderValue(products, orderProducts) {
+
+
+
+
+
+function calculateOrderValue(products, orderProducts, couponId) {
   return orderProducts.reduce((total, orderProduct) => {
     const product = products.find(p => p._id.equals(orderProduct._id));
-    if (product && product.general && typeof product.general.regularPrice === 'number' && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
-      return total + (product.general.regularPrice * orderProduct.quantity);
+    if (product && product.general && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
+      const price = couponId && product.general.salePrice 
+                    ? product.general.salePrice 
+                    : product.general.regularPrice;
+
+      if (isNaN(price)) {
+        console.warn('Invalid price for product:', product);
+        return total;
+      }
+
+      return total + (price * orderProduct.quantity);
     } else {
       console.warn('Invalid product or quantity:', orderProduct);
       return total;
@@ -21,12 +35,26 @@ function calculateOrderValue(products, orderProducts) {
   }, 0);
 }
 
-const calculateDiscount = (coupon, totalPrice) => {
-  if (coupon.general.discountType === 'percentage') {
-    return (coupon.general.couponAmount / 100) * totalPrice;
+
+
+
+
+// Define calculateDiscount function
+function calculateDiscount(coupon, totalPrice) {
+  if (!coupon) {
+    return 0; // No coupon, so no discount
   }
-  return 0;
-};
+
+  if (coupon.discountType === 'percentage') {
+    return (coupon.couponAmount / 100) * totalPrice;
+  } else if (coupon.discountType === 'fixed') {
+    return coupon.couponAmount;
+  } else {
+    return 0; // Unknown discount type, so no discount
+  }
+}
+
+
 
 const createOrder = async (orderData) => {
   try {
@@ -194,6 +222,9 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
+
+
+
 
 
 
@@ -560,4 +591,4 @@ module.exports = {
   updateOutletByOrderId,
   getOrderHistoryByCustomerId,
  
-};
+}

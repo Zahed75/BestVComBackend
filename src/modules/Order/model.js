@@ -80,10 +80,12 @@ const OrderSchema = new mongoose.Schema({
     }
   },
   discountAmount: Number,
+
   totalPrice: {
     type: Number,
     required: true
   },
+  
   orderNote: {
     type: String,
     default: "Order Note",
