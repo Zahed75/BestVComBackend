@@ -342,7 +342,7 @@ const updateOrderStatus = async (id, orderStatus) => {
   const customerPhone = order.phoneNumber;
   const message = getSMSText(orderStatus, customerName, order);
 
-  console.log(message);
+
   // Send SMS to customer
   await sendSMS(customerPhone, message);
 

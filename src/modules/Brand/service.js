@@ -1,6 +1,6 @@
 const brandModel = require('./model');
 const { BadRequest } = require('../../utility/errors');
-
+const mongoose = require('mongoose');
 
 
 const addBrand = async (brandData) => {
@@ -24,54 +24,70 @@ const addBrand = async (brandData) => {
 
 
 
-
 const getAllBrands = async () => {
-    try {
-     
-      const allBrands = await brandModel.aggregate([
-        {
-          $lookup: {
-            from: 'products', 
-            localField: '_id', 
-            foreignField: 'productBrand', 
-            as: 'products'
+  try {
+      const brands = await brandModel.aggregate([
+          {
+              $lookup: {
+                  from: "products",
+                  localField: "name",
+                  foreignField: "productBrand",
+                  as: "products"
+              }
+          },
+          {
+              $addFields: {
+                  productCount: { $size: "$products" }
+              }
           }
-        },
-        {
-          $project: {
-            name: 1,
-            title: 1,
-            description: 1,
-            productCount: { $size: '$products' } // Count the number of products
-          }
-        }
       ]);
-  
-      return allBrands;
-    } catch (err) {
-      console.log(err);
-      throw new Error('Failed to retrieve brands: ' + err.message);
-    }
-  };
+
+      return brands;
+  } catch (error) {
+      throw new Error(error.message);
+  }
+};
+
   
 
 
 
 
 const getBrandById = async (brandId) => {
-    try {
-        const brand = await brandModel.findById(brandId).lean();
-        if (brand) {
-            return { success: true, data: brand };
-        } else {
-            return { success: false, error: 'Brand not found' };
-        }
-    } catch (error) {
-        console.error('Error in getting brand by id:', error.message);
-        return { success: false, error: 'Failed to retrieve brand' };
-    }
+  try {
+      const brand = await brandModel.aggregate([
+          {
+              $match: { _id: new mongoose.Types.ObjectId(brandId) }
+          },
+          {
+              $lookup: {
+                  from: "products",
+                  localField: "name",
+                  foreignField: "productBrand",
+                  as: "products"
+              }
+          },
+          {
+              $addFields: {
+                  productCount: { $size: "$products" }
+              }
+          }
+      ]);
 
+      if (brand && brand.length > 0) {
+          return { success: true, data: brand[0] };
+      } else {
+          return { success: false, error: 'Brand not found' };
+      }
+  } catch (error) {
+      console.error('Error in getting brand by id:', error.message);
+      return { success: false, error: 'Failed to retrieve brand' };
+  }
 }
+
+
+
+
 
 
 

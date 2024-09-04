@@ -10,7 +10,7 @@ const ProductSchema = new Schema({
 
   productBrand: {
     type: mongoose.Types.ObjectId,
-    ref: 'Brand', // Make sure this is correct
+    ref: 'Brand',
     required: true
   },
     
@@ -103,3 +103,5 @@ const ProductSchema = new Schema({
 const ProductModel = mongoose.model('Product', ProductSchema);
 
 module.exports = ProductModel;
+
+
