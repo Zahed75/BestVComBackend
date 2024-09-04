@@ -21,6 +21,8 @@ const getNextOrdersBy = async () => {
   }
 };
 
+
+
 const createProductGrid = async (data) => {
   try {
     // Get the next available ordersBy value
@@ -47,6 +49,7 @@ const createProductGrid = async (data) => {
     throw new Error('Failed to create product grid: ' + error.message);
   }
 }
+
 
 
 
@@ -83,6 +86,7 @@ const getProductGridById = async (gridId) => {
     throw new Error('Failed to retrieve product grid: ' + error.message);
   }
 };
+
 
 
 
@@ -187,17 +191,31 @@ const getAllProductGrids = async () => {
 
 
 
-const deleteProductGridById = async (gridId) => {
+  const deleteProductGridById = async (gridId) => {
     try {
-      const deletedGrid = await GridModel.findByIdAndDelete(gridId);
-      if (!deletedGrid) {
-        throw new Error('Product grid not found');
-      }
-      return deletedGrid;
+        // Find the grid to be deleted
+        const deletedGrid = await GridModel.findById(gridId);
+        if (!deletedGrid) {
+            throw new Error('Product grid not found');
+        }
+        
+        // Capture the ordersBy value of the deleted grid
+        const ordersByToRemove = deletedGrid.ordersBy;
+
+        // Delete the grid
+        await GridModel.findByIdAndDelete(gridId);
+
+        // Update ordersBy for the remaining grids
+        await GridModel.updateMany(
+            { ordersBy: { $gt: ordersByToRemove } },
+            { $inc: { ordersBy: -1 } }
+        );
+
+        return deletedGrid;
     } catch (error) {
-      throw new Error('Failed to delete product grid: ' + error.message);
+        throw new Error('Failed to delete product grid: ' + error.message);
     }
-  };
+};
 
 
 

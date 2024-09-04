@@ -52,7 +52,6 @@ const getAllBrands = async () => {
 
 
 
-
 const getBrandById = async (brandId) => {
   try {
       const brand = await brandModel.aggregate([
