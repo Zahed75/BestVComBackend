@@ -2,6 +2,8 @@ const Category = require("../Category/model");
 const { BadRequest } = require("../../utility/errors");
 const productModel = require("../Products/model");
 const { generateSlug } = require('../../utility/slug');
+const categoryModel = require("../Category/model");
+const ProductModel = require("../Products/model");
 
 
 
@@ -241,6 +243,50 @@ const getProductByCategorySlug = async (slug) => {
 
 
 
+const getCategoryBySlug = async (slug) => {
+  try {
+    // Find the category by slug
+    const category = await Category.findOne({ slug }).exec();
+
+    if (!category) {
+      throw new Error(`Category with slug ${slug} not found`);
+    }
+
+    // Find all subcategories of this category
+    const subCategories = await Category.find({
+      parentCategory: category._id
+    }).exec();
+
+    // Find all products in this category
+    const products = await ProductModel.find({
+      categoryId: category._id
+    }).exec();
+
+    // Find products in subcategories
+    const subCategoryProductsPromises = subCategories.map(subCategory =>
+      ProductModel.find({ categoryId: subCategory._id }).exec()
+    );
+    const subCategoryProducts = await Promise.all(subCategoryProductsPromises);
+
+    // Combine products from the main category and its subcategories
+    const allProducts = [...products, ...subCategoryProducts.flat()];
+
+    return {
+      category,
+      subCategories,
+      products: allProducts
+    };
+  } catch (error) {
+    console.error('Error fetching category by slug:', error);
+    throw error;
+  }
+};
+
+
+
+
+
+
 
 module.exports = {
   addCategory,
@@ -249,5 +295,6 @@ module.exports = {
   deleteCategoryById,
   getSubcategories,
   getCategoryById,
-  getProductByCategorySlug
+  getProductByCategorySlug,
+  getCategoryBySlug,
 };

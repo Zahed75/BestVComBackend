@@ -118,6 +118,24 @@ const getProductByCategorySlugHandler = asyncHandler(async (req, res) => {
   
 
 
+  const getCategoryBySlugHandler = asyncHandler(async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const categoryData = await categoryService.getCategoryBySlug(slug);
+      res.status(200).json({
+        message: "Category fetched successfully!",
+        category: categoryData.category,
+        subCategories: categoryData.subCategories,
+        products: categoryData.products
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: error.message || "Failed to fetch category",
+      });
+    }
+  });
+
+
 
 router.post('/addCategory', authMiddleware, roleMiddleware([HEAD_OFFICE]), createCategoryHandler);
 router.get('/getAllCat', getAllCategoriesHandler);
@@ -126,6 +144,6 @@ router.delete('/deleteCategory/:id', authMiddleware, roleMiddleware([HEAD_OFFICE
 router.get('/:parentCategory', getSubcategoriesHandler);
 router.get('/getCategoryById/:id', getCategoryByIdHandler);
 router.get('/getProductByCatSlug/:slug',getProductByCategorySlugHandler);
-
+router.get('/categories/:slug', getCategoryBySlugHandler);
 
 module.exports = router;
