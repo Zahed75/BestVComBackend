@@ -29,6 +29,7 @@ const createProductGrid = asyncHandler(async (req, res) => {
 });
 
 
+
   const getProductGridById = asyncHandler(async (req, res) => {
     try {
       const { gridId } = req.params;
@@ -50,8 +51,6 @@ const createProductGrid = asyncHandler(async (req, res) => {
 
   
   
-
-
 
 const getAllProductGrids = asyncHandler(async (req, res) => {
   try {
@@ -99,6 +98,7 @@ const getAllProductGrids = asyncHandler(async (req, res) => {
   
 
 
+
   const updateProductGridById = asyncHandler(async (req, res) => {
     try {
       const { id } = req.params;
@@ -117,6 +117,9 @@ const getAllProductGrids = asyncHandler(async (req, res) => {
       });
     }
   });
+
+
+  
   
 
 

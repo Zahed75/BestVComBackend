@@ -37,54 +37,108 @@ const addCategory = async (categoryData) => {
 
 
 
+// const getAllCategory = async () => {
+//   try {
+//     const allCategories = await Category.find();
+//     const allProducts = await productModel.find();
+//     const categoryMap = {};
+
+//     // Debug: Log all categories fetched
+//     console.log('All Categories:', allCategories);
+
+//     // Create a map of all categories by their _id and initialize subCategories array
+//     allCategories.forEach((category) => {
+//       categoryMap[category._id] = category.toObject();
+//       categoryMap[category._id].subCategories = [];
+//       categoryMap[category._id].productCount = 0; // Initialize product count
+//     });
+
+//     // Count products for each category
+//     allProducts.forEach((product) => {
+//       if (categoryMap[product.categoryId]) {
+//         categoryMap[product.categoryId].productCount++;
+//       }
+//     });
+
+//     // Populate subCategories for each category
+//     allCategories.forEach((category) => {
+//       if (category.parentCategory && category.parentCategory !== "") {
+//         if (categoryMap[category.parentCategory]) {
+//           categoryMap[category.parentCategory].subCategories.push(
+//             categoryMap[category._id]
+//           );
+//         }
+//       }
+//     });
+
+//     const rootCategories = allCategories.filter(
+//       (category) => !category.parentCategory || category.parentCategory === ""
+//     );
+
+ 
+//     console.log('Root Categories:', rootCategories);
+
+//     const result = rootCategories.map((category) => {
+//       const { slug, ...rest } = categoryMap[category._id];
+//       return { slug, ...rest };
+//     });
+
+//     // Debug: Log final result
+//     console.log('Final Category Result:', result);
+
+//     return result;
+//   } catch (error) {
+//     console.error('Error fetching categories:', error);
+//     throw error;
+//   }
+// };
+
+
 const getAllCategory = async () => {
   try {
-    const allCategories = await Category.find();
-    const allProducts = await productModel.find();
+    // Fetch all categories and products
+    const allCategories = await Category.find().exec();
+    const allProducts = await productModel.find().exec();
     const categoryMap = {};
 
-    // Debug: Log all categories fetched
-    console.log('All Categories:', allCategories);
-
-    // Create a map of all categories by their _id and initialize subCategories array
+    // Create a map of all categories by their _id and initialize subCategories and products arrays
     allCategories.forEach((category) => {
-      categoryMap[category._id] = category.toObject();
-      categoryMap[category._id].subCategories = [];
-      categoryMap[category._id].productCount = 0; // Initialize product count
+      categoryMap[category._id] = {
+        ...category.toObject(),
+        subCategories: [],
+        productCount: 0,
+        products: [] // Initialize products array
+      };
     });
 
-    // Count products for each category
+    // Populate products into categories
     allProducts.forEach((product) => {
-      if (categoryMap[product.categoryId]) {
-        categoryMap[product.categoryId].productCount++;
-      }
+      product.categoryId.forEach((categoryId) => {
+        if (categoryMap[categoryId]) {
+          categoryMap[categoryId].productCount++;
+          categoryMap[categoryId].products.push(product);
+        }
+      });
     });
 
     // Populate subCategories for each category
     allCategories.forEach((category) => {
       if (category.parentCategory && category.parentCategory !== "") {
         if (categoryMap[category.parentCategory]) {
-          categoryMap[category.parentCategory].subCategories.push(
-            categoryMap[category._id]
-          );
+          categoryMap[category.parentCategory].subCategories.push(categoryMap[category._id]);
         }
       }
     });
 
+    // Create root categories (those without a parentCategory or with an empty parentCategory)
     const rootCategories = allCategories.filter(
       (category) => !category.parentCategory || category.parentCategory === ""
     );
-
- 
-    console.log('Root Categories:', rootCategories);
 
     const result = rootCategories.map((category) => {
       const { slug, ...rest } = categoryMap[category._id];
       return { slug, ...rest };
     });
-
-    // Debug: Log final result
-    console.log('Final Category Result:', result);
 
     return result;
   } catch (error) {
@@ -92,6 +146,7 @@ const getAllCategory = async () => {
     throw error;
   }
 };
+
 
 
 
