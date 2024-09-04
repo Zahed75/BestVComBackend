@@ -122,11 +122,11 @@ const getProductByCategorySlugHandler = asyncHandler(async (req, res) => {
     try {
       const { slug } = req.params;
       const categoryData = await categoryService.getCategoryBySlug(slug);
+  
       res.status(200).json({
-        message: "Category fetched successfully!",
-        category: categoryData.category,
-        subCategories: categoryData.subCategories,
-        products: categoryData.products
+        message: categoryData.message,
+        category: categoryData.category,  // This includes category with products and subcategories
+        products: categoryData.products  // All products including those in subcategories
       });
     } catch (error) {
       res.status(500).json({
@@ -134,6 +134,7 @@ const getProductByCategorySlugHandler = asyncHandler(async (req, res) => {
       });
     }
   });
+  
 
 
 

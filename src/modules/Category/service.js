@@ -245,35 +245,46 @@ const getProductByCategorySlug = async (slug) => {
 
 const getCategoryBySlug = async (slug) => {
   try {
-    // Find the category by slug
-    const category = await Category.findOne({ slug }).exec();
+    // Find the main category by slug
+    const mainCategory = await Category.findOne({ slug }).exec();
 
-    if (!category) {
+    if (!mainCategory) {
       throw new Error(`Category with slug ${slug} not found`);
     }
 
-    // Find all subcategories of this category
+    // Find all subcategories of the main category
     const subCategories = await Category.find({
-      parentCategory: category._id
+      parentCategory: mainCategory._id
     }).exec();
 
-    // Find all products in this category
-    const products = await ProductModel.find({
-      categoryId: category._id
+    // Find all products directly in the main category
+    const mainCategoryProducts = await ProductModel.find({
+      categoryId: mainCategory._id
     }).exec();
 
-    // Find products in subcategories
+    // Find products in each subcategory
     const subCategoryProductsPromises = subCategories.map(subCategory =>
       ProductModel.find({ categoryId: subCategory._id }).exec()
     );
     const subCategoryProducts = await Promise.all(subCategoryProductsPromises);
 
-    // Combine products from the main category and its subcategories
-    const allProducts = [...products, ...subCategoryProducts.flat()];
+    // Combine products from subcategories into a single array
+    const allSubCategoryProducts = subCategoryProducts.flat();
 
+    // Combine all products
+    const allProducts = [...mainCategoryProducts, ...allSubCategoryProducts];
+
+    // Return the complete data structure
     return {
-      category,
-      subCategories,
+      message: "Category fetched successfully!",
+      category: {
+        ...mainCategory._doc,
+        products: mainCategoryProducts,
+        subCategories: subCategories.map((subCategory, index) => ({
+          ...subCategory._doc,
+          products: subCategoryProducts[index]
+        }))
+      },
       products: allProducts
     };
   } catch (error) {
@@ -281,6 +292,8 @@ const getCategoryBySlug = async (slug) => {
     throw error;
   }
 };
+
+
 
 
 
