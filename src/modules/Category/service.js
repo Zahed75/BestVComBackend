@@ -245,36 +245,34 @@ const getProductByCategorySlug = async (slug) => {
 
 const getCategoryBySlug = async (slug) => {
   try {
-    // Find the main category by slug
+  
     const mainCategory = await Category.findOne({ slug }).exec();
 
     if (!mainCategory) {
       throw new Error(`Category with slug ${slug} not found`);
     }
 
-    // Find all subcategories of the main category
     const subCategories = await Category.find({
       parentCategory: mainCategory._id
     }).exec();
 
-    // Find all products directly in the main category
+   
     const mainCategoryProducts = await ProductModel.find({
       categoryId: mainCategory._id
     }).exec();
 
-    // Find products in each subcategory
+ 
     const subCategoryProductsPromises = subCategories.map(subCategory =>
       ProductModel.find({ categoryId: subCategory._id }).exec()
     );
     const subCategoryProducts = await Promise.all(subCategoryProductsPromises);
 
-    // Combine products from subcategories into a single array
+
     const allSubCategoryProducts = subCategoryProducts.flat();
 
-    // Combine all products
+ 
     const allProducts = [...mainCategoryProducts, ...allSubCategoryProducts];
 
-    // Return the complete data structure
     return {
       message: "Category fetched successfully!",
       category: {

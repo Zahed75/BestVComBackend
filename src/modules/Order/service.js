@@ -13,14 +13,13 @@ const { sendOrderInvoiceEmail } = require('../../utility/email');
 
 
 
-
 function calculateOrderValue(products, orderProducts, couponId) {
   return orderProducts.reduce((total, orderProduct) => {
     const product = products.find(p => p._id.equals(orderProduct._id));
     if (product && product.general && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
-      const price = couponId && product.general.salePrice 
-                    ? product.general.salePrice 
-                    : product.general.regularPrice;
+      const price = couponId
+        ? product.general.regularPrice // Use regular price if coupon is applied
+        : product.general.salePrice || product.general.regularPrice; // Use sale price if available, else regular price
 
       if (isNaN(price)) {
         console.warn('Invalid price for product:', product);
@@ -53,7 +52,6 @@ function calculateDiscount(coupon, totalPrice) {
     return 0; // Unknown discount type, so no discount
   }
 }
-
 
 
 const createOrder = async (orderData) => {
@@ -101,8 +99,8 @@ const createOrder = async (orderData) => {
       throw new BadRequest('Invalid product IDs');
     }
 
-    // Calculate total price based on MRP
-    const totalPrice = calculateOrderValue(validProducts, products);
+    // Calculate total price based on coupon presence
+    const totalPrice = calculateOrderValue(validProducts, products, couponName);
 
     if (isNaN(totalPrice)) {
       throw new BadRequest('Total price calculation resulted in NaN');
@@ -201,7 +199,7 @@ const createOrder = async (orderData) => {
       phoneNumber: customerPhoneNumber,
       products: productInfoForSMS,
       totalPrice: finalTotalPrice,
-      discountAmount,
+      discountAmount:discountAmount,
       deliveryCharge,
       vatRate: 5, // Fixed VAT rate
       vat
@@ -222,6 +220,7 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
+
 
 
 
