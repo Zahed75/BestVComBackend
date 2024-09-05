@@ -66,16 +66,11 @@ const createOrder = async (orderData) => {
       channel, outlet
     } = orderData;
 
-    // Ensure that at least email or phoneNumber is provided
-    if (!email && !phoneNumber) {
-      throw new BadRequest('Either email or phone number must be provided');
-    }
-
-    // Find the customer by email or phone number
+    // Find the customer by phone number or email
     const customer = await CustomerModel.findOne({
       $or: [
         { email: email || null },
-        { phoneNumber: phoneNumber || null }
+        { phoneNumber }
       ]
     }).lean().exec();
 
@@ -89,8 +84,6 @@ const createOrder = async (orderData) => {
 
     // Use phoneNumber from the request, or fallback to customer's phoneNumber
     const customerPhoneNumber = phoneNumber || customer.phoneNumber;
-
-    const customerEmail = email || customer.email;
 
     // Validate products
     if (!Array.isArray(products) || products.length === 0) {
@@ -116,12 +109,12 @@ const createOrder = async (orderData) => {
     if (couponName) {
       coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
       if (!coupon) throw new BadRequest('Invalid coupon name');
-      
+
       // Validate coupon expiration
       if (new Date() > new Date(coupon.general.couponExpiry)) {
         throw new BadRequest('Coupon has expired');
       }
-      
+
       // Calculate discount
       discountAmount = calculateDiscount(coupon, totalPrice);
     }
@@ -152,14 +145,13 @@ const createOrder = async (orderData) => {
       orderStatus: 'Received',
       district,
       phoneNumber: customerPhoneNumber,
-      email: customerEmail, // Include email for further use
+      email: email || customer.email,  // Use email from orderData if customer registered with phone only
       paymentMethod,
       transactionId,
       products,
       coupon: coupon ? coupon._id : null,
       discountAmount,
       totalPrice: finalTotalPrice,
-      vatRate: 5, // Fixed VAT rate
       deliveryCharge,
       customerIp,
       channel,
@@ -195,18 +187,18 @@ const createOrder = async (orderData) => {
     console.log(smsText);
     await sendSMS(customerPhoneNumber, smsText);
 
-    // Send Email Invoice to customer with PDF attachment (only if email exists)
-    if (customerEmail) {
-      await sendOrderInvoiceEmail(customerEmail, {
+    // Send Email Invoice to customer if email is available
+    if (savedOrder.email) {
+      await sendOrderInvoiceEmail(savedOrder.email, {
         orderId: savedOrder.orderId,
         firstName: customerFirstName,
         lastName: customerLastName,
-        email: customerEmail,
+        email: savedOrder.email,
         deliveryAddress,
         phoneNumber: customerPhoneNumber,
         products: productInfoForSMS,
         totalPrice: finalTotalPrice,
-        discountAmount: discountAmount,
+        discountAmount,
         deliveryCharge,
         vatRate: 5, // Fixed VAT rate
         vat
@@ -217,7 +209,7 @@ const createOrder = async (orderData) => {
       message: "Order created successfully",
       createdOrder: {
         order: savedOrder,
-        customerEmail: customerEmail || null, // Return null if no email
+        customerEmail: savedOrder.email,
         totalOrderValue: finalTotalPrice,
         couponName: couponName || null
       }
