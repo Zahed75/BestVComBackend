@@ -79,7 +79,7 @@ const createOrder = async (orderData) => {
     if (!customer) {
       throw new NotFound('Customer not found');
     }
-
+    
     // Set firstName and lastName from customer if not provided in the request
     const customerFirstName = firstName || customer.firstName;
     const customerLastName = lastName || customer.lastName;
@@ -100,7 +100,12 @@ const createOrder = async (orderData) => {
     }
 
     // Calculate total price based on coupon presence
-    const totalPrice = calculateOrderValue(validProducts, products, couponName);
+    let totalPrice;
+    if (couponName) {
+      totalPrice = calculateOrderValue(validProducts, products, couponName);
+    } else {
+      totalPrice = calculateOrderValue(validProducts, products);
+    }
 
     if (isNaN(totalPrice)) {
       throw new BadRequest('Total price calculation resulted in NaN');
@@ -199,7 +204,7 @@ const createOrder = async (orderData) => {
       phoneNumber: customerPhoneNumber,
       products: productInfoForSMS,
       totalPrice: finalTotalPrice,
-      discountAmount:discountAmount,
+      discountAmount,
       deliveryCharge,
       vatRate: 5, // Fixed VAT rate
       vat
@@ -220,6 +225,7 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
+
 
 
 
