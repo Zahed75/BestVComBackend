@@ -36,8 +36,6 @@ function calculateOrderValue(products, orderProducts, couponId) {
 
 
 
-
-
 // Define calculateDiscount function
 function calculateDiscount(coupon, totalPrice) {
   if (!coupon) {
@@ -68,18 +66,22 @@ const createOrder = async (orderData) => {
       channel, outlet
     } = orderData;
 
+    // Ensure that at least email or phoneNumber is provided
+    if (!email && !phoneNumber) {
+      throw new BadRequest('Either email or phone number must be provided');
+    }
+
     // Find the customer by email or phone number
     const customer = await CustomerModel.findOne({
       $or: [
-        { email },
-        { phoneNumber }
+        { email: email || null },
+        { phoneNumber: phoneNumber || null }
       ]
     }).lean().exec();
 
     if (!customer) {
       throw new NotFound('Customer not found');
     }
-    
 
     // Set firstName and lastName from customer if not provided in the request
     const customerFirstName = firstName || customer.firstName;
@@ -87,6 +89,9 @@ const createOrder = async (orderData) => {
 
     // Use phoneNumber from the request, or fallback to customer's phoneNumber
     const customerPhoneNumber = phoneNumber || customer.phoneNumber;
+
+    // Use email from the request, or fallback to customer's email
+    const customerEmail = email || customer.email;
 
     // Validate products
     if (!Array.isArray(products) || products.length === 0) {
@@ -148,6 +153,7 @@ const createOrder = async (orderData) => {
       orderStatus: 'Received',
       district,
       phoneNumber: customerPhoneNumber,
+      email: customerEmail, // Include email for further use
       paymentMethod,
       transactionId,
       products,
@@ -190,27 +196,29 @@ const createOrder = async (orderData) => {
     console.log(smsText);
     await sendSMS(customerPhoneNumber, smsText);
 
-    // Send Email Invoice to customer with PDF attachment
-    await sendOrderInvoiceEmail(email, {
-      orderId: savedOrder.orderId,
-      firstName: customerFirstName,
-      lastName: customerLastName,
-      email,
-      deliveryAddress,
-      phoneNumber: customerPhoneNumber,
-      products: productInfoForSMS,
-      totalPrice: finalTotalPrice,
-      discountAmount:discountAmount,
-      deliveryCharge,
-      vatRate: 5, // Fixed VAT rate
-      vat
-    });
+    // Send Email Invoice to customer with PDF attachment (only if email exists)
+    if (customerEmail) {
+      await sendOrderInvoiceEmail(customerEmail, {
+        orderId: savedOrder.orderId,
+        firstName: customerFirstName,
+        lastName: customerLastName,
+        email: customerEmail,
+        deliveryAddress,
+        phoneNumber: customerPhoneNumber,
+        products: productInfoForSMS,
+        totalPrice: finalTotalPrice,
+        discountAmount: discountAmount,
+        deliveryCharge,
+        vatRate: 5, // Fixed VAT rate
+        vat
+      });
+    }
 
     return {
       message: "Order created successfully",
       createdOrder: {
         order: savedOrder,
-        customerEmail: customer.email,
+        customerEmail: customerEmail || null, // Return null if no email
         totalOrderValue: finalTotalPrice,
         couponName: couponName || null
       }
@@ -221,6 +229,7 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
+
 
 
 
