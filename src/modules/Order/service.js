@@ -90,7 +90,6 @@ const createOrder = async (orderData) => {
     // Use phoneNumber from the request, or fallback to customer's phoneNumber
     const customerPhoneNumber = phoneNumber || customer.phoneNumber;
 
-    // Use email from the request, or fallback to customer's email
     const customerEmail = email || customer.email;
 
     // Validate products

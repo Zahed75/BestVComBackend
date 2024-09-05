@@ -49,6 +49,10 @@ const OrderSchema = new mongoose.Schema({
   deliveryCharge: {
     type: Number,
   },
+  
+  email:{
+    type: String,
+  },
 
   district: {
     type: String,
