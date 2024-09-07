@@ -52,6 +52,7 @@ function calculateDiscount(coupon, totalPrice) {
 }
 
 
+
 const createOrder = async (orderData) => {
   try {
     // Generate custom orderId and orderTime
@@ -62,7 +63,7 @@ const createOrder = async (orderData) => {
     const {
       email, orderType, deliveryAddress, deliveryCharge = 0,
       district, phoneNumber, paymentMethod, transactionId,
-      products, couponName, vatRate, firstName, lastName, customerIp,
+      products, couponName, firstName, lastName, customerIp,
       channel, outlet
     } = orderData;
 
@@ -75,7 +76,11 @@ const createOrder = async (orderData) => {
     }).lean().exec();
 
     if (!customer) {
-      throw new NotFound('Customer not found');
+      // If no customer found with provided email/phoneNumber, check if an order exists with the phone number
+      const order = await OrderModel.findOne({ phoneNumber }).lean().exec();
+      if (!order) {
+        throw new NotFound('Customer not found');
+      }
     }
 
     // Set firstName and lastName from customer if not provided in the request
@@ -90,6 +95,7 @@ const createOrder = async (orderData) => {
       throw new BadRequest('No products provided');
     }
 
+    // Ensure each product has a valid price
     const productIds = products.map(product => product._id);
     const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
 
@@ -100,8 +106,8 @@ const createOrder = async (orderData) => {
     // Calculate total price based on coupon presence
     const totalPrice = calculateOrderValue(validProducts, products, couponName);
 
-    if (isNaN(totalPrice)) {
-      throw new BadRequest('Total price calculation resulted in NaN');
+    if (!totalPrice || isNaN(totalPrice)) {
+      throw new BadRequest('Invalid total price');
     }
 
     let discountAmount = 0;
@@ -119,15 +125,19 @@ const createOrder = async (orderData) => {
       discountAmount = calculateDiscount(coupon, totalPrice);
     }
 
+    // Ensure delivery charge is a valid number
+    const validDeliveryCharge = isNaN(deliveryCharge) ? 0 : deliveryCharge;
+
     // Calculate VAT (5% fixed rate)
-    const vat = (5 / 100) * totalPrice;
+    const vatRate = 5; // Fixed VAT rate of 5%
+    const vat = (vatRate / 100) * totalPrice;
 
     if (isNaN(vat)) {
       throw new BadRequest('VAT calculation resulted in NaN');
     }
 
     // Calculate final total price including discount and delivery charge
-    const finalTotalPrice = totalPrice - discountAmount + deliveryCharge;
+    const finalTotalPrice = totalPrice - discountAmount + validDeliveryCharge;
 
     if (isNaN(finalTotalPrice)) {
       throw new BadRequest('Final total price calculation resulted in NaN');
@@ -152,7 +162,7 @@ const createOrder = async (orderData) => {
       coupon: coupon ? coupon._id : null,
       discountAmount,
       totalPrice: finalTotalPrice,
-      deliveryCharge,
+      deliveryCharge: validDeliveryCharge,
       customerIp,
       channel,
       outlet
@@ -160,11 +170,6 @@ const createOrder = async (orderData) => {
 
     // Save the order to the database
     const savedOrder = await newOrder.save();
-
-    if (!savedOrder.orderId) {
-      console.error('orderId is missing from savedOrder:', savedOrder);
-      throw new Error('Order creation failed: orderId is missing');
-    }
 
     // Prepare products info for SMS
     const productInfoForSMS = savedOrder.products.map(product => {
@@ -184,7 +189,6 @@ const createOrder = async (orderData) => {
       discountAmount: savedOrder.discountAmount
     });
 
-    console.log(smsText);
     await sendSMS(customerPhoneNumber, smsText);
 
     // Send Email Invoice to customer if email is available
@@ -199,8 +203,8 @@ const createOrder = async (orderData) => {
         products: productInfoForSMS,
         totalPrice: finalTotalPrice,
         discountAmount,
-        deliveryCharge,
-        vatRate: 5, // Fixed VAT rate
+        deliveryCharge: validDeliveryCharge,
+        vatRate,
         vat
       });
     }
@@ -220,13 +224,6 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
-
-
-
-
-
-
-
 
 
 
