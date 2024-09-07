@@ -10,7 +10,7 @@ const {
   BadRequest,
   Unauthorized,
   Forbidden,
-  NoContent,
+  NotFound,
 } = require("../../utility/errors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -42,6 +42,8 @@ const customerCreateService = async (customerInfo) => {
     throw new Error("Failed to create customer: " + error.message);
   }
 };
+
+
 
 
 
