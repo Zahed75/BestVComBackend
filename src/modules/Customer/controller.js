@@ -189,10 +189,23 @@ const customerOTPSigninHandler = async (req, res, next) => {
   try {
     const customer = await customerService.loginCustomer(req.body);
 
-    res.status(200).json({
+    // Modify the response format by mapping `_id` to `userId`
+    const response = {
       message: "OTP sent to your phone number",
-      customer,
-    });
+      customer: {
+        userId: customer._id,  // Map _id to userId
+        firstName: customer.firstName,
+        phoneNumber: customer.phoneNumber,
+        userName: customer.userName,
+        isValid: customer.isValid,
+        refreshToken: customer.refreshToken,
+        wishList: customer.wishList,
+        __v: customer.__v,
+        otp: customer.otp // Return OTP for internal use (you may want to exclude this in production)
+      }
+    };
+
+    res.status(200).json(response);
   } catch (err) {
     next(err);
   }
