@@ -165,7 +165,8 @@ const createOrder = async (orderData) => {
       deliveryCharge: validDeliveryCharge,
       customerIp,
       channel,
-      outlet
+      outlet,
+      billingDetails: billingDetails,
     });
 
     // Save the order to the database
@@ -491,8 +492,8 @@ const updateOutletByOrderId = async (orderId, outlet) => {
 const getOrderHistoryByCustomerId = async (customerId) => {
   try {
     const orders = await OrderModel.find({ customer: customerId })
-      .populate('products._id', 'productName productImage general') // Adjust the path based on your Product schema
-      .exec();
+        .populate('products._id', 'productName productImage general') // Adjust the path based on your Product schema
+        .exec();
 
     if (!orders || orders.length === 0) {
       throw new Error('No orders found for this customer');
@@ -559,10 +560,6 @@ const getOrderHistoryByCustomerId = async (customerId) => {
   } catch (error) {
     throw error;
   }
-};
-
-module.exports = {
-  getOrderHistoryByCustomerId,
 };
 
 
