@@ -8,18 +8,31 @@ const OrderSchema = new mongoose.Schema({
   customer: {
     type: mongoose.Types.ObjectId,
     required: true,
-    ref: 'customer'
+    ref: 'Customer'
   },
+  customerIp: {
+    type: String
+  },
+
   orderType: {
     type: String,
     enum: ["Delivery", "Pickup", "Online"],
     required: true
   },
+
+  firstName: {
+    type: String,
+    max: [232, 'First Name Should be less than 232 characters']
+  },
+  lastName: {
+    type: String,
+    max: [232, 'Last Name Should be less than 232 characters']
+  },
   orderStatus: {
     type: String,
     enum: [
-      'Received', 
-      'Confirmed', 
+      'Received',
+      'Confirmed',
       'Dispatched',
       'Delivered',
       'On-Hold',
@@ -32,9 +45,15 @@ const OrderSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+
   deliveryCharge: {
     type: Number,
   },
+  
+  email:{
+    type: String,
+  },
+
   district: {
     type: String,
     required: true
@@ -45,15 +64,21 @@ const OrderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    required: true
+    enum:[
+      "Cash On Delivery",
+      "Online Payment"
+    ]
   },
   transactionId: String,
+
   products: [{
     _id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
-      required: true
+      required: true,
+    
     },
+
     quantity: {
       type: Number,
       required: true
@@ -66,22 +91,42 @@ const OrderSchema = new mongoose.Schema({
     }
   },
   discountAmount: Number,
+
   totalPrice: {
     type: Number,
     required: true
   },
-  orderNote:{
+
+  orderNote: {
     type: String,
-    default:"Order Note",
-    max:[3000,'Greater Then Reserved']
+    default: "Order Note",
+    max: [3000, 'Order Note Should be less than 3000 characters']
   },
-  customerIp:{
-    type:String,
-    max:[20,'Ip Address'],
-    default:""
+  channel:{
+    type: String,
+    enum:[
+      "web",
+      "mobile"
+    ]
   },
 
-  vatRate: Number
+    outlet:{
+      type: String,
+      default:""
+    },
+
+  // vatRate: Number,
+
+  orderLogs: [{
+    status: {
+      type: Number,
+      required: true
+    },
+    createdAt: {
+      type: Date,
+      required: true
+    }
+  }]
 }, { timestamps: true });
 
 const OrderModel = mongoose.model('Order', OrderSchema);

@@ -3,22 +3,36 @@ const ProductModel = require('../Products/model');
 const CouponModel = require('../Discount/model');
 const { BadRequest, NotFound } = require('../../utility/errors');
 const CustomerModel = require('../Customer/model');
-const { v4: uuidv4 } = require('uuid');
-
 const { generateCustomOrderId, formatOrderTime } = require('../../utility/customOrder');
+const sendSMS = require('../../utility/aamarPayOTP');
+const { getSMSText } = require('../../utility/getSMS');
+const { sendOrderInvoiceEmail } = require('../../utility/email');
 
-function calculateOrderValue(products, orderProducts) {
+
+
+
+
+
+function calculateOrderValue(products, orderProducts, couponId) {
   return orderProducts.reduce((total, orderProduct) => {
     const product = products.find(p => p._id.equals(orderProduct._id));
-    if (product && product.general && typeof product.general.regularPrice === 'number' && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
-      return total + (product.general.regularPrice * orderProduct.quantity);
+    if (product && product.general && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
+      const price = couponId
+        ? product.general.regularPrice // Use regular price if coupon is applied
+        : product.general.salePrice || product.general.regularPrice; // Use sale price if available, else regular price
+
+      if (isNaN(price)) {
+        console.warn('Invalid price for product:', product);
+        return total;
+      }
+
+      return total + (price * orderProduct.quantity);
     } else {
       console.warn('Invalid product or quantity:', orderProduct);
       return total;
     }
   }, 0);
 }
-
 
 
 
@@ -41,136 +55,171 @@ function calculateDiscount(coupon, totalPrice) {
 
 const createOrder = async (orderData) => {
   try {
-    // Generate custom orderId
-    const orderId = generateCustomOrderId();
+    // Generate custom orderId and orderTime
+    const orderId = await generateCustomOrderId();
     const orderTime = formatOrderTime(new Date());
 
-    const { email, orderType, deliveryAddress, 
-      deliveryCharge = 0, district, phoneNumber,
-       paymentMethod, transactionId, products, couponId, 
-       vatRate,
-       firstName,
-       lastName
-       } = orderData;
+    // Destructure orderData
+    const {
+      email, orderType, deliveryAddress, deliveryCharge = 0,
+      district, phoneNumber, paymentMethod, transactionId,
+      products, couponName, firstName, lastName, customerIp,
+      channel, outlet
+    } = orderData;
 
-    // Validate request body
-    if (!email || !orderType || !deliveryAddress || !district || !phoneNumber || !paymentMethod || !products || !firstName || !lastName) {
-      throw new Error('Please provide all required fields');
-    }
+    // Find the customer by phone number or email
+    const customer = await CustomerModel.findOne({
+      $or: [
+        { email: email || null },
+        { phoneNumber }
+      ]
+    }).lean().exec();
 
-    // Find the customer by email
-    const customer = await CustomerModel.findOne({ email });
     if (!customer) {
-      throw new Error('Customer not found');
-    }
-
-
-    const customerFirstName = await CustomerModel.findOne({ firstName });
-    if (!customer) {
-      throw new Error('Customer not found');
-    }
-
-    const customerLastName = await CustomerModel.findOne({ lastName });
-    if (!customer) {
-      throw new Error('Customer not found');
-    }
-
-
-   
-    if (!Array.isArray(products) || products.length === 0) {
-      throw new Error('No products provided');
-    }
-
-    // Check if all products have a quantity field
-    for (const product of products) {
-      if (!product.quantity || typeof product.quantity !== 'number') {
-        throw new Error('Each product must have a valid quantity');
+      // If no customer found with provided email/phoneNumber, check if an order exists with the phone number
+      const order = await OrderModel.findOne({ phoneNumber }).lean().exec();
+      if (!order) {
+        throw new NotFound('Customer not found');
       }
     }
 
+    // Set firstName and lastName from customer if not provided in the request
+    const customerFirstName = firstName || customer.firstName;
+    const customerLastName = lastName || customer.lastName;
+
+    // Use phoneNumber from the request, or fallback to customer's phoneNumber
+    const customerPhoneNumber = phoneNumber || customer.phoneNumber;
+
+    // Validate products
+    if (!Array.isArray(products) || products.length === 0) {
+      throw new BadRequest('No products provided');
+    }
+
+    // Ensure each product has a valid price
     const productIds = products.map(product => product._id);
-    const validProducts = await ProductModel.find({ _id: { $in: productIds } });
+    const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
 
     if (validProducts.length !== products.length) {
-      throw new Error('Invalid product IDs');
+      throw new BadRequest('Invalid product IDs');
     }
 
-    // Log valid products to debug
-    console.log('Valid Products:', validProducts);
+    // Calculate total price based on coupon presence
+    const totalPrice = calculateOrderValue(validProducts, products, couponName);
 
-    // Calculate total price using the quantity of each product
-    let totalPrice = calculateOrderValue(validProducts, products);
+    if (!totalPrice || isNaN(totalPrice)) {
+      throw new BadRequest('Invalid total price');
+    }
 
-    // Log totalPrice to debug
-    console.log('Total Price:', totalPrice);
-
-    // Apply discount if coupon provided
     let discountAmount = 0;
-    if (couponId) {
-      const coupon = await CouponModel.findById(couponId);
-      if (!coupon) {
-        throw new Error('Invalid coupon ID');
+    let coupon = null;
+    if (couponName) {
+      coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
+      if (!coupon) throw new BadRequest('Invalid coupon name');
+
+      // Validate coupon expiration
+      if (new Date() > new Date(coupon.general.couponExpiry)) {
+        throw new BadRequest('Coupon has expired');
       }
+
+      // Calculate discount
       discountAmount = calculateDiscount(coupon, totalPrice);
-      // Log discountAmount to debug
-      console.log('Discount Amount:', discountAmount);
     }
 
-    // Check if discountAmount is valid
-    if (isNaN(discountAmount) || discountAmount < 0 || discountAmount > totalPrice) {
-      throw new Error('Invalid discount amount');
-    }
+    // Ensure delivery charge is a valid number
+    const validDeliveryCharge = isNaN(deliveryCharge) ? 0 : deliveryCharge;
 
-    // Calculate VAT
+    // Calculate VAT (5% fixed rate)
+    const vatRate = 5; // Fixed VAT rate of 5%
     const vat = (vatRate / 100) * totalPrice;
 
-    // Log VAT to debug
-    console.log('VAT:', vat);
-    console.log(discountAmount, deliveryCharge);
+    if (isNaN(vat)) {
+      throw new BadRequest('VAT calculation resulted in NaN');
+    }
 
-    // Calculate final total price including discount and VAT
-    const finalTotalPrice = totalPrice - discountAmount + vat + deliveryCharge;
+    // Calculate final total price including discount and delivery charge
+    const finalTotalPrice = totalPrice - discountAmount + validDeliveryCharge;
 
-    // Log finalTotalPrice to debug
-    console.log('Final Total Price:', finalTotalPrice);
+    if (isNaN(finalTotalPrice)) {
+      throw new BadRequest('Final total price calculation resulted in NaN');
+    }
 
     // Create new order
     const newOrder = new OrderModel({
       orderId,
       customer: customer._id,
-      firstName,
-      lastName,
+      firstName: customerFirstName,
+      lastName: customerLastName,
       orderType,
       orderTime,
       deliveryAddress,
-      orderStatus: 'Received', // Assign the correct status string
+      orderStatus: 'Received',
       district,
-      phoneNumber,
+      phoneNumber: customerPhoneNumber,
+      email: email || customer.email,  // Use email from orderData if customer registered with phone only
       paymentMethod,
       transactionId,
       products,
-      coupon: couponId ? couponId : null,
+      coupon: coupon ? coupon._id : null,
       discountAmount,
-      totalPrice: finalTotalPrice, // Assign final total price
-      vatRate,
-      deliveryCharge,
-      customerFirstName,
-      customerLastName,
+      totalPrice: finalTotalPrice,
+      deliveryCharge: validDeliveryCharge,
+      customerIp,
+      channel,
+      outlet,
+      billingDetails: billingDetails,
     });
 
     // Save the order to the database
     const savedOrder = await newOrder.save();
 
+    // Prepare products info for SMS
+    const productInfoForSMS = savedOrder.products.map(product => {
+      const validProduct = validProducts.find(p => p._id.equals(product._id));
+      return {
+        name: validProduct ? validProduct.productName : 'Unknown',
+        quantity: product.quantity,
+        price: validProduct ? validProduct.general.regularPrice : 0
+      };
+    });
+
+    // Send SMS to customer
+    const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
+      orderId: savedOrder.orderId,
+      products: productInfoForSMS,
+      totalPrice: savedOrder.totalPrice,
+      discountAmount: savedOrder.discountAmount
+    });
+
+    await sendSMS(customerPhoneNumber, smsText);
+
+    // Send Email Invoice to customer if email is available
+    if (savedOrder.email) {
+      await sendOrderInvoiceEmail(savedOrder.email, {
+        orderId: savedOrder.orderId,
+        firstName: customerFirstName,
+        lastName: customerLastName,
+        email: savedOrder.email,
+        deliveryAddress,
+        phoneNumber: customerPhoneNumber,
+        products: productInfoForSMS,
+        totalPrice: finalTotalPrice,
+        discountAmount,
+        deliveryCharge: validDeliveryCharge,
+        vatRate,
+        vat
+      });
+    }
+
     return {
       message: "Order created successfully",
       createdOrder: {
         order: savedOrder,
-        customerEmail: customer.email,
-        customerFirstName:customer.firstName,
-        customerLastName:customer.lastName,
-        totalOrderValue: finalTotalPrice 
+        customerEmail: savedOrder.email,
+        totalOrderValue: finalTotalPrice,
+        couponName: couponName || null
       }
     };
+
   } catch (error) {
     console.error("Error creating order:", error);
     throw error;
@@ -186,18 +235,14 @@ const createOrder = async (orderData) => {
 
 
 
-
-
-
-
 //updateOrderByOrder ID
 
 const updateOrder = async (orderId, orderData) => {
 
-    // Find the order by OrderId and update it with the provided data
-    const updatedOrder = await OrderModel.findByIdAndUpdate(orderId, orderData, { new: true });
-    return updatedOrder;
-  
+  // Find the order by OrderId and update it with the provided data
+  const updatedOrder = await OrderModel.findByIdAndUpdate(orderId, orderData, { new: true });
+  return updatedOrder;
+
 };
 
 // delete OrderBy ID
@@ -223,15 +268,17 @@ const getAllOrders = async () => {
     }).populate({
       path: 'customer',
       model: 'customer',
-      select: 'firstName lastName email phoneNumber district address'
+      select: 'firstName lastName email phoneNumber district address' // Add firstName and lastName here
     });
 
     const formattedOrders = orders.map(order => {
       return {
         ...order.toObject(),
+        customerFirstName: order.customer?.firstName || "", // Handle potential null
+        customerLastName: order.customer?.lastName || "", // Handle potential null
         products: order.products.map(productItem => {
           const productDetails = productItem._id;
-          return {
+          return productDetails ? {
             _id: productDetails._id,
             productName: productDetails.productName,
             productImage: productDetails.productImage,
@@ -240,12 +287,10 @@ const getAllOrders = async () => {
             price: productDetails.general.regularPrice,
             offerPrice: productDetails.general.salePrice,
             totalPrice: productDetails.general.salePrice * productItem.quantity,
-          };
-        }),
+          } : null;
+        }).filter(product => product !== null),
         customer: order.customer ? {
           _id: order.customer._id,
-          firstName: order.customer.firstName,
-          lastName: order.customer.lastName,
           email: order.customer.email,
           phoneNumber: order.customer.phoneNumber,
           district: order.customer.district,
@@ -269,34 +314,54 @@ const getAllOrders = async () => {
 
 
 
-// Update Order Status
-const updateOrderStatus = async (id, updateOrder) => {
-  const { orderStatus } = updateOrder;
 
-  const order = await OrderModel.findByIdAndUpdate({ _id: id }, updateOrder, {
-    new: true,
+
+// Update Order Status
+
+
+const updateOrderStatus = async (id, orderStatus) => {
+  // Find and update the order, and populate the products field
+  const order = await OrderModel.findByIdAndUpdate(
+    id,
+    { orderStatus },
+    { new: true }
+  ).populate({
+    path: 'products._id',
+    select: 'productName general.salePrice', // Select appropriate fields
   });
 
-  if (!order) throw new NotFound("Order not found");
-
-  const isLogged = order.orderLogs.find(
-    (log) => log.status === Number(orderStatus)
-  );
-
-  if (!isLogged) {
-    order.orderLogs.push({
-      status: Number(orderStatus),
-      createdAt: new Date(),
-    });
-
-    await order.save();
-
+  // Check if the order was found
+  if (!order) {
+    throw new Error('Order not found');
   }
-}
+
+  // Prepare SMS details
+  const customerName = `${order.firstName} ${order.lastName}`;
+  const customerPhone = order.phoneNumber;
+  const message = getSMSText(orderStatus, customerName, order);
+
+
+  // Send SMS to customer
+  await sendSMS(customerPhone, message);
+
+  return order;
+};
+
+
+
+ 
+  
+
+
+
+
+
+
 
 
 const getOrderById = async (id) => {
   try {
+
     const orderInfo = await OrderModel.findById(id)
       .populate({
         path: 'products._id',
@@ -317,6 +382,11 @@ const getOrderById = async (id) => {
       ...orderInfo.toObject(),
       products: orderInfo.products.map(productItem => {
         const productDetails = productItem._id;
+        if (!productDetails) {
+          console.warn('Product not found:', productItem);
+          return null;
+          
+        }
         return {
           _id: productDetails._id,
           productName: productDetails.productName,
@@ -372,23 +442,153 @@ const getCustomerHistory = async (customerId) => {
 
 
 
+
+
+
 // update OrderNoteStatus
 
 const updateOrderNoteById = async (orderId, orderNote) => {
 
-    const updatedOrder = await OrderModel.findOneAndUpdate(
-      { _id: orderId },
-      { $set: { orderNote } },
-      { new: true } // To return the updated document
+  const updatedOrder = await OrderModel.findOneAndUpdate(
+    { _id: orderId },
+    { $set: { orderNote } },
+    { new: true } // To return the updated document
+  );
+
+  if (!updatedOrder) {
+    throw new NotFound("Order not found");
+  }
+  
+  return { success: true, order: updatedOrder };
+
+};
+
+
+
+
+
+// chnage outletByOrderId
+const updateOutletByOrderId = async (orderId, outlet) => {
+  try {
+    const updatedOrder = await OrderModel.findByIdAndUpdate(
+      orderId,
+      { outlet },
+      { new: true }
     );
 
     if (!updatedOrder) {
-      throw new NotFound("Order not found");
+      throw new Error('Order not found');
     }
 
-    return { success: true, order: updatedOrder };
-  
+    return updatedOrder;
+  } catch (error) {
+    throw new Error(error.message);
+  }
 };
+
+
+
+
+const getOrderHistoryByCustomerId = async (customerId) => {
+  try {
+    const orders = await OrderModel.find({ customer: customerId })
+        .populate('products._id', 'productName productImage general') // Adjust the path based on your Product schema
+        .exec();
+
+    if (!orders || orders.length === 0) {
+      throw new Error('No orders found for this customer');
+    }
+
+    const customer = await CustomerModel.findById(customerId).exec();
+    if (!customer) {
+      throw new Error('Customer not found');
+    }
+
+    const billingInfo = customer.billingInfo;
+
+    const orderHistory = orders.map(order => {
+      const products = order.products.map(product => {
+        if (product._id) {
+          const regularPrice = product._id.general.regularPrice || 0;
+          const productPrice = product._id.general.salePrice || regularPrice;
+          return {
+            productName: product._id.productName,
+            productImage: product._id.productImage,
+            quantity: product.quantity,
+            productPrice: productPrice * product.quantity,
+            regularPrice: regularPrice * product.quantity,
+          };
+        }
+        return {
+          productName: 'Product not found',
+          productImage: 'image not available',
+          quantity: product.quantity,
+          productPrice: 0,
+          regularPrice: 0,
+        };
+      });
+
+      const total = products.reduce((acc, product) => acc + product.productPrice, 0);
+      const regularTotal = products.reduce((acc, product) => acc + product.regularPrice, 0);
+      const discount = regularTotal - total;
+      const VAT = (total * 0.15); // Assuming VAT is 15%
+      const subtotal = total + VAT;
+
+      return {
+        orderId: order.orderId,
+        date: order.createdAt,
+        status: order.orderStatus,
+        total,
+        subtotal,
+        discount,
+        VAT,
+        products,
+        paymentMethod: order.paymentMethod,
+        billingDetails: billingInfo ? {
+          firstName: billingInfo.firstName,
+          lastName: billingInfo.lastName,
+          fullAddress: billingInfo.fullAddress,
+          phoneNumber: billingInfo.phoneNumber,
+          email: billingInfo.email,
+          zipCode: billingInfo.zipCode,
+          district: billingInfo.district,
+        } : null,
+      };
+    });
+
+    return orderHistory;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 module.exports = {
@@ -399,5 +599,8 @@ module.exports = {
   updateOrderStatus,
   getOrderById,
   getCustomerHistory,
-  updateOrderNoteById
-};
+  updateOrderNoteById,
+  updateOutletByOrderId,
+  getOrderHistoryByCustomerId,
+ 
+}

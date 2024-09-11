@@ -90,9 +90,23 @@ const settingSchema = new mongoose.Schema({
             type: String,
 
         }],
+        subject: {
+            type: String,
+        },
         enable: {
             type: Boolean,
             default: false
+        },
+        emailBody: {
+            type: String,
+            default: ''
+        },
+        emailHeader:{
+            type : String,
+        },
+        emailType:{
+            type: String,
+            enum:['HTML','TEXT']
         },
         emailSenderOptions: {
             FromName: {
@@ -103,13 +117,6 @@ const settingSchema = new mongoose.Schema({
                 type: String,
                 default: ''
             }
-        },
-        emailBody: {
-            type: String,
-            default: ''
-        },
-        emailHeader:{
-            type : String,
         },
         emailTemplate: {
             headerImage: {

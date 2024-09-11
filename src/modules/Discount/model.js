@@ -4,7 +4,7 @@ const CouponSchema = new mongoose.Schema({
     categoryId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'category',
-        // required: true
+        
     },
     general: {
         couponName: {
@@ -30,8 +30,17 @@ const CouponSchema = new mongoose.Schema({
         },
     },
     usageRestriction: {
-        minimumSpend: Number,
-        maximumSpend: Number,
+        
+        minimumSpend: {
+            type: Number,
+            
+        },
+
+        maximumSpend:{
+        type: Number,
+
+        } ,
+
         individualUseOnly: {
             type: Boolean,
             default: false
@@ -42,7 +51,7 @@ const CouponSchema = new mongoose.Schema({
         },
         products: [{
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Product'
+            ref: 'Product',
         }],
         excludeProducts: [{
             type: mongoose.Schema.Types.ObjectId,

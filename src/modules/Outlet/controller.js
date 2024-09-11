@@ -4,10 +4,11 @@ const outletService = require('./service');
 const { asyncHandler } = require('../../utility/common');
 const multerMiddleware = require('../../middlewares/multerMiddleware');
 
+
+
 const outletCreate = asyncHandler(async (req, res) => {
-  const { outletName, outletLocation, outletManager,outletImage,outletManagerEmail,outletManagerPhone} = req.body;
-  // const outletImage = req.files['outletImage'] ? `/uploads/${req.files['outletImage'][0].filename}` : '';
-  const createdOutlet = await outletService.outletCreateService(outletName, outletLocation, outletImage, outletManager,outletManagerEmail,outletManagerPhone);
+  const { outletName, outletLocation, outletManager, outletImage, outletManagerEmail, outletManagerPhone, cityName } = req.body;
+  const createdOutlet = await outletService.outletCreateService(outletName, cityName, outletLocation, outletImage, outletManager, outletManagerEmail, outletManagerPhone);
   res.status(200).json({ createdOutlet });
 });
 
@@ -21,15 +22,18 @@ const updateOutlet = asyncHandler(async (req, res) => {
   res.status(200).json({ outlet });
 });
 
+
 const deleteOutlet = asyncHandler(async (req, res) => {
   await outletService.deleteOutlet(req.params.id);
   res.status(200).json({ message: "Outlet deleted successfully" });
 });
 
+
 const searchOutlet = asyncHandler(async (req, res) => {
   const searchInfo = await outletService.searchOutlet(req.query.outletName.split(","));
   res.status(200).json({ message: "Search successful", searchInfo });
 });
+
 
 const outletEmailSetPassword = asyncHandler(async (req, res) => {
   const { email, token } = req.body;
@@ -40,10 +44,28 @@ const outletEmailSetPassword = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Email sent successfully" });
 });
 
+
+
+
+
 const getOutletManagerById = asyncHandler(async (req, res) => {
   const managerInfo = await outletService.getOutletManagerByIdService(req.params.id);
   res.status(200).json({ message: "Outlet manager found", managerInfo });
 });
+
+
+const getOutletById = asyncHandler(async (req, res) => {
+  const outlet = await outletService.getOutletById(req.params.id);
+  res.status(200).json({ message: "Outlet found", outlet });
+});
+
+
+
+
+
+
+
+router.get("/getOutletById/:id", getOutletById);
 
 router.post("/outletCreate", multerMiddleware.upload.fields([
   { name: 'outletImage', maxCount: 1 }

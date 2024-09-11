@@ -2,7 +2,10 @@ const OutletModel = require("./model");
 const userModel = require("../User/model");
 const { passEmailForOutlet } = require('../../utility/email');
 
-const outletCreateService = async (outletName, outletLocation, outletImage, outletManager, outletManagerEmail, outletManagerPhone) => {
+
+
+
+const outletCreateService = async (outletName, cityName, outletLocation, outletImage, outletManager, outletManagerEmail, outletManagerPhone) => {
   try {
     if (!outletName || !outletLocation || !outletManager || !outletImage) {
       throw new Error('Outlet name, location, and branch admin with image are required');
@@ -18,21 +21,24 @@ const outletCreateService = async (outletName, outletLocation, outletImage, outl
     if (existingOutlet) {
       throw new Error('Outlet with the same name already exists');
     }
-    
+
     const newOutlet = await OutletModel.create({
       outletName,
       outletLocation,
       outletImage,
       outletManager,
       outletManagerEmail,
-      outletManagerPhone
+      outletManagerPhone,
+      cityName
     });
     return newOutlet;
   } catch (error) {
-    console.error('Error in outletCreateService:', error.message); 
+    console.error('Error in outletCreateService:', error.message);
     throw new Error('Outlet creation failed: ' + error.message);
   }
 };
+
+
 
 const getAllUsers = async () => {
   try {
@@ -43,6 +49,10 @@ const getAllUsers = async () => {
     throw new Error('Failed to retrieve users: ' + error.message);
   }
 };
+
+
+
+
 
 const updateOutlet = async (userId, updatedInfo) => {
   try {
@@ -86,12 +96,15 @@ const deleteOutlet = async (id) => {
   }
 };
 
+
+
+
 const searchOutlet = async (outletName) => {
   try {
     if (!outletName) {
       throw new Error('Outlet name is required');
     }
-    const searchedOutlet = await OutletModel.find({ outletName: { $in: outletName }});
+    const searchedOutlet = await OutletModel.find({ outletName: { $in: outletName } });
     if (searchedOutlet.length === 0) {
       throw new Error('No outlets found matching the search criteria');
     }
@@ -101,6 +114,9 @@ const searchOutlet = async (outletName) => {
     throw new Error('Search failed: ' + error.message);
   }
 };
+
+
+
 
 const getOutletManagerByIdService = async (id) => {
   try {
@@ -117,6 +133,25 @@ const getOutletManagerByIdService = async (id) => {
     throw new Error('Failed to retrieve outlet manager: ' + error.message);
   }
 };
+  
+
+const getOutletById = async (id) => {
+  try {
+    if (!id) {
+      throw new Error('Outlet ID is required');
+    }
+    console.log('Fetching outlet with ID:', id);
+    const outlet = await OutletModel.findById(id)
+    .populate('outletManager', 'firstName lastName email phoneNumber');
+    if (!outlet) {
+      throw new Error('Outlet not found');
+    }
+    return outlet;
+  } catch (error) {
+    console.error('Error in getOutletById:', error.message);
+    throw new Error('Failed to retrieve outlet: ' + error.message);
+  }
+}
 
 module.exports = {
   outletCreateService,
@@ -124,5 +159,9 @@ module.exports = {
   updateOutlet,
   deleteOutlet,
   searchOutlet,
-  getOutletManagerByIdService
-};
+  getOutletManagerByIdService,
+  getOutletById
+
+}
+
+

@@ -4,7 +4,8 @@ const { asyncHandler } =require('../../utility/common');
 const customerService = require('./service')
 const authMiddleware= require('../../middlewares/authMiddleware');
 const roleMiddleware= require('../../middlewares/roleMiddleware');
-const { HEAD_OFFICE,BRANCH_ADMIN } = require('../../config/constants');
+const { HEAD_OFFICE,BRANCH_ADMIN, MANAGER,ADMIN, CUSTOMER } = require('../../config/constants');
+
 
 
 const createCustomerhandler = asyncHandler(async (req, res) => {
@@ -26,6 +27,8 @@ const getAllCustomerhandler = asyncHandler(async (req, res) => {
         customer
     });
 });
+
+
 
 
 const forgetCredentialshandler = asyncHandler(async (req, res) => {
@@ -95,17 +98,135 @@ const resetPassHandler = asyncHandler(async(req,res)=>{
 
 
 
-
-const updateCustomerHandler = asyncHandler(async(req,res)=>{
-  const {id} = req.params;
+const updateCustomerHandler = asyncHandler(async (req, res) => {
+  const { id } = req.params;
   const customer = await customerService.updateCustomerService(id, req.body);
   res.status(200).json({
     message: "Customer Updated Successfully!",
     customer
   });
 });
-  
 
+
+
+
+
+const getCustomerInfoByIdHandler = asyncHandler(async(req,res)=>{
+
+    const customerId = req.params.id;
+    const customerInfo = await customerService.getCustomerInfoById(customerId);
+   return res.status(200).json({
+    message:"Customer Information Fetched Successfully",
+    customerInfo
+   })
+  
+})
+
+
+
+
+const registerCustomerByPhoneNumber = asyncHandler(async (req, res) => {
+  const { firstName, phoneNumber } = req.body;
+
+  // Validate input
+  if (!firstName || !phoneNumber) {
+    return res.status(400).json({ message: "First name and phone number are required" });
+  }
+
+  try {
+    const result = await customerService.registerCustomerByPhoneNumber({ firstName, phoneNumber });
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+});
+
+
+
+
+
+
+
+const customerVerifyOTPHandler = async (req, res, next) => {
+  try {
+    const { customer, accessToken, refreshToken } =
+      await customerService.verifyCustomerOTP(req.body);
+
+    res.cookie("currentUserRole", CUSTOMER, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    res.cookie("jwt", refreshToken, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    res.status(200).json({
+      message: "OTP verification successful",
+      user: {
+        userId: customer._id,  // Changing _id to userId
+        firstName: customer.firstName,
+        phoneNumber: customer.phoneNumber,
+        userName: customer.userName,
+        isValid: customer.isValid,
+        wishList: customer.wishList,
+        __v: customer.__v,
+        accessToken,
+        refreshToken,
+      },
+    });
+  } catch (err) {
+    next(err, req, res);
+  }
+};
+
+
+
+
+
+const customerOTPSigninHandler = async (req, res, next) => {
+  try {
+    const customer = await customerService.loginCustomer(req.body);
+
+    // Modify the response format by mapping `_id` to `userId`
+    const response = {
+      message: "OTP sent to your phone number",
+      customer: {
+        userId: customer._id,  // Map _id to userId
+        firstName: customer.firstName,
+        phoneNumber: customer.phoneNumber,
+        userName: customer.userName,
+        isValid: customer.isValid,
+        refreshToken: customer.refreshToken,
+        wishList: customer.wishList,
+        __v: customer.__v,
+        otp: customer.otp // Return OTP for internal use (you may want to exclude this in production)
+      }
+    };
+
+    res.status(200).json(response);
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+
+
+
+const customerResendOTPHandler = async (req, res, next) => {
+  try {
+    const customer = await customerService.resendCustomerOTP(req.body);
+
+    res.status(200).json({
+      message: "OTP resent to your phone number",
+      customer,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 
 
@@ -113,11 +234,20 @@ const updateCustomerHandler = asyncHandler(async(req,res)=>{
 
 
 router.post('/createCustomer',createCustomerhandler);
-router.get('/getCustomer',authMiddleware,roleMiddleware([HEAD_OFFICE,BRANCH_ADMIN]),getAllCustomerhandler);
+router.get('/getCustomer',roleMiddleware([HEAD_OFFICE]),getAllCustomerhandler);
 router.post('/forgetCred',forgetCredentialshandler);
 router.post('/otpverify',otpVerifyHandler);
 router.post('/expiredOtp',expireOTP);
 router.post('/customerSignIn',customerSignInHandler);
 router.put('/resetPassword',resetPassHandler);
 router.patch('/updateCustomer/:id',updateCustomerHandler);
+router.get('/info/:id',getCustomerInfoByIdHandler);
+
+router.post('/registerByPhone',registerCustomerByPhoneNumber);
+
+router.post('/verifyPhoneOtp',customerVerifyOTPHandler)
+
+router.post('/loginPhoneOTP',customerOTPSigninHandler)
+
+router.post('/resendPhoneOTP',customerResendOTPHandler)
 module.exports = router;

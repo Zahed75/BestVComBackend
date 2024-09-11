@@ -25,6 +25,8 @@ const createCategoryHandler = asyncHandler(async (req, res) => {
 });
 
 
+
+
 // getAllSubcatgories
 
 const getAllCategoriesHandler = asyncHandler(async (req, res) => {
@@ -34,6 +36,10 @@ const getAllCategoriesHandler = asyncHandler(async (req, res) => {
         categories: allCategories
     });
 });
+
+
+
+
 
 // Update CategoryBy ID
 
@@ -87,6 +93,49 @@ const getCategoryByIdHandler = asyncHandler(async (req, res) => {
     }
 });
 
+const getProductByCategorySlugHandler = asyncHandler(async (req, res) => {
+    const { slug } = req.params;  // or req.body if you prefer
+    try {
+      const products = await categoryService.getProductByCategorySlug(slug);
+  
+      if (!products || products.length === 0) {
+        return res.status(404).json({
+          message: "No products found for the specified category slug",
+        });
+      }
+  
+      res.status(200).json({
+        message: "Success",
+        products
+      });
+    } catch (err) {
+      res.status(500).json({
+        message: "An error occurred",
+        error: err.message
+      });
+    }
+  });
+  
+
+
+  const getCategoryBySlugHandler = asyncHandler(async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const categoryData = await categoryService.getCategoryBySlug(slug);
+  
+      res.status(200).json({
+        message: categoryData.message,
+        category: categoryData.category,  // This includes category with products and subcategories
+        products: categoryData.products  // All products including those in subcategories
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: error.message || "Failed to fetch category",
+      });
+    }
+  });
+  
+
 
 
 router.post('/addCategory', authMiddleware, roleMiddleware([HEAD_OFFICE]), createCategoryHandler);
@@ -94,7 +143,8 @@ router.get('/getAllCat', getAllCategoriesHandler);
 router.put('/updateCategory/:id', authMiddleware, roleMiddleware([HEAD_OFFICE]), updateCategoryHandler);
 router.delete('/deleteCategory/:id', authMiddleware, roleMiddleware([HEAD_OFFICE]), deleteCategoryHandler);
 router.get('/:parentCategory', getSubcategoriesHandler);
-router.get('/getCategoryById/:id', getCategoryByIdHandler);//auth and role must be added
-
+router.get('/getCategoryById/:id', getCategoryByIdHandler);
+router.get('/getProductByCatSlug/:slug',getProductByCategorySlugHandler);
+router.get('/categories/:slug', getCategoryBySlugHandler);
 
 module.exports = router;

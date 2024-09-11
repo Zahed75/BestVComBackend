@@ -2,16 +2,24 @@ const customerModel = require("../Customer/model");
 const { generateOTP } = require("../../utility/common");
 const { SendEmailUtility } = require("../../utility/email");
 const productModel = require("../Products/model");
-
+const Order = require('../Order/model');
+const toBengaliNum = require("number-to-bengali");
+const sendSMS = require("../../utility/aamarPayOTP");
 
 const {
   BadRequest,
   Unauthorized,
   Forbidden,
-  NoContent,
+  NotFound,
 } = require("../../utility/errors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { CUSTOMER } = require("../../config/constants");
+
+const createToken = require("../../utility/createToken");
+
+
+
 
 const customerCreateService = async (customerInfo) => {
   try {
@@ -38,14 +46,13 @@ const customerCreateService = async (customerInfo) => {
 
 
 
+
+
 const getAllCustomerService = async () => {
-  try {
+ 
     const newCustomer = await customerModel.find();
-    return { customer: newCustomer };
-  } catch (error) {
-    console.error(error);
-    return { customer: null };
-  }
+    return newCustomer;
+  
 };
 
 
@@ -76,6 +83,8 @@ const forgetInfoService = async (email) => {
     throw error;
   }
 };
+
+
 
 // Verify OTP
 const verifyOTP = async (email, otp) => {
@@ -140,6 +149,7 @@ const customerSignInService = async (email, password) => {
   }
 };
 
+
 const resetPass = async (email, newPassword) => {
   try {
     // Hash the new password
@@ -172,9 +182,14 @@ const resetPass = async (email, newPassword) => {
 
 
 
+
 const updateCustomerService = async (customerId, customerData) => {
   try {
-    // Find the customer by customerId and update it with the provided data
+    // Ensure that profilePicture is always a string
+    if (!customerData.profilePicture || typeof customerData.profilePicture !== 'string') {
+      customerData.profilePicture = '';
+    }
+
     const updatedCustomer = await customerModel.findByIdAndUpdate(
       customerId,
       customerData,
@@ -187,6 +202,188 @@ const updateCustomerService = async (customerId, customerData) => {
 };
 
 
+
+
+const getCustomerInfoById = async (id) => {
+  try {
+    const customer = await customerModel.findById(id);
+    return customer;
+  } catch (error) {
+    throw new Error('Error retrieving customer information');
+  }
+};
+
+
+
+
+// services/customerService.js
+
+const registerCustomerByPhoneNumber = async (customer) => {
+  const { phoneNumber, firstName } = customer;
+
+  if (!phoneNumber || !firstName) {
+    throw new BadRequest("First name and phone number are required");
+  }
+
+  const existingCustomer = await customerModel.findOne({ phoneNumber });
+  const otp = generateOTP();
+  const message = `(BestElectronics) সম্মানিত গ্রাহক, চার সংখ্যার ওটিপি: ${toBengaliNum(
+    otp
+  )} ব্যবহার করে আপনার মোবাইল নম্বর ভেরিফিকেশন করুন।`;
+
+  if (existingCustomer) {
+    if (existingCustomer.isValid) {
+      throw new BadRequest("You already have an account with this phone number. Please login");
+    } else {
+      // Update existing customer with new OTP
+      const updatedCustomer = await customerModel.findOneAndUpdate(
+        { phoneNumber },
+        { otp },
+        { new: true }
+      );
+
+      await sendSMS(phoneNumber, message);
+
+      return updatedCustomer;
+    }
+  }
+
+  const newCustomer = new customerModel({
+    phoneNumber,
+    firstName,
+    otp
+  });
+
+  await newCustomer.save();
+
+  await sendSMS(phoneNumber, message);
+
+  return newCustomer;
+};
+
+
+
+
+
+
+
+
+
+// verify customer OTP
+
+const verifyCustomerOTP = async (customer) => {
+  const { phoneNumber, otp } = customer;
+
+  const isCustomer = await customerModel.findOne({ phoneNumber })
+
+  if (!isCustomer)
+    throw new NotFound(
+      "You do not have an account with this phone number. Please register"
+    );
+
+  if (Number(otp) !== isCustomer.otp) throw new BadRequest("Invalid OTP code");
+
+  isCustomer.otp = undefined;
+  isCustomer.isValid = true;
+
+  const accessToken = createToken(
+    {
+      userId: isCustomer._id,
+      role: CUSTOMER,
+    },
+    { expiresIn: "360d" }
+  );
+
+  //customer refresh Token
+  const refreshToken = createToken(
+    {
+      userId: isCustomer._id,
+      role: CUSTOMER,
+    },
+    { expiresIn: "360d" }
+  );
+
+  isCustomer.refreshToken = refreshToken;
+
+  await isCustomer.save();
+
+  isCustomer.refreshToken = undefined;
+
+  return { customer: isCustomer, accessToken, refreshToken };
+};
+
+
+
+
+
+
+
+const loginCustomer = async (customer) => {
+  const { phoneNumber } = customer;
+
+  const customerExist = await customerModel.findOne({ phoneNumber });
+  
+  if (!customerExist) {
+    throw new NotFound(
+      "You do not have an account with this phone number. Please register."
+    );
+  }
+
+  // Generate OTP
+  const otp = generateOTP();
+
+  // Create message in Bengali
+  const message = `সম্মানিত গ্রাহক,\nচার সংখ্যার ওটিপি (OTP): ${toBengaliNum(
+    otp
+  )} ব্যবহার করে আপনার মোবাইল নম্বর ভেরিফিকেশন করুন। -BestElectronics`;
+
+  // Save OTP to customer document
+  customerExist.otp = otp;
+  
+  // Send SMS: Ensure the correct order of arguments
+  await sendSMS(phoneNumber, message);
+
+  // Save the customer with the updated OTP
+  await customerExist.save();
+
+  return customerExist;
+};
+
+
+
+
+
+
+const resendCustomerOTP = async (customer) => {
+  const { phoneNumber } = customer;
+
+  const isCustomer = await customerModel.findOne({ phoneNumber });
+
+  if (!isCustomer) {
+    throw new NotFound(
+      "You do not have an account with this phone number. Please register."
+    );
+  }
+
+  // Generate OTP
+  const otp = generateOTP();
+  
+  // Create message in Bengali
+  const message = `সম্মানিত গ্রাহক,\nচার সংখ্যার ওটিপি (OTP): ${toBengaliNum(
+    otp
+  )} ব্যবহার করে আপনার মোবাইল নম্বর ভেরিফিকেশন করুন। -BestElectronics`;
+  
+  // Save OTP to customer document
+  isCustomer.otp = otp;
+  
+  // Send SMS: Ensure the correct order of arguments
+  await sendSMS(phoneNumber, message);
+
+  // Save the customer with the updated OTP
+  await isCustomer.save();
+
+  return isCustomer;
+};
 
 
 
@@ -203,6 +400,10 @@ module.exports = {
   expireOTP,
   customerSignInService,
   resetPass,
-
+  getCustomerInfoById,
+  registerCustomerByPhoneNumber,
+  verifyCustomerOTP,
+  loginCustomer,
+  resendCustomerOTP
 
 };

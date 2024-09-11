@@ -23,8 +23,8 @@ const { asyncHandler } = require('../../utility/common');
 // Register a new user
 
 const registerHandler = asyncHandler(async (req, res) => {
-  const { email, phoneNumber, password, role } = req.body;
-  const user = await authService.UserRegister(email, phoneNumber, password, role);
+  const { email, phoneNumber, password, role, firstName, lastName, profilePicture } = req.body;
+  const user = await authService.UserRegister(email, phoneNumber, password, role, firstName, lastName, profilePicture);
 
   res.status(200).json({
     message: "Your account has been registered. Please check your email for the OTP.",
@@ -37,21 +37,63 @@ const registerHandler = asyncHandler(async (req, res) => {
 
 
 
+// register UserByPhoneNumber
+
+const registerUserByPhoneHandler = asyncHandler(async(req,res)=>{
+  const { phoneNumber } = req.body;
+
+  const user = await authService.registerUserByPhoneNumber(phoneNumber);
+  res.status(200).json({ 
+    message: 'OTP sent to your phone number', 
+    userId: user._id 
+  });
+
+})
+
+
+
+// verify OTP By Phone Number
+const verifyOTPPhoneHandler = asyncHandler(async(req,res)=>{
+  const { phoneNumber, otp } = req.body;
+  const { user, token } = await authService.verifyOTPByPhone(phoneNumber, otp);
+  res.status(200).json({ 
+    message: 'OTP verified', 
+    token,
+    user
+   });
+ 
+})
+
+
+
+
+
+
+const resendOTPbyPhoneHandler = asyncHandler(async(req,res)=>{
+  const { phoneNumber } = req.body;
+
+  const user = await authService.resendOTPbyPhone(phoneNumber);
+  res.status(200).json({ message: 'New OTP sent to your phone number', userId: user._id });
+
+})
+
+
+
+
+
+
 const addUsersHandler = asyncHandler(async (req, res) => {
-  const { email, firstName, lastName, phoneNumber, role, password, outletId,profilePicture} = req.body;
+  const { email, phoneNumber, password, role, firstName, lastName, userName, profilePicture, outletId } = req.body;
+  const user  = await authService.addUsers({ email, phoneNumber, password, role, firstName, lastName, userName, profilePicture, outletId });
 
-  try {
-    const result = await authService.addUsers({ email, phoneNumber, firstName, lastName, password, role, outletId, profilePicture });
-
-    res.status(201).json({
-      message: "Your account has been registered. Please Login!!",
-      email: result.user.email,
-      user: result.user,
-    });
-  } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
-  }
+  res.status(200).json({
+    message: "Your account has been registered.",
+    email: user.email,
+    user
+  });
 });
+
+
 
 
 
@@ -132,12 +174,70 @@ const userSignInHandler = async (req, res, next) => {
 
 
 
+const getAllManagers = asyncHandler(async (req, res) => {
+ 
+    const users = await authService.getAllManagers();
+    res.status(200).json({
+      message: "Successfully retrieved all users",
+      users
+    });
+ 
+});
+
+
+
+
+
+const getUserByIdHandler = asyncHandler(async (req, res) => {
+ 
+    const userId = req.params.id;
+    const user = await authService.getUserById(userId);
+    res.status(200).json({
+      message: "Successfully retrieved user",
+      user
+    });
+
+});
+
+
+
+const deleteUserByIdHandler = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const result = await authService.deleteUserById(userId);
+  res.status(result.status).json(result);
+});
+
+
+
+
+const updateUserByIdHandler = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const userData = req.body;
+  const result = await authService.updateUserById(userId, userData);
+  res.status(result.status).json(result);
+});
+
+
+
+
+
+
+
+
 router.post('/adminRegister', registerHandler);
 router.post('/otpVerification', otpVerifyHandler);
 router.post('/otpResend', resendOTPHandler);
 router.post('/expireOTP', expireOTP);
 router.post('/signInAdmin', userSignInHandler)
 router.post('/userManage', authMiddleware, roleMiddleware([HEAD_OFFICE]), addUsersHandler);
+router.get('/managers', getAllManagers);
+router.get('/users/:id',getUserByIdHandler);
+router.delete('/users/:userId', deleteUserByIdHandler);
+router.put('/users/:userId', updateUserByIdHandler);
+router.post('/phoneRegister',registerUserByPhoneHandler);
+router.post('/phoneOTP-Verify',verifyOTPPhoneHandler);
+router.post('/resendOTPByPhone',resendOTPbyPhoneHandler);
+
 
 
 module.exports = router;

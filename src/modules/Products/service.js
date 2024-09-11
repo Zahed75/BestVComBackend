@@ -1,21 +1,49 @@
 const Product = require('../Products/model');
-const { BadRequest } = require('../../utility/errors');
 const { generateSlug } = require('../../utility/slug');
-const e = require('express');
 
+const { BadRequest } = require('../../utility/errors');
 
-// addProduct
+const CategoryModel = require('../Category/model');
+
+// addProducts
+
 
 const addProduct = async (productData) => {
-  const { productName } = productData
-  const productSlug = generateSlug(productName);
-  const productCode = await generateProductCode(Product);
-  const newProduct = await Product.create({ ...productData, productCode, productSlug }); // Combine productData and productCode directly
-  if (!newProduct) {
-    throw new BadRequest('Could Not Create Product');
+  try {
+    const { productName } = productData;
+    let productSlug = generateSlug(productName);
+    const existingProduct = await Product.findOne({ productSlug });
+
+    if (existingProduct) {
+      let counter = 2;
+      let newSlug;
+      do {
+        newSlug = `${productSlug}-${counter}`;
+        counter++;
+      } while (await Product.findOne({ productSlug: newSlug }));
+
+      productSlug = newSlug;
+    }
+
+    const productCode = await generateProductCode(Product);
+
+    // Create the product with Mongoose, `createdAt` will be automatically set
+    const newProduct = await Product.create({ ...productData, productCode, productSlug });
+
+    if (!newProduct) {
+      throw new Error('Could not create product');
+    }
+    return newProduct;
+  } catch (error) {
+    console.error("Error adding product:", error);
+    throw new Error('Failed to add product');
   }
-  return newProduct;
-}
+};
+
+
+
+
+
 
 
 //Edit Product
@@ -52,6 +80,9 @@ const deleteProductById = async (id) => {
   }
   return product;
 }
+
+
+
 
 
 // generate Product Codes
@@ -93,13 +124,18 @@ const getProductByIdService = async (id) => {
 
 
 
-
-const getProductByCategoryId = async (categoryId) => {
+const getProductByCategoryId = async (categoryIds) => {
   try {
-    const products = await Product.find({ categoryId: categoryId });
+    // Check if categoryIds is an array, if not, convert it to an array
+    if (!Array.isArray(categoryIds)) {
+      categoryIds = [categoryIds];
+    }
+
+    // Use the $in operator to find products with any of the specified categoryIds
+    const products = await Product.find({ categoryId: { $in: categoryIds } });
 
     if (!products || products.length === 0) {
-      console.log('No products found for categoryId:', categoryId);
+      console.log('No products found for categoryIds:', categoryIds);
       return [];
     }
 
@@ -109,25 +145,185 @@ const getProductByCategoryId = async (categoryId) => {
     console.error('Error in getProductByCategoryId:', error);
     throw new Error('Failed to retrieve products by category');
   }
-}
+};
+
+
+
+
 
 const getProductByproductStatus = async () => {
   try {
     const products = await Product.find({ productStatus: "Published" });
     if (!products || products.length === 0) {
-      console.log('No products found for productStatus:', productStatus);
+      console.log('No products found for productStatus: Published');
       return [];
-    }
-    else {
+    } else {
       console.log('Products found:', products.length);
       return products;
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error in getProductByproductStatus:', error);
     throw new Error('Failed to retrieve products by productStatus');
   }
-}
+};
+
+
+
+
+
+
+const getProductBySlug = async (productSlug) => {
+  try {
+    const product = await Product.findOne({ productSlug });
+    if (!product) {
+      console.log('No products found by slug:', productSlug);
+    }
+    return product;
+  } catch (err) {
+    console.error('Error finding product by slug', err.message);
+    throw new Error('Failed to retrieve product');
+  }
+};
+
+
+
+
+const updateProductSpecification = async (productId, specId, newKeyValue) => {
+  try {
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: productId, 'productSpecification._id': specId },
+      {
+        $set: {
+          'productSpecification.$.key': newKeyValue.key,
+          'productSpecification.$.value': newKeyValue.value,
+        }
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProduct) {
+      throw new Error('Product or specification not found');
+    }
+
+    return updatedProduct;
+  } catch (error) {
+    console.error('Error updating product specification:', error);
+    throw new Error('Failed to update product specification');
+  }
+};
+
+
+
+
+
+const deleteProductSpecification = async (productId, specificationId) => {
+  try {
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: productId },
+      { $pull: { productSpecification: { _id: specificationId } } },
+      { new: true } // Return the updated document
+    );
+
+    if (!updatedProduct) {
+      throw new Error('Product or Specification not found');
+    }
+
+    return updatedProduct;
+  } catch (error) {
+    console.error("Error deleting product specification:", error);
+    throw new Error('Failed to delete product specification');
+  }
+};
+
+
+
+
+const addProductSpecifications = async (productId, newSpecifications) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      { $push: { productSpecification: { $each: newSpecifications } } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProduct) {
+      throw new Error('Product not found');
+    }
+
+    return updatedProduct;
+  } catch (error) {
+    console.error('Error adding product specifications:', error);
+    throw new Error('Failed to add product specifications');
+  }
+};
+
+
+
+
+const changeProductSpecifications = async (productId, newSpecifications) => {
+  try {
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      { productSpecification: newSpecifications }, // Replace the entire specification array
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProduct) {
+      throw new Error('Product not found');
+    }
+
+    return updatedProduct;
+  } catch (error) {
+    console.error('Error updating product specifications:', error);
+    throw new Error('Failed to update product specifications');
+  }
+};
+
+
+
+
+
+
+const getFilteredProducts = async (filterOptions) => {
+  try {
+    let query = {};
+
+    // Handle category filter
+    if (filterOptions.CategoryModel && filterOptions.CategoryModel.length > 0) {
+      const categoryIds = filterOptions.CategoryModel.map(id => mongoose.Types.ObjectId(id));
+      query.categoryId = { $in: categoryIds };
+    }
+
+    // Handle price filter
+    if (filterOptions.minPrice || filterOptions.maxPrice) {
+      query['general.regularPrice'] = {};
+      if (filterOptions.minPrice) {
+        query['general.regularPrice'].$gte = parseFloat(filterOptions.minPrice);
+      }
+      if (filterOptions.maxPrice) {
+        query['general.regularPrice'].$lte = parseFloat(filterOptions.maxPrice);
+      }
+    }
+
+    // Handle brand filter
+    if (filterOptions.brand) {
+      query.productBrand = filterOptions.brand;
+    }
+
+    console.log("Executing MongoDB Query:", query); // Debugging line
+
+    const products = await Product.find(query).exec();
+
+    if (products.length > 0) {
+      return { success: true, data: products };
+    } else {
+      return { success: false, message: "No products found matching the criteria" };
+    }
+  } catch (error) {
+    console.error("Error in getFilteredProducts:", error);
+    return { success: false, message: "Error fetching filtered products" };
+  }
+};
 
 
 
@@ -140,5 +336,12 @@ module.exports = {
   deleteProductById,
   getProductByIdService,
   getProductByCategoryId,
-  getProductByproductStatus
+  getProductByproductStatus,
+  getProductBySlug,
+  updateProductSpecification,
+  deleteProductSpecification,
+  addProductSpecifications,
+  changeProductSpecifications,
+  getFilteredProducts
+
 }
