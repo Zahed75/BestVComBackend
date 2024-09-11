@@ -21,7 +21,7 @@ const wishListRoute = require('../modules/Wishlist/controller');
 const settingsRoute = require('../modules/settings/controller');
 const brandRoute = require('../modules/Brand/controller');
 const gridRoute = require('../modules/ProductsGrid/controller');
-
+const emailRoute = require('../modules/Email/controller');
 
 
 //EndPoint
@@ -39,6 +39,7 @@ router.use('/reports',reportingRoute);
 router.use('/wishlist',wishListRoute);
 router.use('/settings',settingsRoute);
 router.use('/brand',brandRoute);
+router.use('/email',emailRoute);
 
 router.use(authVerifyMiddleware);
 
