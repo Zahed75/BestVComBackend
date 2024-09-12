@@ -16,8 +16,8 @@ function calculateOrderValue(products, orderProducts, couponId) {
     const product = products.find(p => p._id.equals(orderProduct._id));
     if (product && product.general && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
       const price = couponId
-        ? product.general.regularPrice // Use regular price if coupon is applied
-        : product.general.salePrice || product.general.regularPrice; // Use sale price if available, else regular price
+          ? product.general.regularPrice // Use regular price if coupon is applied
+          : product.general.salePrice || product.general.regularPrice; // Use sale price if available, else regular price
 
       if (isNaN(price)) {
         console.warn('Invalid price for product:', product);
@@ -50,55 +50,100 @@ function calculateDiscount(coupon, totalPrice) {
 }
 
 
-
-
 const createOrder = async (orderData) => {
   try {
+    // Generate custom orderId and orderTime
     const orderId = await generateCustomOrderId();
-    const { email, orderType, deliveryAddress, deliveryCharge = 0, district, phoneNumber, paymentMethod, transactionId, products, couponName, firstName, lastName, customerIp, channel, outlet } = orderData;
+    const orderTime = formatOrderTime(new Date());
 
-    // Find customer by email or phone number
-    const customer = await CustomerModel.findOne({ $or: [{ email: email || null }, { phoneNumber }] }).lean().exec();
+    // Destructure orderData
+    const {
+      email, orderType, deliveryAddress, deliveryCharge = 0,
+      district, phoneNumber, paymentMethod, transactionId,
+      products, couponName, vatRate, firstName, lastName, customerIp,
+      channel, outlet
+    } = orderData;
 
-    if (!customer) throw new Error('Customer not found');
+    // Find the customer by phone number or email
+    const customer = await CustomerModel.findOne({
+      $or: [
+        { email: email || null },
+        { phoneNumber }
+      ]
+    }).lean().exec();
 
+    if (!customer) {
+      throw new NotFound('Customer not found');
+    }
+
+    // Set firstName and lastName from customer if not provided in the request
     const customerFirstName = firstName || customer.firstName;
     const customerLastName = lastName || customer.lastName;
+
+    // Use phoneNumber from the request, or fallback to customer's phoneNumber
     const customerPhoneNumber = phoneNumber || customer.phoneNumber;
 
-    if (!Array.isArray(products) || products.length === 0) throw new Error('No products provided');
+    // Validate products
+    if (!Array.isArray(products) || products.length === 0) {
+      throw new BadRequest('No products provided');
+    }
 
     const productIds = products.map(product => product._id);
     const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
 
-    if (validProducts.length !== products.length) throw new Error('Invalid product IDs');
+    if (validProducts.length !== products.length) {
+      throw new BadRequest('Invalid product IDs');
+    }
 
+    // Calculate total price based on coupon presence
     const totalPrice = calculateOrderValue(validProducts, products, couponName);
-    if (!totalPrice || isNaN(totalPrice)) throw new Error('Invalid total price');
+
+    if (isNaN(totalPrice)) {
+      throw new BadRequest('Total price calculation resulted in NaN');
+    }
 
     let discountAmount = 0;
     let coupon = null;
     if (couponName) {
       coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
-      if (!coupon) throw new Error('Invalid coupon name');
+      if (!coupon) throw new BadRequest('Invalid coupon name');
+
+      // Validate coupon expiration
+      if (new Date() > new Date(coupon.general.couponExpiry)) {
+        throw new BadRequest('Coupon has expired');
+      }
+
+      // Calculate discount
       discountAmount = calculateDiscount(coupon, totalPrice);
     }
 
-    const vatRate = 5;
-    const vat = (vatRate / 100) * totalPrice;
+    // Calculate VAT (5% fixed rate)
+    const vat = (5 / 100) * totalPrice;
 
-    const finalTotalPrice = totalPrice - discountAmount + (isNaN(deliveryCharge) ? 0 : deliveryCharge);
+    if (isNaN(vat)) {
+      throw new BadRequest('VAT calculation resulted in NaN');
+    }
 
+    // Calculate final total price including discount and delivery charge
+    const finalTotalPrice = totalPrice - discountAmount + deliveryCharge;
+
+    if (isNaN(finalTotalPrice)) {
+      throw new BadRequest('Final total price calculation resulted in NaN');
+    }
+
+    // Create new order
     const newOrder = new OrderModel({
       orderId,
       customer: customer._id,
       firstName: customerFirstName,
       lastName: customerLastName,
       orderType,
+      orderTime,
       deliveryAddress,
+      orderStatus: 'Received',
       district,
       phoneNumber: customerPhoneNumber,
-      email: email || customer.email,
+      email: email || customer.email,  // Use email from orderData if customer registered with phone only
       paymentMethod,
       transactionId,
       products,
@@ -111,37 +156,66 @@ const createOrder = async (orderData) => {
       outlet
     });
 
+    // Save the order to the database
     const savedOrder = await newOrder.save();
 
-    const productInfoForSMS = savedOrder.products.map(product => {
-      const validProduct = validProducts.find(p => p._id.equals(product._id));
-      return { name: validProduct ? validProduct.productName : 'Unknown', quantity: product.quantity, price: validProduct ? validProduct.general.regularPrice : 0 };
-    });
-
-    const smsText = `Order ${savedOrder.orderId} confirmed. Products: ${productInfoForSMS.map(p => `${p.quantity} x ${p.name} - ${p.price}`).join(', ')}`;
-
-    // Validate and send SMS
-    if (typeof customerPhoneNumber === 'string' && customerPhoneNumber.trim()) {
-      await sendSMS(customerPhoneNumber, smsText);
+    if (!savedOrder.orderId) {
+      console.error('orderId is missing from savedOrder:', savedOrder);
+      throw new Error('Order creation failed: orderId is missing');
     }
 
-    // Validate and send email
-    if (typeof savedOrder.email === 'string' && savedOrder.email.trim()) {
+    // Prepare products info for SMS
+    const productInfoForSMS = savedOrder.products.map(product => {
+      const validProduct = validProducts.find(p => p._id.equals(product._id));
+      return {
+        name: validProduct ? validProduct.productName : 'Unknown',
+        quantity: product.quantity,
+        price: validProduct ? validProduct.general.regularPrice : 0
+      };
+    });
+
+    // Send SMS to customer
+    const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
+      orderId: savedOrder.orderId,
+      products: productInfoForSMS,
+      totalPrice: savedOrder.totalPrice,
+      discountAmount: savedOrder.discountAmount
+    });
+
+    console.log(smsText);
+    await sendSMS(customerPhoneNumber, smsText);
+
+    // Send Email Invoice to customer if email is available
+    if (savedOrder.email) {
       await sendOrderInvoiceEmail(savedOrder.email, {
         orderId: savedOrder.orderId,
-        customerName: `${savedOrder.firstName} ${savedOrder.lastName}`,
+        firstName: customerFirstName,
+        lastName: customerLastName,
+        email: savedOrder.email,
+        deliveryAddress,
+        phoneNumber: customerPhoneNumber,
         products: productInfoForSMS,
-        totalPrice: savedOrder.totalPrice,
-        deliveryCharge: savedOrder.deliveryCharge,
-        discountAmount: savedOrder.discountAmount,
-        paymentMethod: savedOrder.paymentMethod
+        totalPrice: finalTotalPrice,
+        discountAmount,
+        deliveryCharge,
+        vatRate: 5, // Fixed VAT rate
+        vat
       });
     }
 
-    return savedOrder;
+    return {
+      message: "Order created successfully",
+      createdOrder: {
+        order: savedOrder,
+        customerEmail: savedOrder.email,
+        totalOrderValue: finalTotalPrice,
+        couponName: couponName || null
+      }
+    };
+
   } catch (error) {
-    console.error('Error creating order:', error.message);
-    throw new Error(error.message);
+    console.error("Error creating order:", error);
+    throw error;
   }
 };
 

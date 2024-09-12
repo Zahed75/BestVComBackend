@@ -87,87 +87,76 @@ handlebars.registerHelper('multiply', function(a, b) {
 
 
 
+
 // send Email Invoice
 exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
   try {
-    // Validate the EmailTo field (ensure it's a string)
-    if (!EmailTo || typeof EmailTo !== 'string') {
-      throw new Error('Recipient email (EmailTo) is not defined or invalid.');
-    }
+    // Log the order data for debugging
+    console.log('Order Data:', orderData);
 
-    // Fetch the email template for new orders
-    const template = await EmailTemplateModel.findOne({ status: 'new_order', enable: true }).exec();
+    // Read the HTML template file
+    const templatePath = path.join(__dirname, '../templates/order.html');
+    const htmlTemplate = await readHTMLFile(templatePath);
 
-    // Fallback content if template is not found
-    const defaultSubject = 'Order Confirmation';
-    const defaultEmailHeading = 'Thank you for your order!';
-    const defaultBaseColor = '#FF6600';
-    const defaultBodyBackgroundColor = '#F5F5F5';
-    const defaultBodyTextColor = '#333';
-    const defaultFromName = 'Your Company';
-    const defaultFromAddress = 'no-reply@yourcompany.com';
+    // Compile Handlebars template
+    const template = handlebars.compile(htmlTemplate);
 
-    if (!template) {
-      console.warn('Email template for new orders not found. Using default template.');
-    }
-
-    // Use template data if available, else fallback to default values
-    const { subject, emailHeading, headerImage, baseColor, bodyBackgroundColor, bodyTextColor, footerText, fromName, fromAddress } = template || {
-      subject: defaultSubject,
-      emailHeading: defaultEmailHeading,
-      baseColor: defaultBaseColor,
-      bodyBackgroundColor: defaultBodyBackgroundColor,
-      bodyTextColor: defaultBodyTextColor,
-      fromName: defaultFromName,
-      fromAddress: defaultFromAddress
+    // Prepare data to inject into the template
+    const replacements = {
+      orderId: orderData.orderId,
+      orderDate: new Date().toLocaleDateString(),  // Format the order date as needed
+      customerName: `${orderData.firstName} ${orderData.lastName}`,  // Combine first and last name
+      customerEmail: orderData.email,
+      deliveryAddress: orderData.deliveryAddress,
+      phoneNumber: orderData.phoneNumber,
+      products: orderData.products.map(product => ({
+        name: product.name,
+        quantity: product.quantity,
+        price: product.price,
+        total: product.quantity * product.price
+      })),
+      subtotal: (orderData.totalPrice - orderData.discountAmount - orderData.deliveryCharge).toFixed(2),  // Corrected subtotal calculation
+      discount: orderData.discountAmount.toFixed(2),
+      deliveryCharge: orderData.deliveryCharge.toFixed(2),
+      vatRate: orderData.vatRate.toFixed(2),
+      vat: orderData.vat.toFixed(2),  // VAT should be directly provided
+      total: orderData.totalPrice.toFixed(2),
     };
 
-    // Prepare the email content
-    const htmlContent = `
-      <html>
-      <body style="font-family: Arial, sans-serif; color: ${bodyTextColor}; background-color: ${bodyBackgroundColor};">
-        <div style="max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; background-color: #fff;">
-          <h1 style="color: ${baseColor};">${emailHeading}</h1>
-          <p>Thank you for your purchase!</p>
-          ${headerImage ? `<img src="${headerImage}" alt="Header Image" style="max-width: 100%; height: auto;"/>` : ''}
+    // Log the replacements data for debugging
+    console.log('Replacements Data:', replacements);
 
-          <h2 style="color: ${baseColor};">Order Information</h2>
-          <p><strong>Order ID:</strong> ${orderData.orderId}</p>
-          <p><strong>Total Cost:</strong> ${orderData.totalPrice.toFixed(2)} BDT</p>
-          <p><strong>Delivery Address:</strong> ${orderData.deliveryAddress}</p>
-          
-          <h3 style="color: ${baseColor};">Items:</h3>
-          <ul>
-            ${orderData.products.map(product => `
-              <li>
-                <strong>${product.name || 'Unknown Product'}</strong> - 
-                ${product.quantity} x ${product.price ? product.price.toFixed(2) + ' BDT' : 'N/A'}
-              </li>
-            `).join('')}
-          </ul>
+    // Replace placeholders with actual data in the template
+    const emailHtml = template(replacements);
 
-          <p><strong>Discount Amount:</strong> ${orderData.discountAmount.toFixed(2)} BDT</p>
-          <p><strong>Delivery Charge:</strong> ${orderData.deliveryCharge.toFixed(2)} BDT</p>
-          <p><strong>VAT (${orderData.vatRate}%):</strong> ${orderData.vat.toFixed(2)} BDT</p>
+    // Setup email options
+    const mailOptions = {
+      from: 'BestElectronics-Technologies <tech.syscomatic@gmail.com>',
+      to: EmailTo,
+      subject: 'Your Order Invoice',
+      html: emailHtml,
+      attachments: [
+        {
+          filename: 'bel.png',
+          path: path.join(__dirname, '../public/images/bel.png'),
+          cid: 'logo'  // Content-ID for embedding
+        },
+        ...(pdfPath ? [{ filename: path.basename(pdfPath), path: pdfPath }] : [])
+      ]
+    };
 
-          ${footerText ? `<p style="color: #888;">${footerText}</p>` : ''}
-        </div>
-      </body>
-      </html>
-    `;
+    // Send email using Nodemailer
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Order invoice email sent:', info);
 
-    // Send the email to the customer
-    await sendEmail({
-      to: EmailTo,  // Single customer email
-      from: `${fromName} <${fromAddress}>`,
-      subject: subject,
-      html: htmlContent
-    });
+    // Remove the PDF file after sending the email
+    if (pdfPath) {
+      fs.unlinkSync(pdfPath);
+    }
 
-    console.log('Order invoice email sent successfully to:', EmailTo);
-
+    return info;
   } catch (error) {
-    console.error("Error sending order invoice email:", error.message || error);
+    console.error('Error sending order invoice email:', error);
     throw error;
   }
 };
