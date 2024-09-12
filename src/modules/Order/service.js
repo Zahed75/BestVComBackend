@@ -7,10 +7,9 @@ const { generateCustomOrderId, formatOrderTime } = require('../../utility/custom
 const sendSMS = require('../../utility/aamarPayOTP');
 const { getSMSText } = require('../../utility/getSMS');
 const { sendOrderInvoiceEmail } = require('../../utility/email');
-
-
-
-
+const EmailTemplateModel = require('../Email/model')
+const UserModel = require('../User/model');
+const emailService = require('../Email/service');
 
 
 function calculateOrderValue(products, orderProducts, couponId) {
@@ -53,178 +52,102 @@ function calculateDiscount(coupon, totalPrice) {
 
 
 
+
 const createOrder = async (orderData) => {
   try {
-    // Generate custom orderId and orderTime
     const orderId = await generateCustomOrderId();
-    const orderTime = formatOrderTime(new Date());
+    const { email, orderType, deliveryAddress, deliveryCharge = 0, district, phoneNumber, paymentMethod, transactionId, products, couponName, firstName, lastName, customerIp, channel, outlet } = orderData;
 
-    // Destructure orderData
-    const {
-      email, orderType, deliveryAddress, deliveryCharge = 0,
-      district, phoneNumber, paymentMethod, transactionId,
-      products, couponName, firstName, lastName, customerIp,
-      channel, outlet
-    } = orderData;
+    // Find customer by email or phone number
+    const customer = await CustomerModel.findOne({ $or: [{ email: email || null }, { phoneNumber }] }).lean().exec();
 
-    // Find the customer by phone number or email
-    const customer = await CustomerModel.findOne({
-      $or: [
-        { email: email || null },
-        { phoneNumber }
-      ]
-    }).lean().exec();
+    if (!customer) throw new Error('Customer not found');
 
-    if (!customer) {
-      // If no customer found with provided email/phoneNumber, check if an order exists with the phone number
-      const order = await OrderModel.findOne({ phoneNumber }).lean().exec();
-      if (!order) {
-        throw new NotFound('Customer not found');
-      }
-    }
-
-    // Set firstName and lastName from customer if not provided in the request
     const customerFirstName = firstName || customer.firstName;
     const customerLastName = lastName || customer.lastName;
-
-    // Use phoneNumber from the request, or fallback to customer's phoneNumber
     const customerPhoneNumber = phoneNumber || customer.phoneNumber;
 
-    // Validate products
-    if (!Array.isArray(products) || products.length === 0) {
-      throw new BadRequest('No products provided');
-    }
+    if (!Array.isArray(products) || products.length === 0) throw new Error('No products provided');
 
-    // Ensure each product has a valid price
     const productIds = products.map(product => product._id);
     const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
 
-    if (validProducts.length !== products.length) {
-      throw new BadRequest('Invalid product IDs');
-    }
+    if (validProducts.length !== products.length) throw new Error('Invalid product IDs');
 
-    // Calculate total price based on coupon presence
     const totalPrice = calculateOrderValue(validProducts, products, couponName);
-
-    if (!totalPrice || isNaN(totalPrice)) {
-      throw new BadRequest('Invalid total price');
-    }
+    if (!totalPrice || isNaN(totalPrice)) throw new Error('Invalid total price');
 
     let discountAmount = 0;
     let coupon = null;
     if (couponName) {
       coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
-      if (!coupon) throw new BadRequest('Invalid coupon name');
-
-      // Validate coupon expiration
-      if (new Date() > new Date(coupon.general.couponExpiry)) {
-        throw new BadRequest('Coupon has expired');
-      }
-
-      // Calculate discount
+      if (!coupon) throw new Error('Invalid coupon name');
       discountAmount = calculateDiscount(coupon, totalPrice);
     }
 
-    // Ensure delivery charge is a valid number
-    const validDeliveryCharge = isNaN(deliveryCharge) ? 0 : deliveryCharge;
-
-    // Calculate VAT (5% fixed rate)
-    const vatRate = 5; // Fixed VAT rate of 5%
+    const vatRate = 5;
     const vat = (vatRate / 100) * totalPrice;
 
-    if (isNaN(vat)) {
-      throw new BadRequest('VAT calculation resulted in NaN');
-    }
+    const finalTotalPrice = totalPrice - discountAmount + (isNaN(deliveryCharge) ? 0 : deliveryCharge);
 
-    // Calculate final total price including discount and delivery charge
-    const finalTotalPrice = totalPrice - discountAmount + validDeliveryCharge;
-
-    if (isNaN(finalTotalPrice)) {
-      throw new BadRequest('Final total price calculation resulted in NaN');
-    }
-
-    // Create new order
     const newOrder = new OrderModel({
       orderId,
       customer: customer._id,
       firstName: customerFirstName,
       lastName: customerLastName,
       orderType,
-      orderTime,
       deliveryAddress,
-      orderStatus: 'Received',
       district,
       phoneNumber: customerPhoneNumber,
-      email: email || customer.email,  // Use email from orderData if customer registered with phone only
+      email: email || customer.email,
       paymentMethod,
       transactionId,
       products,
       coupon: coupon ? coupon._id : null,
       discountAmount,
       totalPrice: finalTotalPrice,
-      deliveryCharge: validDeliveryCharge,
+      deliveryCharge,
       customerIp,
       channel,
-      outlet,
-      billingDetails: billingDetails,
+      outlet
     });
 
-    // Save the order to the database
     const savedOrder = await newOrder.save();
 
-    // Prepare products info for SMS
     const productInfoForSMS = savedOrder.products.map(product => {
       const validProduct = validProducts.find(p => p._id.equals(product._id));
-      return {
-        name: validProduct ? validProduct.productName : 'Unknown',
-        quantity: product.quantity,
-        price: validProduct ? validProduct.general.regularPrice : 0
-      };
+      return { name: validProduct ? validProduct.productName : 'Unknown', quantity: product.quantity, price: validProduct ? validProduct.general.regularPrice : 0 };
     });
 
-    // Send SMS to customer
-    const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
-      orderId: savedOrder.orderId,
-      products: productInfoForSMS,
-      totalPrice: savedOrder.totalPrice,
-      discountAmount: savedOrder.discountAmount
-    });
+    const smsText = `Order ${savedOrder.orderId} confirmed. Products: ${productInfoForSMS.map(p => `${p.quantity} x ${p.name} - ${p.price}`).join(', ')}`;
 
-    await sendSMS(customerPhoneNumber, smsText);
+    // Validate and send SMS
+    if (typeof customerPhoneNumber === 'string' && customerPhoneNumber.trim()) {
+      await sendSMS(customerPhoneNumber, smsText);
+    }
 
-    // Send Email Invoice to customer if email is available
-    if (savedOrder.email) {
+    // Validate and send email
+    if (typeof savedOrder.email === 'string' && savedOrder.email.trim()) {
       await sendOrderInvoiceEmail(savedOrder.email, {
         orderId: savedOrder.orderId,
-        firstName: customerFirstName,
-        lastName: customerLastName,
-        email: savedOrder.email,
-        deliveryAddress,
-        phoneNumber: customerPhoneNumber,
+        customerName: `${savedOrder.firstName} ${savedOrder.lastName}`,
         products: productInfoForSMS,
-        totalPrice: finalTotalPrice,
-        discountAmount,
-        deliveryCharge: validDeliveryCharge,
-        vatRate,
-        vat
+        totalPrice: savedOrder.totalPrice,
+        deliveryCharge: savedOrder.deliveryCharge,
+        discountAmount: savedOrder.discountAmount,
+        paymentMethod: savedOrder.paymentMethod
       });
     }
 
-    return {
-      message: "Order created successfully",
-      createdOrder: {
-        order: savedOrder,
-        customerEmail: savedOrder.email,
-        totalOrderValue: finalTotalPrice,
-        couponName: couponName || null
-      }
-    };
-
+    return savedOrder;
   } catch (error) {
-    console.error("Error creating order:", error);
-    throw error;
+    console.error('Error creating order:', error.message);
+    throw new Error(error.message);
   }
 };
+
+
+
 
 
 

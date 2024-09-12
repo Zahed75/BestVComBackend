@@ -6,42 +6,23 @@ const { BRANCH_ADMIN,HEAD_OFFICE,MANAGER,CUSTOMER, ADMIN} = require('../../confi
 
 
 
-const createNewOrderEmailController = async (req, res) => {
+const createAndSendOrderEmailsController = async (req, res) => {
     try {
-        // Extract the necessary data from the request body
-        const emailData = {
-            enable: req.body.enable,
-            recipients: req.body.recipients, // Array of recipient user IDs
-            subject: req.body.subject,
-            emailHeading: req.body.emailHeading,
-            additionalContent: req.body.additionalContent,
-            emailType: req.body.emailType,
-            headerImage: req.body.headerImage,
-            footerText: req.body.footerText,
-            baseColor: req.body.baseColor,
-            backgroundColor: req.body.backgroundColor,
-            bodyBackgroundColor: req.body.bodyBackgroundColor,
-            bodyTextColor: req.body.bodyTextColor,
-            fromName: req.body.fromName,
-            fromAddress: req.body.fromAddress,
-        };
+        const orderData = req.body.orderData; // Extract the order data from the request body
 
-        // Call the service to create the new order email setup
-        const createdTemplate = await emailService.createNewOrderEmail(emailData);
+        // Call the service to send order emails
+        const result = await emailService.createAndSendOrderEmails(orderData);
 
         // Return success response
-        return res.status(201).json({
-            success: true,
-            message: 'New order email setup created successfully',
-            data: createdTemplate,
-        });
+        return res.status(200).json(result);
     } catch (error) {
         return res.status(500).json({
             success: false,
-            message: `Error creating new order email setup: ${error.message}`,
+            message: `Error sending order emails: ${error.message}`,
         });
     }
 };
+
 
 
 const updateNewOrderEmailController = async (req, res) => {
@@ -49,13 +30,13 @@ const updateNewOrderEmailController = async (req, res) => {
         const templateId = req.params.id; // Get the template ID from URL params
         const updateData = req.body; // Get the updated data from the request body
 
-        // Call the service to update the new order email setup
+        // Call the service to update the new order email setup and send the updated email
         const updatedTemplate = await emailService.updateNewOrderEmail(templateId, updateData);
 
         // Return success response
         return res.status(200).json({
             success: true,
-            message: 'New order email setup updated successfully',
+            message: 'New order email setup updated and email sent successfully',
             data: updatedTemplate,
         });
     } catch (error) {
@@ -67,8 +48,7 @@ const updateNewOrderEmailController = async (req, res) => {
 };
 
 
-
-router.post('/email-setup/new-order', createNewOrderEmailController);
+router.post('/email-setup/new-order', createAndSendOrderEmailsController);
 
 router.put('/email-setup/new-order/:id', updateNewOrderEmailController);
 
