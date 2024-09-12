@@ -49,7 +49,7 @@ const OrderSchema = new mongoose.Schema({
   deliveryCharge: {
     type: Number,
   },
-  
+
   email:{
     type: String,
   },
@@ -76,7 +76,7 @@ const OrderSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
       required: true,
-    
+
     },
 
     quantity: {
@@ -132,3 +132,4 @@ const OrderSchema = new mongoose.Schema({
 const OrderModel = mongoose.model('Order', OrderSchema);
 
 module.exports = OrderModel;
+

@@ -5,10 +5,6 @@ const path = require('path');
 
 const createToken = require('./createToken');
 
-const EmailTemplateModel = require('../../src/modules/Email/model'); // Adjust the path as necessary
-const emailService = require('../modules/Email/service');
-const {sendEmail} = require("../modules/Email/service");
-
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587,
@@ -31,7 +27,7 @@ exports.SendEmailUtility = async (EmailTo, EmailText, EmailSubject) => {
       console.log({ info });
       if (err) {
         resolve(err);
-      }  
+      }
       resolve(info);
     });
   });
@@ -80,10 +76,6 @@ const readHTMLFile = (pathToFile) => {
 handlebars.registerHelper('multiply', function(a, b) {
   return a * b;
 });
-
-
-
-
 
 
 
