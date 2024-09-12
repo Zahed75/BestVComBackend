@@ -122,6 +122,13 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
       fromAddress: defaultFromAddress
     };
 
+    // Ensure that all numeric fields in orderData are properly handled
+    const totalPrice = orderData.totalPrice || 0;
+    const discountAmount = orderData.discountAmount || 0;
+    const deliveryCharge = orderData.deliveryCharge || 0;
+    const vat = orderData.vat || 0;
+    const vatRate = orderData.vatRate || 0;
+
     // Prepare the email content
     const htmlContent = `
       <html>
@@ -133,7 +140,7 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
 
           <h2 style="color: ${baseColor};">Order Information</h2>
           <p><strong>Order ID:</strong> ${orderData.orderId}</p>
-          <p><strong>Total Cost:</strong> ${orderData.totalPrice.toFixed(2)} BDT</p>
+          <p><strong>Total Cost:</strong> ${totalPrice.toFixed(2)} BDT</p>
           <p><strong>Delivery Address:</strong> ${orderData.deliveryAddress}</p>
           
           <h3 style="color: ${baseColor};">Items:</h3>
@@ -146,9 +153,9 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
             `).join('')}
           </ul>
 
-          <p><strong>Discount Amount:</strong> ${orderData.discountAmount.toFixed(2)} BDT</p>
-          <p><strong>Delivery Charge:</strong> ${orderData.deliveryCharge.toFixed(2)} BDT</p>
-          <p><strong>VAT (${orderData.vatRate}%):</strong> ${orderData.vat.toFixed(2)} BDT</p>
+          <p><strong>Discount Amount:</strong> ${discountAmount.toFixed(2)} BDT</p>
+          <p><strong>Delivery Charge:</strong> ${deliveryCharge.toFixed(2)} BDT</p>
+          <p><strong>VAT (${vatRate}%):</strong> ${vat.toFixed(2)} BDT</p>
 
           ${footerText ? `<p style="color: #888;">${footerText}</p>` : ''}
         </div>
