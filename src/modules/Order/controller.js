@@ -13,8 +13,6 @@ const { BRANCH_ADMIN,HEAD_OFFICE,MANAGER,CUSTOMER, ADMIN} = require('../../confi
 
 
 // API endpoint for creating orders
-
-
 const createOrder = asyncHandler(async (req, res) => {
   const orderData = req.body;
   const order = await orderService.createOrder(orderData);

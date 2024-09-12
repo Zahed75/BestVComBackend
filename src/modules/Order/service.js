@@ -70,12 +70,9 @@ const createOrder = async (orderData) => {
       ]
     }).lean().exec();
 
+    // If no customer found, throw an error
     if (!customer) {
-      // If no customer found with provided email/phoneNumber, check if an order exists with the phone number
-      const order = await OrderModel.findOne({ phoneNumber }).lean().exec();
-      if (!order) {
-        throw new NotFound('Customer not found');
-      }
+      throw new NotFound('Customer not found');
     }
 
     // Set firstName and lastName from customer if not provided in the request
@@ -141,7 +138,7 @@ const createOrder = async (orderData) => {
     // Create new order
     const newOrder = new OrderModel({
       orderId,
-      customer: customer._id,
+      customer: customer._id, // Fixing the potential issue where customer might be null
       firstName: customerFirstName,
       lastName: customerLastName,
       orderType,
@@ -219,7 +216,6 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
-
 
 
 
