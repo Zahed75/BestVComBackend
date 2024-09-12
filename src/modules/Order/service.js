@@ -7,9 +7,8 @@ const { generateCustomOrderId, formatOrderTime } = require('../../utility/custom
 const sendSMS = require('../../utility/aamarPayOTP');
 const { getSMSText } = require('../../utility/getSMS');
 const { sendOrderInvoiceEmail } = require('../../utility/email');
-const EmailTemplateModel = require('../Email/model')
 const UserModel = require('../User/model');
-const emailService = require('../Email/service');
+
 
 
 function calculateOrderValue(products, orderProducts, couponId) {
