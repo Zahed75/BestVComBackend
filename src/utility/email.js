@@ -90,7 +90,7 @@ handlebars.registerHelper('multiply', function(a, b) {
 // send Email Invoice
 exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
   try {
-    // Validate the EmailTo field
+    // Validate the EmailTo field (ensure it's a string)
     if (!EmailTo || typeof EmailTo !== 'string') {
       throw new Error('Recipient email (EmailTo) is not defined or invalid.');
     }
@@ -98,11 +98,29 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
     // Fetch the email template for new orders
     const template = await EmailTemplateModel.findOne({ status: 'new_order', enable: true }).exec();
 
+    // Fallback content if template is not found
+    const defaultSubject = 'Order Confirmation';
+    const defaultEmailHeading = 'Thank you for your order!';
+    const defaultBaseColor = '#FF6600';
+    const defaultBodyBackgroundColor = '#F5F5F5';
+    const defaultBodyTextColor = '#333';
+    const defaultFromName = 'Your Company';
+    const defaultFromAddress = 'no-reply@yourcompany.com';
+
     if (!template) {
-      throw new Error('Email template for new orders not found');
+      console.warn('Email template for new orders not found. Using default template.');
     }
 
-    const { subject, emailHeading, headerImage, baseColor, bodyBackgroundColor, bodyTextColor, footerText, fromName, fromAddress } = template;
+    // Use template data if available, else fallback to default values
+    const { subject, emailHeading, headerImage, baseColor, bodyBackgroundColor, bodyTextColor, footerText, fromName, fromAddress } = template || {
+      subject: defaultSubject,
+      emailHeading: defaultEmailHeading,
+      baseColor: defaultBaseColor,
+      bodyBackgroundColor: defaultBodyBackgroundColor,
+      bodyTextColor: defaultBodyTextColor,
+      fromName: defaultFromName,
+      fromAddress: defaultFromAddress
+    };
 
     // Prepare the email content
     const htmlContent = `
@@ -138,15 +156,15 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
       </html>
     `;
 
-    // Ensure that EmailTo is properly passed to sendEmail
+    // Send the email to the customer
     await sendEmail({
-      to: EmailTo,  // Use the validated EmailTo field
+      to: EmailTo,  // Single customer email
       from: `${fromName} <${fromAddress}>`,
       subject: subject,
       html: htmlContent
     });
 
-    console.log('Order invoice email sent successfully.');
+    console.log('Order invoice email sent successfully to:', EmailTo);
 
   } catch (error) {
     console.error("Error sending order invoice email:", error.message || error);
