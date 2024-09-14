@@ -134,9 +134,30 @@ const getProductByCategorySlugHandler = asyncHandler(async (req, res) => {
       });
     }
   });
-  
 
 
+
+
+
+const getAllCategoriesName = async (req, res) => {
+    try {
+        // Call the service to get all category details
+        const categories = await categoryService.getAllCategoriesName();
+        res.status(200).json({
+            message: 'Categories retrieved successfully',
+            categories
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: 'Error retrieving categories',
+            error: error.message
+        });
+    }
+};
+
+
+
+router.get('/categories-name',getAllCategoriesName);
 
 router.post('/addCategory', authMiddleware, roleMiddleware([HEAD_OFFICE]), createCategoryHandler);
 router.get('/getAllCat', getAllCategoriesHandler);
