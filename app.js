@@ -137,11 +137,12 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Request Rate Limit using express-rate-limit
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3000, // Limit each IP to 3000 requests per `window`
-});
-app.use(limiter); // Apply express-rate-limit globally
+// const limiter = rateLimit({
+//   windowMs: 15 * 60 * 1000, // 15 minutes
+//   max: 3000, // Limit each IP to 3000 requests per `window`
+// });
+// app.use(limiter); // Apply express-rate-limit globally
+
 
 // Set up a Bottleneck instance to throttle specific requests
 const bottleneckLimiter = new Bottleneck({
