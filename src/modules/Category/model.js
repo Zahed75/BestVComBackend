@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const CategorySchema = new mongoose.Schema({
-    
+
     userId:{
         type:mongoose.Schema.Types.ObjectId,
         required:true,
@@ -14,7 +14,7 @@ const CategorySchema = new mongoose.Schema({
     parentCategory:{
         type : String,
         max:[30,"category name must be under 30"],
-        
+
     },
     categoryDescription:{
         type:String,
@@ -22,12 +22,12 @@ const CategorySchema = new mongoose.Schema({
     },
     fetaureImage:{
         type:[String]
-        
+
 
     },
     slug:{
         type:String,
-        unique:true 
+        unique:true
     },
     title:{
         type:String,
