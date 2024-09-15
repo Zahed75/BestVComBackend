@@ -41,6 +41,7 @@ const getAllCategoriesHandler = asyncHandler(async (req, res) => {
 
 
 
+
 // Update CategoryBy ID
 
 const updateCategoryHandler = asyncHandler(async (req, res) => {
@@ -157,8 +158,9 @@ const getAllCategoriesName = async (req, res) => {
 
 
 
-router.get('/categories-name',getAllCategoriesName);
 
+
+router.get('/categories-name',getAllCategoriesName);
 router.post('/addCategory', authMiddleware, roleMiddleware([HEAD_OFFICE]), createCategoryHandler);
 router.get('/getAllCat', getAllCategoriesHandler);
 router.put('/updateCategory/:id', authMiddleware, roleMiddleware([HEAD_OFFICE]), updateCategoryHandler);
