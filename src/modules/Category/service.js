@@ -204,13 +204,13 @@ const getCategoryBySlug = async (slug) => {
     }).exec();
 
    
-    const mainCategoryProducts = await ProductModel.find({
+    const mainCategoryProducts = await productModel.find({
       categoryId: mainCategory._id
     }).exec();
 
  
     const subCategoryProductsPromises = subCategories.map(subCategory =>
-      ProductModel.find({ categoryId: subCategory._id }).exec()
+      productModel.find({ categoryId: subCategory._id }).exec()
     );
     const subCategoryProducts = await Promise.all(subCategoryProductsPromises);
 
