@@ -13,7 +13,6 @@ const GridSchema = new mongoose.Schema({
   productColumn: {
     type: Number,
   },
-
   filterCategories: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'category'
@@ -24,7 +23,10 @@ const GridSchema = new mongoose.Schema({
   }],
   ordersBy: {
     type: Number,
-    index: true 
+    index: true
+  },
+  link: {  // New field added
+    type: String,
   }
 });
 

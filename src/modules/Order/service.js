@@ -15,9 +15,8 @@ function calculateOrderValue(products, orderProducts, couponId) {
     const product = products.find(p => p._id.equals(orderProduct._id));
     if (product && product.general && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
       const price = couponId
-          ? product.general.regularPrice // Use regular price if coupon is applied
-          : product.general.salePrice || product.general.regularPrice; // Use sale price if available, else regular price
-
+        ? product.general.regularPrice // Use regular price if coupon is applied
+        : product.general.salePrice || product.general.regularPrice; // Use sale price if available, else regular price
       if (isNaN(price)) {
         console.warn('Invalid price for product:', product);
         return total;
@@ -33,15 +32,23 @@ function calculateOrderValue(products, orderProducts, couponId) {
 
 
 // Define calculateDiscount function
-function calculateDiscount(coupon, totalPrice) {
+function calculateDiscount(coupon, totalPrice, products, validProducts) {
   if (!coupon) {
-    return 0; // No coupon, so no discount
-  }
+    let disc = 0;
 
-  if (coupon.discountType === 'percentage') {
-    return (coupon.couponAmount / 100) * totalPrice;
-  } else if (coupon.discountType === 'fixed') {
-    return coupon.couponAmount;
+    validProducts.forEach(item => {
+      const { regularPrice, salePrice = 0 } = item.general;
+      const productQuantity = products.find(pr => pr._id === item._id.toString()).quantity;
+      disc += (regularPrice - salePrice) * productQuantity;
+    });
+
+    console.log("Total Discount:", disc);
+    return disc; // No coupon, so no discount
+  }
+  if (coupon?.general?.discountType === 'percentage') {
+    return (coupon.general.couponAmount / 100) * totalPrice;
+  } else if (coupon.general?.discountType === 'fixed') {
+    return coupon.general.couponAmount;
   } else {
     return 0; // Unknown discount type, so no discount
   }
@@ -112,9 +119,10 @@ const createOrder = async (orderData) => {
       if (new Date() > new Date(coupon.general.couponExpiry)) {
         throw new BadRequest('Coupon has expired');
       }
-
       // Calculate discount
       discountAmount = calculateDiscount(coupon, totalPrice);
+    } else {
+      discountAmount = calculateDiscount(null, 0, products, validProducts)
     }
 
     // Ensure delivery charge is a valid number
@@ -130,7 +138,6 @@ const createOrder = async (orderData) => {
 
     // Calculate final total price including discount and delivery charge
     const finalTotalPrice = totalPrice - discountAmount + validDeliveryCharge;
-
     if (isNaN(finalTotalPrice)) {
       throw new BadRequest('Final total price calculation resulted in NaN');
     }
@@ -169,7 +176,8 @@ const createOrder = async (orderData) => {
       return {
         name: validProduct ? validProduct.productName : 'Unknown',
         quantity: product.quantity,
-        price: validProduct ? validProduct.general.regularPrice : 0
+        price: validProduct ? validProduct.general.regularPrice : 0,
+        salePrice: validProduct ? validProduct.general.salePrice : 0
       };
     });
 
@@ -188,16 +196,18 @@ const createOrder = async (orderData) => {
       await sendOrderInvoiceEmail(savedOrder.email, {
         orderId: savedOrder.orderId,
         firstName: customerFirstName,
+        paymentMethod,
         lastName: customerLastName,
         email: savedOrder.email,
         deliveryAddress,
         phoneNumber: customerPhoneNumber,
         products: productInfoForSMS,
-        totalPrice: finalTotalPrice,
+        totalPrice: totalPrice - discountAmount,
         discountAmount,
         deliveryCharge: validDeliveryCharge,
         vatRate,
-        vat
+        vat,
+        coupon
       });
     }
 
@@ -340,8 +350,8 @@ const updateOrderStatus = async (id, orderStatus) => {
 
 
 
- 
-  
+
+
 
 
 
@@ -376,7 +386,7 @@ const getOrderById = async (id) => {
         if (!productDetails) {
           console.warn('Product not found:', productItem);
           return null;
-          
+
         }
         return {
           _id: productDetails._id,
@@ -449,7 +459,7 @@ const updateOrderNoteById = async (orderId, orderNote) => {
   if (!updatedOrder) {
     throw new NotFound("Order not found");
   }
-  
+
   return { success: true, order: updatedOrder };
 
 };
@@ -483,8 +493,8 @@ const updateOutletByOrderId = async (orderId, outlet) => {
 const getOrderHistoryByCustomerId = async (customerId) => {
   try {
     const orders = await OrderModel.find({ customer: customerId })
-        .populate('products._id', 'productName productImage general') // Adjust the path based on your Product schema
-        .exec();
+      .populate('products._id', 'productName productImage general') // Adjust the path based on your Product schema
+      .exec();
 
     if (!orders || orders.length === 0) {
       throw new Error('No orders found for this customer');
@@ -593,5 +603,5 @@ module.exports = {
   updateOrderNoteById,
   updateOutletByOrderId,
   getOrderHistoryByCustomerId,
- 
+
 }

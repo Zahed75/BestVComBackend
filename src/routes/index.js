@@ -22,9 +22,10 @@ const settingsRoute = require('../modules/settings/controller');
 const brandRoute = require('../modules/Brand/controller');
 const gridRoute = require('../modules/ProductsGrid/controller');
 const emailRoute = require('../modules/Email/controller');
-
+const menuRoute = require('../modules/Menu/controller');
 
 //EndPoint
+router.use('/menu',menuRoute);
 router.use('/grid',gridRoute);
 router.use('/auth', authRoute);
 router.use('/user',userRoute);

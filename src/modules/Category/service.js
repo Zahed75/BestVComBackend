@@ -3,7 +3,7 @@ const { BadRequest } = require("../../utility/errors");
 const productModel = require("../Products/model");
 const { generateSlug } = require('../../utility/slug');
 const categoryModel = require("../Category/model");
-const ProductModel = require("../Products/model");
+
 
 
 

@@ -219,7 +219,7 @@ const getDiscountByCoupon = async (couponName, products, userId) => {
   });
 
   let discount = 0;
-  if (coupon.general.discountType === 'percentage') {
+  if (coupon.general?.discountType === 'percentage') {
     discount = (coupon.general.couponAmount / 100) * totalPrice;
   } else {
     discount = coupon.general.couponAmount;
