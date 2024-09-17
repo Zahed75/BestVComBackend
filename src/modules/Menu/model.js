@@ -16,11 +16,25 @@ const SubMenuSchema = new mongoose.Schema({
     },
     subMenu: [
         {
-            type: mongoose.Schema.Types.Mixed, // Mixed to allow further nesting
+            type: new mongoose.Schema({
+                name: { type: String, required: true },
+                link: { type: String, required: true },
+                icon: { type: String, required: false },
+                subMenu: [
+                    {
+                        type: new mongoose.Schema({
+                            name: { type: String, required: true },
+                            link: { type: String, required: true },
+                            icon: { type: String, required: false },
+                        }, { _id: true }), // Generates _id for the third-level sub-menu items
+                    }
+                ],
+            }, { _id: true }) // Generates _id for the second-level sub-menu items
         }
     ]
-});
+}, { _id: true }); // Generates _id for the first-level sub-menu items
 
+// Define the main menu schema
 const MenuSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -34,10 +48,9 @@ const MenuSchema = new mongoose.Schema({
         type: String,
         required: false, // Icon is optional
     },
-    subMenu: [SubMenuSchema] // Embedding the SubMenuSchema for nested submenus
-});
+    subMenu: [SubMenuSchema] // Nested submenu schema
+}, { timestamps: true });
 
-// Create the Menu model
 const Menu = mongoose.model('Menu', MenuSchema);
 
 module.exports = Menu;
