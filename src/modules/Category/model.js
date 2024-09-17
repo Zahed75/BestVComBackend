@@ -22,8 +22,6 @@ const CategorySchema = new mongoose.Schema({
     },
     fetaureImage:{
         type:[String]
-
-
     },
     slug:{
         type:String,
