@@ -1,12 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { asyncHandler } = require('../../utility/common');
-
-
 const brandService = require('./service');
-
-
-
+const Brand = require('../Brand/model')
+const Product = require('../Products/model');
 
 
 
@@ -35,14 +32,43 @@ const getAllBrandsHandler = asyncHandler(async (req, res) => {
 
 
 
-const getBrandByIdHandler = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const brand = await brandService.getBrandById(id);
-    res.status(200).json({
-        message: "Get Brand by ID Successfully!",
-        brand
-    });
-})
+
+const getBrandByIdHandler = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).json({ message: 'Brand ID is required' });
+        }
+
+        // Fetch brand from database
+        const brand = await Brand.findById(id);
+
+        if (!brand) {
+            return res.status(404).json({ message: 'Brand not found' });
+        }
+
+        // Fetch all products associated with this brand
+        const products = await Product.find({ productBrand: id });
+
+        // Prepare the response
+        return res.status(200).json({
+            success: true,
+            data: {
+                brand,
+                products,
+                productCount: products.length  // Count the number of products
+            }
+        });
+    } catch (error) {
+        console.error('Error in getBrandById controller:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal Server Error',
+        });
+    }
+};
+
 
 
 

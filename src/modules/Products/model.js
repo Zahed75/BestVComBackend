@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const ProductSchema = new Schema({
+
   categoryId: [{
     type: mongoose.Types.ObjectId,
     required: true,
@@ -13,7 +14,6 @@ const ProductSchema = new Schema({
     ref: 'Brand',
     required: true
   },
-    
   productName: {
     type: String,
     maxlength: 300,

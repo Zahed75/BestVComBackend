@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const brandSchema = new mongoose.Schema(
+
     {
         name: {
             type: String,
@@ -18,7 +19,6 @@ const brandSchema = new mongoose.Schema(
             required: true,
             trim: true
         },
-
     },
     {
         timestamps: true
