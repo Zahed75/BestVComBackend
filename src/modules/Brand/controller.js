@@ -19,41 +19,19 @@ const createBrandHandler = asyncHandler(async (req, res) => {
 
 
 
-const getAllBrandsHandler = async (req, res) => {
-    try {
-        // Find all brands
-        const brands = await Brand.find({});
 
-        // Use Promise.all to count products for each brand asynchronously
-        const brandData = await Promise.all(
-            brands.map(async (brand) => {
-                // Count the products associated with each brand
-                const productCount = await Product.countDocuments({
-                    productBrand: brand._id,
-                    productStatus: 'Published'  // Count only published products
-                });
 
-                // Return the brand along with the product count
-                return {
-                    brand,
-                    productCount
-                };
-            })
-        );
-
-        // Return the result
-        return res.status(200).json({
-            success: true,
-            data: brandData
-        });
-    } catch (error) {
-        console.error('Error in getAllBrandsWithProductCount controller:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Internal Server Error',
+const getAllBrandsHandler = asyncHandler(async (req, res) => {
+        const allBrands = await brandService.getAllBrands();
+        res.status(200).json({
+            message: "GetAll Brands Fetched Successfully!",
+            brands: allBrands
         });
     }
-};
+)
+
+
+
 
 
 

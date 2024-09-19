@@ -25,25 +25,28 @@ const addBrand = async (brandData) => {
 
 
 const getAllBrands = async () => {
-    const brands = await Brand.find({});
+    try {
+        const brands = await brandModel.aggregate([
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "name",
+                    foreignField: "productBrand",
+                    as: "products"
+                }
+            },
+            {
+                $addFields: {
+                    productCount: { $size: "$products" }
+                }
+            }
+        ]);
 
-    const brandData = await Promise.all(
-        brands.map(async (brand) => {
-            const productCount = await Product.countDocuments({
-                productBrand: brand._id,
-                productStatus: 'Published'
-            });
-
-            return {
-                brand,
-                productCount
-            };
-        })
-    );
-
-    return brandData;
+        return brands;
+    } catch (error) {
+        throw new Error(error.message);
+    }
 };
-
 
 
 
