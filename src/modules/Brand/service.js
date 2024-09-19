@@ -48,42 +48,41 @@ const getAllBrands = async () => {
   }
 };
 
-  
+
 
 
 
 const getBrandById = async (brandId) => {
-  try {
-      const brand = await brandModel.aggregate([
-          {
-              $match: { _id: new mongoose.Types.ObjectId(brandId) }
-          },
-          {
-              $lookup: {
-                  from: "products",
-                  localField: "name",
-                  foreignField: "productBrand",
-                  as: "products"
-              }
-          },
-          {
-              $addFields: {
-                  productCount: { $size: "$products" }
-              }
-          }
-      ]);
+    try {
+        const brand = await brandModel.aggregate([
+            {
+                $match: { _id: new mongoose.Types.ObjectId(brandId) }
+            },
+            {
+                $lookup: {
+                    from: "products",
+                    localField: "name",
+                    foreignField: "productBrand",
+                    as: "products"
+                }
+            },
+            {
+                $addFields: {
+                    productCount: { $size: "$products" }
+                }
+            }
+        ]);
 
-      if (brand && brand.length > 0) {
-          return { success: true, data: brand[0] };
-      } else {
-          return { success: false, error: 'Brand not found' };
-      }
-  } catch (error) {
-      console.error('Error in getting brand by id:', error.message);
-      return { success: false, error: 'Failed to retrieve brand' };
-  }
+        if (brand && brand.length > 0) {
+            return { success: true, data: brand[0] };
+        } else {
+            return { success: false, error: 'Brand not found' };
+        }
+    } catch (error) {
+        console.error('Error in getting brand by id:', error.message);
+        return { success: false, error: 'Failed to retrieve brand' };
+    }
 }
-
 
 
 

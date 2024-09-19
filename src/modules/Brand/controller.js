@@ -34,7 +34,8 @@ const getAllBrandsHandler = asyncHandler(async (req, res) => {
 
 
 
-const getBrandByIdHandler = asyncHandler(async (req, res) => { 
+
+const getBrandByIdHandler = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const brand = await brandService.getBrandById(id);
     res.status(200).json({
@@ -42,7 +43,6 @@ const getBrandByIdHandler = asyncHandler(async (req, res) => {
         brand
     });
 })
-
 
 
 
