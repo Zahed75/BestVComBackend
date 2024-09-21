@@ -25,7 +25,7 @@ const GridSchema = new mongoose.Schema({
     type: Number,
     index: true
   },
-  link: {  // New field added
+  url: {  // New field added
     type: String,
   }
 });
