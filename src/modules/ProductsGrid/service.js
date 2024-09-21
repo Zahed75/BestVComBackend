@@ -23,32 +23,73 @@ const getNextOrdersBy = async () => {
 
 
 
+// const createProductGrid = async (data) => {
+//   try {
+//     // Get the next available ordersBy value
+//     const nextOrdersBy = await getNextOrdersBy();
+//
+//     // Add the ordersBy value to the grid data
+//     data.ordersBy = nextOrdersBy;
+//
+//     const newGrid = new GridModel(data);
+//     await newGrid.save();
+//
+//     const populatedGrid = await GridModel.findById(newGrid._id)
+//       .populate({
+//         path: 'filterCategories',
+//         select: 'categoryName'
+//       })
+//       .populate({
+//         path: 'selectProducts',
+//         select: 'productName'
+//       });
+//
+//     return populatedGrid;
+//   } catch (error) {
+//     throw new Error('Failed to create product grid: ' + error.message);
+//   }
+// }
+
+
 const createProductGrid = async (data) => {
-  try {
-    // Get the next available ordersBy value
-    const nextOrdersBy = await getNextOrdersBy();
+    try {
+        // Get the next available ordersBy value
+        const nextOrdersBy = await getNextOrdersBy();
 
-    // Add the ordersBy value to the grid data
-    data.ordersBy = nextOrdersBy;
+        // Add the ordersBy value to the grid data
+        data.ordersBy = nextOrdersBy;
 
-    const newGrid = new GridModel(data);
-    await newGrid.save();
+        // Ensure the `url` field is included when creating the new grid
+        const newGrid = new GridModel({
+            gridName: data.gridName,
+            gridDescription: data.gridDescription,
+            productRow: data.productRow,
+            productColumn: data.productColumn,
+            filterCategories: data.filterCategories,
+            selectProducts: data.selectProducts,
+            ordersBy: data.ordersBy,
+            url: data.url // Including the new URL field here
+        });
 
-    const populatedGrid = await GridModel.findById(newGrid._id)
-      .populate({
-        path: 'filterCategories',
-        select: 'categoryName'
-      })
-      .populate({
-        path: 'selectProducts',
-        select: 'productName'
-      });
+        // Save the new grid
+        await newGrid.save();
 
-    return populatedGrid;
-  } catch (error) {
-    throw new Error('Failed to create product grid: ' + error.message);
-  }
-}
+        // Populate related data after saving
+        const populatedGrid = await GridModel.findById(newGrid._id)
+            .populate({
+                path: 'filterCategories',
+                select: 'categoryName'
+            })
+            .populate({
+                path: 'selectProducts',
+                select: 'productName'
+            });
+
+        return populatedGrid;
+    } catch (error) {
+        throw new Error('Failed to create product grid: ' + error.message);
+    }
+};
 
 
 
