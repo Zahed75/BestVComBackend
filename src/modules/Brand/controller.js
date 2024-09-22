@@ -21,14 +21,20 @@ const createBrandHandler = asyncHandler(async (req, res) => {
 
 
 
-const getAllBrandsHandler = asyncHandler(async (req, res) => {
-        const allBrands = await brandService.getAllBrands();
+const getAllBrandsHandler= async (req, res) => {
+    try {
+        const brands = await brandService.getAllBrands();
         res.status(200).json({
-            message: "GetAll Brands Fetched Successfully!",
-            brands: allBrands
+            success: true,
+            data: brands
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
         });
     }
-)
+};
 
 
 
