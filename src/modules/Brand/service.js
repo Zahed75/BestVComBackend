@@ -24,29 +24,34 @@ const addBrand = async (brandData) => {
 
 
 
+
 const getAllBrands = async () => {
     try {
-        const brands = await brandModel.aggregate([
-            {
-                $lookup: {
-                    from: "products",
-                    localField: "name",
-                    foreignField: "productBrand",
-                    as: "products"
-                }
-            },
-            {
-                $addFields: {
-                    productCount: { $size: "$products" }
-                }
-            }
-        ]);
+        // Fetch all brands
+        const brands = await brandModel.find();
 
-        return brands;
+        // Loop through each brand and get products related to that brand
+        const brandWithProducts = await Promise.all(brands.map(async (brand) => {
+            const products = await Product.find({ productBrand: brand._id }); // Find products by brand ID
+
+            return {
+                ...brand._doc,
+                productCount: products.length, // Count the number of products
+                products: products // Include product details
+            };
+        }));
+
+        return brandWithProducts;
     } catch (error) {
         throw new Error(error.message);
     }
 };
+
+
+
+
+
+
 
 
 
