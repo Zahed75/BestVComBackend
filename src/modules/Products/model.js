@@ -24,10 +24,7 @@ const ProductSchema = new Schema({
     required: true,
     unique: true
   },
-  productBrand: {
-    type: String,
-    required: true
-  },
+
   productCode: {
     type: String
   },
