@@ -58,6 +58,9 @@ const verifyOTPHandler = asyncHandler(async (req, res) => {
   });
 });
 
+
+
+
 // resetPassword With Verification
 const resetPassHandler = asyncHandler(async (req, res) => {
   const { email, newPassword } = req.body;
@@ -68,18 +71,52 @@ const resetPassHandler = asyncHandler(async (req, res) => {
 
 
 
+
+
 const updateUserDetailsHandler = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  // const { error } = changeUserDetailsValidate(req.body);
-  // if (error) {
-  //   return res.status(400).json({ error: error.details[0].message });
-  // }
+
   const user = await userService.updateUserService(id, req.body);
   res.status(200).json({
     message: "User updated successfully",
     user,
   })
 });
+
+
+
+
+
+const changePassword = async (req, res) => {
+  try {
+    // Extract user ID from req.body
+    const { userId, currentPassword, newPassword, confirmPassword } = req.body;
+
+    // Validate input
+    if (!userId || !currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({ success: false, message: 'User ID, current password, new password, and confirm password are required' });
+    }
+
+    // Call the service to change the password
+    const result = await userService.changePassword(userId, currentPassword, newPassword, confirmPassword);
+
+    // Return the result
+    return res.status(200).json(result);
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Server error',
+    });
+  }
+};
+
+
+
+
+
+
+
 
 // router.post('/resetPass',resetPasswordHandler);
 router.get(
@@ -91,9 +128,13 @@ router.get(
 router.post("/resetUser", userResetHandler);
 router.post("/checkOTP", verifyOTPHandler);
 router.post("/setPassword", resetPassHandler);
+
 router.put(
   "/updateUserDetails/:id",
   updateUserDetailsHandler
-);//not tested yet
+);
+
+router.patch('/change-password',changePassword);
+
 
 module.exports = router;

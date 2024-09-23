@@ -328,6 +328,45 @@ const getFilteredProducts = async (filterOptions) => {
 
 
 
+// Allowed category slugs hardcoded
+const allowedSlugs = [
+  'tv-entertainment',
+  'fan',
+  'home-appliances',
+  'kitchen-appliances',
+  'small-appliances',
+  'electrical-power'
+];
+
+const getAllProductsByAllowedCategorySlugsService = async () => {
+  try {
+    // Find categories based on the allowed slugs
+    const categories = await CategoryModel.find({ slug: { $in: allowedSlugs } });
+
+    if (!categories.length) {
+      throw new Error('No categories found for the allowed slugs.');
+    }
+
+    // Extract category IDs from the found categories
+    const categoryIds = categories.map(category => category._id);
+
+    // Find all products that belong to the found category IDs
+    const products = await ProductModel.find({ categoryId: { $in: categoryIds } }).populate('categoryId', 'categoryName slug');
+
+    return products;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+
+
+
+
+
+
+
 
 module.exports = {
   addProduct,
@@ -342,6 +381,7 @@ module.exports = {
   deleteProductSpecification,
   addProductSpecifications,
   changeProductSpecifications,
-  getFilteredProducts
+  getFilteredProducts,
+  getAllProductsByAllowedCategorySlugsService
 
 }

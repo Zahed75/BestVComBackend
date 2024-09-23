@@ -244,8 +244,35 @@ const updateProductSpecificationHandler = asyncHandler(async (req, res) => {
 
 
 
+const getAllProductsByAllowedCategorySlugsController = asyncHandler(async (req, res) => {
+    try {
+        const products = await productService.getAllProductsByAllowedCategorySlugsService();
 
-  
+        if (products.length === 0) {
+            return res.status(200).json({
+                message: `No products found for the allowed category slugs.`,
+                products: []
+            });
+        }
+
+        res.status(200).json({
+            message: `Products retrieved successfully for the allowed category slugs.`,
+            products
+        });
+    } catch (error) {
+        res.status(400).json({
+            message: error.message || "Failed to retrieve products",
+        });
+    }
+});
+
+
+
+
+
+
+
+
 router.get('/getProductByproductStatus', getProductByproductStatusHandler);
 router.post('/addProduct', authMiddleware, roleMiddleware([HEAD_OFFICE, BRANCH_ADMIN]), addProductHandler);
 router.put('/updateProduct/:id',updateProductByIdHandler);
@@ -263,5 +290,6 @@ router.put('/:productId/changeSpecifications', changeProductSpecificationsHandle
 
 router.get('/Productfilters', filterProducts);
 
+router.get('/get-AllProductsSlug',getAllProductsByAllowedCategorySlugsController)
 module.exports = router;
 

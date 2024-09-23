@@ -105,6 +105,11 @@ const resetPass = async (email, newPassword) => {
     }
   };
 
+
+
+
+
+
 const updateUserService = async (id, data) => {
     try {
       if(!data){
@@ -124,12 +129,54 @@ const updateUserService = async (id, data) => {
 
 
 
+const changePassword = async (userId, currentPassword, newPassword, confirmPassword) => {
+    try {
+        // Fetch the user by their ID
+        const user = await User.findById(userId);
+
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // Check if the current password is correct
+        const isMatch = await user.authenticate(currentPassword);
+        if (!isMatch) {
+            throw new Error('Current password is incorrect');
+        }
+
+        // Check if new password matches confirm password
+        if (newPassword !== confirmPassword) {
+            throw new Error('New password and confirm password do not match');
+        }
+
+        // Check if the new password is different from the current password
+        const isNewPasswordSame = await bcrypt.compare(newPassword, user.password);
+        if (isNewPasswordSame) {
+            throw new Error('New password must be different from the current password');
+        }
+
+        // Update the password and save the user
+        user.password = newPassword; // The password will be hashed in the `pre('save')` middleware
+        await user.save();
+
+        return { success: true, message: 'Password updated successfully' };
+
+    } catch (error) {
+        throw new Error(error.message);
+    }
+};
+
+
+
+
+
 module.exports = {
 
   getAllUsers,
   userResetLink,
   verifyOTP,
   resetPass,
-  updateUserService
+  updateUserService,
+  changePassword
  
 };
