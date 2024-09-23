@@ -351,7 +351,7 @@ const getAllProductsByAllowedCategorySlugsService = async () => {
     const categoryIds = categories.map(category => category._id);
 
     // Find all products that belong to the found category IDs
-    const products = await ProductModel.find({ categoryId: { $in: categoryIds } }).populate('categoryId', 'categoryName slug');
+    const products = await Product.find({ categoryId: { $in: categoryIds } }).populate('categoryId', 'categoryName slug');
 
     return products;
   } catch (error) {
