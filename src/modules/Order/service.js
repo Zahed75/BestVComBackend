@@ -293,7 +293,7 @@ const createOrder = async (orderData) => {
       // Calculate discount
       discountAmount = calculateDiscount(coupon, totalPrice);
     } else {
-      discountAmount = calculateDiscount(null, 0, products, validProducts)
+      discountAmount = calculateDiscount(null, 0, products, validProducts);
     }
 
     // Ensure delivery charge is a valid number
@@ -333,27 +333,50 @@ const createOrder = async (orderData) => {
     // Save the order to the database
     const savedOrder = await newOrder.save();
 
-    // Prepare products info for the response
-    const productsWithDetails = savedOrder.products.map(product => {
+    // Prepare products info for SMS
+    const productInfoForSMS = savedOrder.products.map(product => {
       const validProduct = validProducts.find(p => p._id.equals(product._id));
       return {
-        _id: validProduct ? validProduct._id : 'Unknown',
-        productName: validProduct ? validProduct.productName : 'Unknown',
-        productImage: validProduct ? validProduct.productImage : 'No Image',
-        salePrice: validProduct ? validProduct.general.salePrice : 0,
-        regularPrice: validProduct ? validProduct.general.regularPrice : 0,
+        name: validProduct ? validProduct.productName : 'Unknown',
         quantity: product.quantity,
+        price: validProduct ? validProduct.general.regularPrice : 0,
       };
     });
+
+    // Send SMS to customer
+    const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
+      orderId: savedOrder.orderId,
+      products: productInfoForSMS,
+      totalPrice: savedOrder.totalPrice,
+      discountAmount: savedOrder.discountAmount
+    });
+
+    await sendSMS(customer.phoneNumber, smsText);  // Use customer's phone number
+
+    // Send Email Invoice to customer if email is available
+    if (savedOrder.email) {
+      await sendOrderInvoiceEmail(savedOrder.email, {
+        orderId: savedOrder.orderId,
+        firstName: customerFirstName,
+        lastName: customerLastName,
+        email: savedOrder.email,
+        deliveryAddress,
+        phoneNumber: customer.phoneNumber,
+        products: productInfoForSMS,
+        totalPrice: finalTotalPrice,
+        discountAmount,
+        deliveryCharge: validDeliveryCharge,
+        vatRate,
+        vat,
+        coupon
+      });
+    }
 
     // Prepare response
     return {
       message: "Order created successfully",
       createdOrder: {
-        order: {
-          ...savedOrder.toObject(),
-          products: productsWithDetails,
-        },
+        order: savedOrder.toObject(),
         customerEmail: savedOrder.email,
         totalOrderValue: finalTotalPrice,
         couponName: couponName || null
@@ -365,7 +388,6 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
-
 
 
 

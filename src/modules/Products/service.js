@@ -338,6 +338,7 @@ const allowedSlugs = [
   'electrical-power'
 ];
 
+
 const getAllProductsByAllowedCategorySlugsService = async () => {
   try {
     // Find categories based on the allowed slugs
