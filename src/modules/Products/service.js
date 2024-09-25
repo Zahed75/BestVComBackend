@@ -329,36 +329,33 @@ const getFilteredProducts = async (filterOptions) => {
 
 
 // Allowed category slugs hardcoded
-const allowedSlugs = [
-  'tv-entertainment',
-  'fan',
-  'home-appliances',
-  'kitchen-appliances',
-  'small-appliances',
-  'electrical-power'
+
+
+const allowedCategoryIds = [
+  "66bad6ec5a4a8987716ee701",
+  "66e66d9344c7641816db25d4",
+  "66e50d06e39a0fec145142d3",
+  "66e50c8ae39a0fec145141a6",
+  "66defcc7b146be859e284ab0",
+  "66bc25165a4a8987716eed9e"
 ];
 
-
-const getAllProductsByAllowedCategorySlugsService = async () => {
+const getAllProductsByAllowedCategoryIdsService = async () => {
   try {
-    // Find categories based on the allowed slugs
-    const categories = await CategoryModel.find({ slug: { $in: allowedSlugs } });
-
-    if (!categories.length) {
-      throw new Error('No categories found for the allowed slugs.');
-    }
-
-    // Extract category IDs from the found categories
-    const categoryIds = categories.map(category => category._id);
-
-    // Find all products that belong to the found category IDs
-    const products = await Product.find({ categoryId: { $in: categoryIds } }).populate('categoryId', 'categoryName slug');
+    // Find all products
+    const products = await Product.find()
+        .populate({
+          path: 'categoryId',
+          select: 'categoryName slug',
+          match: { _id: { $in: allowedCategoryIds } } // Only populate if category is in allowed IDs
+        });
 
     return products;
   } catch (error) {
     throw error;
   }
 };
+
 
 
 
@@ -383,6 +380,6 @@ module.exports = {
   addProductSpecifications,
   changeProductSpecifications,
   getFilteredProducts,
-  getAllProductsByAllowedCategorySlugsService
+  getAllProductsByAllowedCategoryIdsService
 
 }
