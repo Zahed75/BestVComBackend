@@ -61,73 +61,73 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">
-      <img src="cid:logo" alt="Best Electronics Ltd">
-    </div>
-    <h1>Order Invoice</h1>
-    
-    <div class="header">
-      <p><strong>Order ID:</strong> {{orderId}}</p>
-      <p><strong>Order Date:</strong> {{orderDate}}</p>
-    </div>
-
-    <div>
-      <p><strong>Customer Name:</strong> {{customerName}}</p>
-      <p><strong>Delivery Address:</strong> {{deliveryAddress}}</p>
-      <p><strong>Phone Number:</strong> {{phoneNumber}}</p>
-      <p><strong>Payment Method:</strong> {{paymentMethod}}</p>
-      <!-- <p><strong>Shipping Method:</strong> {{shippingMethod}}</p> -->
-      <p><strong>Tracking Number:</strong> {{orderId}}</p>
-    </div>
-
-    <h2>Order Summary</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Product Name</th>
-          <th>Quantity</th>
-          <th>Price</th>
-          <th>SubTotal</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{#each products}}
-        <tr>
-          <td>{{this.name}}</td>
-          <td>{{this.quantity}}</td>
-          <td>{{this.price}}</td>
-          <td>{{this.total}}</td>
-        </tr>
-        {{/each}}
-      </tbody>
-      <tfoot>
-        <tr class="total-row">
-          <td colspan="3">Subtotal:</td>
-          <td>{{subtotal}}</td>
-        </tr>
-        <tr class="total-row">
-          <td colspan="3">Discount:</td>
-          <td>{{discount}}</td>
-        </tr>
-        <tr class="total-row">
-          <td colspan="3">Delivery Charge:</td>
-          <td>{{deliveryCharge}}</td>
-        </tr>
-        <tr class="total-row">
-          <td colspan="3">VAT (inclusive, 5%):</td>
-          <td>Included</td>
-        </tr>
-        <tr class="total-row">
-          <td colspan="3">Total:</td>
-          <td>{{total}}</td>
-        </tr>
-      </tfoot>
-    </table>
-
-    <div class="footer">
-      <p>Thank you for shopping with us!</p>
-    </div>
+<div class="container">
+  <div class="logo">
+    <img src="cid:logo" alt="Best Electronics Ltd">
   </div>
+  <h1>Order Invoice</h1>
+
+  <div class="header">
+    <p><strong>Order ID:</strong> {{orderId}}</p>
+    <p><strong>Order Date:</strong> {{orderDate}}</p>
+  </div>
+
+  <div>
+    <p><strong>Customer Name:</strong> {{customerName}}</p>
+    <p><strong>Delivery Address:</strong> {{deliveryAddress}}</p>
+    <p><strong>Phone Number:</strong> {{phoneNumber}}</p>
+    <p><strong>Payment Method:</strong> {{paymentMethod}}</p>
+    <!-- <p><strong>Shipping Method:</strong> {{shippingMethod}}</p> -->
+    <p><strong>Tracking Number:</strong> {{orderId}}</p>
+  </div>
+
+  <h2>Order Summary</h2>
+  <table>
+    <thead>
+    <tr>
+      <th>Product Name</th>
+      <th>Quantity</th>
+      <th>Price</th>
+      <th>SubTotal</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#each products}}
+    <tr>
+      <td>{{this.name}}</td>
+      <td>{{this.quantity}}</td>
+      <td>{{this.regularPrice}}</td>
+      <td>{{this.total}}</td>
+    </tr>
+    {{/each}}
+    </tbody>
+    <tfoot>
+    <tr class="total-row">
+      <td colspan="3">Subtotal:</td>
+      <td>{{subtotal}}</td>
+    </tr>
+    <tr class="total-row">
+      <td colspan="3">Discount:</td>
+      <td>{{discount}}</td>
+    </tr>
+    <tr class="total-row">
+      <td colspan="3">Delivery Charge:</td>
+      <td>{{deliveryCharge}}</td>
+    </tr>
+    <tr class="total-row">
+      <td colspan="3">VAT (inclusive, 5%):</td>
+      <td>Included</td>
+    </tr>
+    <tr class="total-row">
+      <td colspan="3">Total:</td>
+      <td>{{total}}</td>
+    </tr>
+    </tfoot>
+  </table>
+
+  <div class="footer">
+    <p>Thank you for shopping with us!</p>
+  </div>
+</div>
 </body>
 </html>

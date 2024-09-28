@@ -233,8 +233,9 @@ function calculateDiscount(coupon, totalPrice, products, validProducts) {
 
 const createOrder = async (orderData) => {
   try {
-    // Generate custom orderId
+    // Generate custom orderId and orderTime
     const orderId = await generateCustomOrderId();
+    const orderTime = formatOrderTime(new Date());
 
     // Destructure orderData
     const {
@@ -252,6 +253,7 @@ const createOrder = async (orderData) => {
       ]
     }).lean().exec();
 
+    // If no customer found, throw an error
     if (!customer) {
       throw new NotFound('Customer not found');
     }
@@ -260,12 +262,15 @@ const createOrder = async (orderData) => {
     const customerFirstName = firstName || customer.firstName;
     const customerLastName = lastName || customer.lastName;
 
+    // Use phoneNumber from the request, or fallback to customer's phoneNumber
+    const customerPhoneNumber = phoneNumber || customer.phoneNumber;
+
     // Validate products
     if (!Array.isArray(products) || products.length === 0) {
       throw new BadRequest('No products provided');
     }
 
-    // Fetch valid product details
+    // Ensure each product has a valid price
     const productIds = products.map(product => product._id);
     const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
 
@@ -290,6 +295,7 @@ const createOrder = async (orderData) => {
       if (new Date() > new Date(coupon.general.couponExpiry)) {
         throw new BadRequest('Coupon has expired');
       }
+
       // Calculate discount
       discountAmount = calculateDiscount(coupon, totalPrice);
     } else {
@@ -303,21 +309,29 @@ const createOrder = async (orderData) => {
     const vatRate = 5; // Fixed VAT rate of 5%
     const vat = (vatRate / 100) * totalPrice;
 
+    if (isNaN(vat)) {
+      throw new BadRequest('VAT calculation resulted in NaN');
+    }
+
     // Calculate final total price including discount and delivery charge
     const finalTotalPrice = totalPrice - discountAmount + validDeliveryCharge;
+    if (isNaN(finalTotalPrice)) {
+      throw new BadRequest('Final total price calculation resulted in NaN');
+    }
 
     // Create new order
     const newOrder = new OrderModel({
       orderId,
-      customer: customer._id,
+      customer: customer._id, // Fixing the potential issue where customer might be null
       firstName: customerFirstName,
       lastName: customerLastName,
       orderType,
+      orderTime,
       deliveryAddress,
       orderStatus: 'Received',
       district,
-      phoneNumber,
-      email: email || customer.email,
+      phoneNumber: customerPhoneNumber,
+      email: email || customer.email,  // Use email from orderData if customer registered with phone only
       paymentMethod,
       transactionId,
       products,
@@ -333,39 +347,41 @@ const createOrder = async (orderData) => {
     // Save the order to the database
     const savedOrder = await newOrder.save();
 
-    // Prepare products info for SMS and response
-    const productInfoForResponse = savedOrder.products.map(product => {
+    // Prepare products info for SMS and the response
+    const productInfoForSMS = savedOrder.products.map(product => {
       const validProduct = validProducts.find(p => p._id.equals(product._id));
       return {
-        productImage: validProduct ? validProduct.productImage : 'Unknown',
-        productName: validProduct ? validProduct.productName : 'Unknown',
-        salePrice: validProduct ? validProduct.salePrice : 0,
-        regularPrice: validProduct ? validProduct.general.regularPrice : 0,
-        quantity: product.quantity,
+        _id: product._id,  // Keep the existing _id
+        quantity: product.quantity,  // Keep the existing quantity
+        productName: validProduct ? validProduct.productName : 'Unnamed Product',  // Add product name
+        productImage: validProduct ? validProduct.general.productImage : null, // Add product image
+        regularPrice: validProduct ? validProduct.general.regularPrice : 0,  // Add regular price
+        salePrice: validProduct ? validProduct.general.salePrice : 0  // Add sale price
       };
     });
 
     // Send SMS to customer
     const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
       orderId: savedOrder.orderId,
-      products: productInfoForResponse,
+      products: productInfoForSMS,
       totalPrice: savedOrder.totalPrice,
       discountAmount: savedOrder.discountAmount
     });
 
-    await sendSMS(customer.phoneNumber, smsText);  // Use customer's phone number
+    await sendSMS(customerPhoneNumber, smsText);
 
     // Send Email Invoice to customer if email is available
     if (savedOrder.email) {
       await sendOrderInvoiceEmail(savedOrder.email, {
         orderId: savedOrder.orderId,
         firstName: customerFirstName,
+        paymentMethod,
         lastName: customerLastName,
         email: savedOrder.email,
         deliveryAddress,
-        phoneNumber: customer.phoneNumber,
-        products: productInfoForResponse,
-        totalPrice: finalTotalPrice,
+        phoneNumber: customerPhoneNumber,
+        products: productInfoForSMS,
+        totalPrice: totalPrice - discountAmount,
         discountAmount,
         deliveryCharge: validDeliveryCharge,
         vatRate,
@@ -374,16 +390,38 @@ const createOrder = async (orderData) => {
       });
     }
 
-    // Prepare response
+    // Return the order response with the totalPrice explicitly included
     return {
       message: "Order created successfully",
       createdOrder: {
         order: {
-          ...savedOrder.toObject(),
-          products: productInfoForResponse // Include detailed product info in the response
+          orderId: savedOrder.orderId,
+          customer: savedOrder.customer,
+          customerIp: savedOrder.customerIp,
+          orderType: savedOrder.orderType,
+          firstName: savedOrder.firstName,
+          lastName: savedOrder.lastName,
+          orderStatus: savedOrder.orderStatus,
+          deliveryAddress: savedOrder.deliveryAddress,
+          deliveryCharge: savedOrder.deliveryCharge,
+          email: savedOrder.email,
+          district: savedOrder.district,
+          phoneNumber: savedOrder.phoneNumber,
+          paymentMethod: savedOrder.paymentMethod,
+          products: productInfoForSMS,  // Updated products with additional fields
+          coupon: savedOrder.coupon ? savedOrder.coupon : null,
+          discountAmount: savedOrder.discountAmount,
+          totalPrice: savedOrder.totalPrice,  // Ensure totalPrice is included here
+          orderNote: savedOrder.orderNote,
+          channel: savedOrder.channel,
+          outlet: savedOrder.outlet,
+          orderLogs: savedOrder.orderLogs,
+          createdAt: savedOrder.createdAt,
+          updatedAt: savedOrder.updatedAt,
+          __v: savedOrder.__v
         },
         customerEmail: savedOrder.email,
-        totalOrderValue: finalTotalPrice,
+        totalOrderValue: savedOrder.totalPrice,
         couponName: couponName || null
       }
     };
@@ -393,7 +431,6 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
-
 
 
 
