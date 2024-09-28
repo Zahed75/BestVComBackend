@@ -328,9 +328,6 @@ const getFilteredProducts = async (filterOptions) => {
 
 
 
-// Allowed category slugs hardcoded
-
-
 const allowedCategoryIds = [
   "66bad6ec5a4a8987716ee701",
   "66e66d9344c7641816db25d4",
@@ -342,12 +339,16 @@ const allowedCategoryIds = [
 
 const getAllProductsByAllowedCategoryIdsService = async () => {
   try {
-    // Find all products
+    // Find all products and populate categoryId and subCategories
     const products = await Product.find()
         .populate({
           path: 'categoryId',
-          select: 'categoryName slug',
-          match: { _id: { $in: allowedCategoryIds } } // Only populate if category is in allowed IDs
+          select: 'categoryName slug subCategories', // Include subCategories in the selected fields
+          match: { _id: { $in: allowedCategoryIds } },
+          populate: {
+            path: 'subCategories', // Populate the subCategories
+            select: 'categoryName slug' // Select fields from subCategories
+          }
         });
 
     return products;
