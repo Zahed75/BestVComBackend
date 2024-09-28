@@ -80,11 +80,15 @@ handlebars.registerHelper('multiply', function (a, b) {
 
 
 
+
+
+
+
 // send Email Invoice
 exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
   try {
     // Log the order data for debugging
-    // console.log('Order Data:', orderData);
+    console.log('Order Data:', orderData);
 
     // Read the HTML template file
     const templatePath = path.join(__dirname, '../templates/order.html');
@@ -92,7 +96,7 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
 
     // Compile Handlebars template
     const template = handlebars.compile(htmlTemplate);
-    console.log(orderData)
+
     // Prepare data to inject into the template
     const replacements = {
       orderId: orderData.orderId,
@@ -102,23 +106,27 @@ exports.sendOrderInvoiceEmail = async (EmailTo, orderData, pdfPath = null) => {
       deliveryAddress: orderData.deliveryAddress,
       phoneNumber: orderData.phoneNumber,
       paymentMethod: orderData.paymentMethod,
+
+      // Map products to include all necessary details
       products: orderData.products.map(product => ({
-        name: product.name,
+        name: product.productName || 'Unnamed Product',  // Ensure product name exists
         quantity: product.quantity,
-        price: product.price,
-        total: orderData.coupon ? product.quantity * product.price : product.quantity * product.salePrice
+        regularPrice: product.regularPrice.toFixed(2),  // Regular price
+        salePrice: product.salePrice ? product.salePrice.toFixed(2) : null,  // Sale price if available
+        total: (product.quantity * (product.salePrice || product.regularPrice)).toFixed(2)  // Calculate total based on price
       })),
+
       subtotal: (orderData.totalPrice + orderData.discountAmount - orderData.deliveryCharge).toFixed(2),  // Corrected subtotal calculation
       discount: orderData.discountAmount.toFixed(2),
       deliveryCharge: orderData.deliveryCharge.toFixed(2),
-      vatRate: orderData.vatRate.toFixed(2),
-      vat: orderData.vat.toFixed(2),  // VAT should be directly provided
+      vatRate: orderData.vatRate ? orderData.vatRate.toFixed(2) : '5.00',  // Default VAT rate of 5%
+      vat: orderData.vat.toFixed(2),  // Ensure VAT is included
       total: (orderData.totalPrice + orderData.deliveryCharge).toFixed(2),
     };
 
     // Log the replacements data for debugging
-    // console.log('Replacements Data:', replacements);
-console.log(replacements)
+    console.log('Replacements Data:', replacements);
+
     // Replace placeholders with actual data in the template
     const emailHtml = template(replacements);
 
@@ -132,7 +140,7 @@ console.log(replacements)
         {
           filename: 'bel.png',
           path: path.join(__dirname, '../public/images/bel.png'),
-          cid: 'logo'  // Content-ID for embedding
+          cid: 'logo'  // Content-ID for embedding logo in the email
         },
         ...(pdfPath ? [{ filename: path.basename(pdfPath), path: pdfPath }] : [])
       ]
@@ -140,9 +148,9 @@ console.log(replacements)
 
     // Send email using Nodemailer
     const info = await transporter.sendMail(mailOptions);
-    // console.log('Order invoice email sent:', info);
+    console.log('Order invoice email sent:', info);
 
-    // Remove the PDF file after sending the email
+    // Remove the PDF file after sending the email if it was provided
     if (pdfPath) {
       fs.unlinkSync(pdfPath);
     }
