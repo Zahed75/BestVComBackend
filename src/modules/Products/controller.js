@@ -241,9 +241,6 @@ const updateProductSpecificationHandler = asyncHandler(async (req, res) => {
 
 
 
-
-
-
 const getAllProductsByAllowedCategoryIdsController = asyncHandler(async (req, res) => {
     try {
         const products = await productService.getAllProductsByAllowedCategoryIdsService();

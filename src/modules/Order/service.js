@@ -333,20 +333,22 @@ const createOrder = async (orderData) => {
     // Save the order to the database
     const savedOrder = await newOrder.save();
 
-    // Prepare products info for SMS
-    const productInfoForSMS = savedOrder.products.map(product => {
+    // Prepare products info for SMS and response
+    const productInfoForResponse = savedOrder.products.map(product => {
       const validProduct = validProducts.find(p => p._id.equals(product._id));
       return {
-        name: validProduct ? validProduct.productName : 'Unknown',
+        productImage: validProduct ? validProduct.productImage : 'Unknown',
+        productName: validProduct ? validProduct.productName : 'Unknown',
+        salePrice: validProduct ? validProduct.salePrice : 0,
+        regularPrice: validProduct ? validProduct.general.regularPrice : 0,
         quantity: product.quantity,
-        price: validProduct ? validProduct.general.regularPrice : 0,
       };
     });
 
     // Send SMS to customer
     const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
       orderId: savedOrder.orderId,
-      products: productInfoForSMS,
+      products: productInfoForResponse,
       totalPrice: savedOrder.totalPrice,
       discountAmount: savedOrder.discountAmount
     });
@@ -362,7 +364,7 @@ const createOrder = async (orderData) => {
         email: savedOrder.email,
         deliveryAddress,
         phoneNumber: customer.phoneNumber,
-        products: productInfoForSMS,
+        products: productInfoForResponse,
         totalPrice: finalTotalPrice,
         discountAmount,
         deliveryCharge: validDeliveryCharge,
@@ -376,7 +378,10 @@ const createOrder = async (orderData) => {
     return {
       message: "Order created successfully",
       createdOrder: {
-        order: savedOrder.toObject(),
+        order: {
+          ...savedOrder.toObject(),
+          products: productInfoForResponse // Include detailed product info in the response
+        },
         customerEmail: savedOrder.email,
         totalOrderValue: finalTotalPrice,
         couponName: couponName || null
@@ -388,6 +393,8 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
+
+
 
 
 
