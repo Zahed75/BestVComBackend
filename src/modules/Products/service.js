@@ -328,80 +328,6 @@ const getFilteredProducts = async (filterOptions) => {
 
 
 
-// const allowedCategoryIds = [
-//   "66bad6ec5a4a8987716ee701",
-//   "66e66d9344c7641816db25d4",
-//   "66e50d06e39a0fec145142d3",
-//   "66e50c8ae39a0fec145141a6",
-//   "66defcc7b146be859e284ab0",
-//   "66bc25165a4a8987716eed9e"
-// ];
-//
-//
-// const getAllProductsByAllowedCategoryIdsService = async () => {
-//   try {
-//     // Fetch all products with allowed categories
-//     const products = await Product.find()
-//         .populate({
-//           path: 'categoryId',
-//           select: 'categoryName slug',
-//           match: { _id: { $in: allowedCategoryIds } }
-//         })
-//         .lean()
-//         .exec();
-//
-//     // Function to recursively fetch subcategories
-//     const fetchSubCategories = async (categoryId) => {
-//       const subCategories = await CategoryModel.find({ parentCategory: categoryId })
-//           .select('_id categoryName slug')
-//           .lean()
-//           .exec();
-//
-//       // Recursively fetch subcategories of each subcategory
-//       const subCategoriesWithChildren = await Promise.all(
-//           subCategories.map(async (subCat) => ({
-//             _id: subCat._id,
-//             categoryName: subCat.categoryName,
-//             slug: subCat.slug,
-//             subCategories: await fetchSubCategories(subCat._id) // Recursive call
-//           }))
-//       );
-//
-//       return subCategoriesWithChildren;
-//     };
-//
-//     // For each product, fetch and append the subcategories associated with the parent category
-//     const updatedProducts = await Promise.all(
-//         products.map(async (product) => {
-//           const updatedCategories = await Promise.all(
-//               product.categoryId.map(async (category) => {
-//                 // Fetch subcategories for the current category
-//                 const subCategories = await fetchSubCategories(category._id);
-//
-//                 return {
-//                   categoryId: category._id,
-//                   categoryName: category.categoryName,
-//                   subCategories: subCategories // Include subcategories with their own subcategories
-//                 };
-//               })
-//           );
-//
-//           return {
-//             ...product,
-//             categoryId: updatedCategories // Replace the categoryId field with the enriched version
-//           };
-//         })
-//     );
-//
-//     return updatedProducts;
-//   } catch (error) {
-//     throw error;
-//   }
-// };
-
-
-
-
 const allowedCategoryIds = [
   "66bad6ec5a4a8987716ee701",
   "66e66d9344c7641816db25d4",
@@ -411,76 +337,73 @@ const allowedCategoryIds = [
   "66bc25165a4a8987716eed9e"
 ];
 
-// Function to recursively get subcategories
-const getSubCategories = async (parentCategoryId) => {
-  const subCategories = await CategoryModel.find({ parentCategory: parentCategoryId })
-      .select('_id categoryName slug')
-      .lean();
-
-  // If subcategories exist, fetch their subcategories recursively
-  if (subCategories.length > 0) {
-    const updatedSubCategories = await Promise.all(
-        subCategories.map(async (subCategory) => {
-          const nestedSubCategories = await getSubCategories(subCategory._id); // Recursive call
-          return {
-            _id: subCategory._id,
-            categoryName: subCategory.categoryName,
-            slug: subCategory.slug,
-            subCategories: nestedSubCategories, // Append nested subcategories
-          };
-        })
-    );
-    return updatedSubCategories;
-  } else {
-    return []; // No subcategories
-  }
-};
 
 const getAllProductsByAllowedCategoryIdsService = async () => {
   try {
-    // Fetch all products and populate categoryId
+    // Fetch all products with allowed categories
     const products = await Product.find()
         .populate({
           path: 'categoryId',
           select: 'categoryName slug',
-          match: { _id: { $in: allowedCategoryIds } },
+          match: { _id: { $in: allowedCategoryIds } }
         })
         .lean()
         .exec();
 
+    // Function to recursively fetch subcategories
+    const fetchSubCategories = async (categoryId) => {
+      const subCategories = await CategoryModel.find({ parentCategory: categoryId })
+          .select('_id categoryName slug')
+          .lean()
+          .exec();
+
+      // Recursively fetch subcategories of each subcategory
+      const subCategoriesWithChildren = await Promise.all(
+          subCategories.map(async (subCat) => ({
+            _id: subCat._id,
+            categoryName: subCat.categoryName,
+            slug: subCat.slug,
+            subCategories: await fetchSubCategories(subCat._id) // Recursive call
+          }))
+      );
+
+      return subCategoriesWithChildren;
+    };
+
     // For each product, fetch and append the subcategories associated with the parent category
     const updatedProducts = await Promise.all(
         products.map(async (product) => {
-          if (!product.categoryId || !Array.isArray(product.categoryId)) {
-            return product; // Return the product as is if there are no categories
-          }
-
           const updatedCategories = await Promise.all(
               product.categoryId.map(async (category) => {
-                // Find subcategories where parentCategory matches the current category's _id
-                const subCategories = await getSubCategories(category._id); // Recursively fetch subcategories
+                // Fetch subcategories for the current category
+                const subCategories = await fetchSubCategories(category._id);
 
                 return {
                   categoryId: category._id,
                   categoryName: category.categoryName,
-                  subCategories, // Add nested subcategories
+                  subCategories: subCategories // Include subcategories with their own subcategories
                 };
               })
           );
 
           return {
             ...product,
-            categoryId: updatedCategories, // Replace the categoryId field with the enriched version
+            categoryId: updatedCategories // Replace the categoryId field with the enriched version
           };
         })
     );
 
-    return updatedProducts; // Return the enriched product list
+    return updatedProducts;
   } catch (error) {
-    console.error("Error fetching products:", error);
     throw error;
   }
 };
+
+
+
+
+
+
 
 
 
