@@ -400,6 +400,8 @@ const getFilteredProducts = async (filterOptions) => {
 // };
 
 
+
+
 const allowedCategoryIds = [
   "66bad6ec5a4a8987716ee701",
   "66e66d9344c7641816db25d4",
@@ -409,6 +411,31 @@ const allowedCategoryIds = [
   "66bc25165a4a8987716eed9e"
 ];
 
+// Function to recursively get subcategories
+const getSubCategories = async (parentCategoryId) => {
+  const subCategories = await CategoryModel.find({ parentCategory: parentCategoryId })
+      .select('_id categoryName slug')
+      .lean();
+
+  // If subcategories exist, fetch their subcategories recursively
+  if (subCategories.length > 0) {
+    const updatedSubCategories = await Promise.all(
+        subCategories.map(async (subCategory) => {
+          const nestedSubCategories = await getSubCategories(subCategory._id); // Recursive call
+          return {
+            _id: subCategory._id,
+            categoryName: subCategory.categoryName,
+            slug: subCategory.slug,
+            subCategories: nestedSubCategories, // Append nested subcategories
+          };
+        })
+    );
+    return updatedSubCategories;
+  } else {
+    return []; // No subcategories
+  }
+};
+
 const getAllProductsByAllowedCategoryIdsService = async () => {
   try {
     // Fetch all products and populate categoryId
@@ -416,7 +443,7 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
         .populate({
           path: 'categoryId',
           select: 'categoryName slug',
-          match: { _id: { $in: allowedCategoryIds } }
+          match: { _id: { $in: allowedCategoryIds } },
         })
         .lean()
         .exec();
@@ -424,7 +451,6 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
     // For each product, fetch and append the subcategories associated with the parent category
     const updatedProducts = await Promise.all(
         products.map(async (product) => {
-          // Check if categoryId exists and is an array
           if (!product.categoryId || !Array.isArray(product.categoryId)) {
             return product; // Return the product as is if there are no categories
           }
@@ -432,26 +458,19 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
           const updatedCategories = await Promise.all(
               product.categoryId.map(async (category) => {
                 // Find subcategories where parentCategory matches the current category's _id
-                const subCategories = await CategoryModel.find({
-                  parentCategory: category._id
-                }).select('_id categoryName slug').lean();
+                const subCategories = await getSubCategories(category._id); // Recursively fetch subcategories
 
-                // Return the category with its subcategories
                 return {
                   categoryId: category._id,
                   categoryName: category.categoryName,
-                  subCategories: subCategories.map(subCat => ({
-                    _id: subCat._id,
-                    categoryName: subCat.categoryName,
-                    slug: subCat.slug,
-                  }))
+                  subCategories, // Add nested subcategories
                 };
               })
           );
 
           return {
             ...product,
-            categoryId: updatedCategories // Replace the categoryId field with the enriched version
+            categoryId: updatedCategories, // Replace the categoryId field with the enriched version
           };
         })
     );
@@ -463,7 +482,28 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
   }
 };
 
-module.exports = {
-  getAllProductsByAllowedCategoryIdsService
-};
 
+
+
+
+
+
+
+
+module.exports = {
+  addProduct,
+  updateProductById,
+  getAllProducts,
+  deleteProductById,
+  getProductByIdService,
+  getProductByCategoryId,
+  getProductByproductStatus,
+  getProductBySlug,
+  updateProductSpecification,
+  deleteProductSpecification,
+  addProductSpecifications,
+  changeProductSpecifications,
+  getFilteredProducts,
+  getAllProductsByAllowedCategoryIdsService
+
+}
