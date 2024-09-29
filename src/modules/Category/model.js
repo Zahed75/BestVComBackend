@@ -45,4 +45,3 @@ const CategorySchema = new mongoose.Schema({
 const categoryModel=mongoose.model('category',CategorySchema);
 
 module.exports=categoryModel;
-
