@@ -336,6 +336,55 @@ const allowedCategoryIds = [
   "66defcc7b146be859e284ab0",
   "66bc25165a4a8987716eed9e"
 ];
+//
+// const getAllProductsByAllowedCategoryIdsService = async () => {
+//   try {
+//     // Fetch all products with allowed categories
+//     const products = await Product.find()
+//         .populate({
+//           path: 'categoryId',
+//           select: 'categoryName slug',
+//           match: { _id: { $in: allowedCategoryIds } }
+//         })
+//         .lean()
+//         .exec();
+//
+//     // For each product, fetch and append the subcategories associated with the parent category
+//     const updatedProducts = await Promise.all(
+//         products.map(async (product) => {
+//           const updatedCategories = await Promise.all(
+//               product.categoryId.map(async (category) => {
+//                 // Find subcategories where parentCategory matches the current category's _id
+//                 const subCategories = await CategoryModel.find({
+//                   parentCategory: category._id
+//                 }).select('_id categoryName slug').lean();
+//
+//                 return {
+//                   categoryId: category._id,
+//                   categoryName: category.categoryName,
+//                   subCategories: subCategories.map(subCat => ({
+//                     _id: subCat._id,
+//                     categoryName: subCat.categoryName,
+//                     slug: subCat.slug
+//                   }))
+//                 };
+//               })
+//           );
+//
+//           return {
+//             ...product,
+//             categoryId: updatedCategories // Replace the categoryId field with the enriched version
+//           };
+//         })
+//     );
+//
+//     return updatedProducts;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+
+
 
 const getAllProductsByAllowedCategoryIdsService = async () => {
   try {
@@ -349,24 +398,38 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
         .lean()
         .exec();
 
+    // Function to recursively fetch subcategories
+    const fetchSubCategories = async (categoryId) => {
+      const subCategories = await CategoryModel.find({ parentCategory: categoryId })
+          .select('_id categoryName slug')
+          .lean()
+          .exec();
+
+      // Recursively fetch subcategories of each subcategory
+      const subCategoriesWithChildren = await Promise.all(
+          subCategories.map(async (subCat) => ({
+            _id: subCat._id,
+            categoryName: subCat.categoryName,
+            slug: subCat.slug,
+            subCategories: await fetchSubCategories(subCat._id) // Recursive call
+          }))
+      );
+
+      return subCategoriesWithChildren;
+    };
+
     // For each product, fetch and append the subcategories associated with the parent category
     const updatedProducts = await Promise.all(
         products.map(async (product) => {
           const updatedCategories = await Promise.all(
               product.categoryId.map(async (category) => {
-                // Find subcategories where parentCategory matches the current category's _id
-                const subCategories = await CategoryModel.find({
-                  parentCategory: category._id
-                }).select('_id categoryName slug').lean();
+                // Fetch subcategories for the current category
+                const subCategories = await fetchSubCategories(category._id);
 
                 return {
                   categoryId: category._id,
                   categoryName: category.categoryName,
-                  subCategories: subCategories.map(subCat => ({
-                    _id: subCat._id,
-                    categoryName: subCat.categoryName,
-                    slug: subCat.slug
-                  }))
+                  subCategories: subCategories // Include subcategories with their own subcategories
                 };
               })
           );
@@ -383,8 +446,6 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
     throw error;
   }
 };
-
-
 
 
 
