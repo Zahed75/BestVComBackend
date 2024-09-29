@@ -328,14 +328,15 @@ const getFilteredProducts = async (filterOptions) => {
 
 
 
-const allowedCategoryIds = [
-  "66bad6ec5a4a8987716ee701",
-  "66e66d9344c7641816db25d4",
-  "66e50d06e39a0fec145142d3",
-  "66e50c8ae39a0fec145141a6",
-  "66defcc7b146be859e284ab0",
-  "66bc25165a4a8987716eed9e"
-];
+// const allowedCategoryIds = [
+//   "66bad6ec5a4a8987716ee701",
+//   "66e66d9344c7641816db25d4",
+//   "66e50d06e39a0fec145142d3",
+//   "66e50c8ae39a0fec145141a6",
+//   "66defcc7b146be859e284ab0",
+//   "66bc25165a4a8987716eed9e"
+// ];
+//
 //
 // const getAllProductsByAllowedCategoryIdsService = async () => {
 //   try {
@@ -349,24 +350,38 @@ const allowedCategoryIds = [
 //         .lean()
 //         .exec();
 //
+//     // Function to recursively fetch subcategories
+//     const fetchSubCategories = async (categoryId) => {
+//       const subCategories = await CategoryModel.find({ parentCategory: categoryId })
+//           .select('_id categoryName slug')
+//           .lean()
+//           .exec();
+//
+//       // Recursively fetch subcategories of each subcategory
+//       const subCategoriesWithChildren = await Promise.all(
+//           subCategories.map(async (subCat) => ({
+//             _id: subCat._id,
+//             categoryName: subCat.categoryName,
+//             slug: subCat.slug,
+//             subCategories: await fetchSubCategories(subCat._id) // Recursive call
+//           }))
+//       );
+//
+//       return subCategoriesWithChildren;
+//     };
+//
 //     // For each product, fetch and append the subcategories associated with the parent category
 //     const updatedProducts = await Promise.all(
 //         products.map(async (product) => {
 //           const updatedCategories = await Promise.all(
 //               product.categoryId.map(async (category) => {
-//                 // Find subcategories where parentCategory matches the current category's _id
-//                 const subCategories = await CategoryModel.find({
-//                   parentCategory: category._id
-//                 }).select('_id categoryName slug').lean();
+//                 // Fetch subcategories for the current category
+//                 const subCategories = await fetchSubCategories(category._id);
 //
 //                 return {
 //                   categoryId: category._id,
 //                   categoryName: category.categoryName,
-//                   subCategories: subCategories.map(subCat => ({
-//                     _id: subCat._id,
-//                     categoryName: subCat.categoryName,
-//                     slug: subCat.slug
-//                   }))
+//                   subCategories: subCategories // Include subcategories with their own subcategories
 //                 };
 //               })
 //           );
@@ -385,10 +400,18 @@ const allowedCategoryIds = [
 // };
 
 
+const allowedCategoryIds = [
+  "66bad6ec5a4a8987716ee701",
+  "66e66d9344c7641816db25d4",
+  "66e50d06e39a0fec145142d3",
+  "66e50c8ae39a0fec145141a6",
+  "66defcc7b146be859e284ab0",
+  "66bc25165a4a8987716eed9e"
+];
 
 const getAllProductsByAllowedCategoryIdsService = async () => {
   try {
-    // Fetch all products with allowed categories
+    // Fetch all products and populate categoryId
     const products = await Product.find()
         .populate({
           path: 'categoryId',
@@ -398,38 +421,30 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
         .lean()
         .exec();
 
-    // Function to recursively fetch subcategories
-    const fetchSubCategories = async (categoryId) => {
-      const subCategories = await CategoryModel.find({ parentCategory: categoryId })
-          .select('_id categoryName slug')
-          .lean()
-          .exec();
-
-      // Recursively fetch subcategories of each subcategory
-      const subCategoriesWithChildren = await Promise.all(
-          subCategories.map(async (subCat) => ({
-            _id: subCat._id,
-            categoryName: subCat.categoryName,
-            slug: subCat.slug,
-            subCategories: await fetchSubCategories(subCat._id) // Recursive call
-          }))
-      );
-
-      return subCategoriesWithChildren;
-    };
-
     // For each product, fetch and append the subcategories associated with the parent category
     const updatedProducts = await Promise.all(
         products.map(async (product) => {
+          // Check if categoryId exists and is an array
+          if (!product.categoryId || !Array.isArray(product.categoryId)) {
+            return product; // Return the product as is if there are no categories
+          }
+
           const updatedCategories = await Promise.all(
               product.categoryId.map(async (category) => {
-                // Fetch subcategories for the current category
-                const subCategories = await fetchSubCategories(category._id);
+                // Find subcategories where parentCategory matches the current category's _id
+                const subCategories = await CategoryModel.find({
+                  parentCategory: category._id
+                }).select('_id categoryName slug').lean();
 
+                // Return the category with its subcategories
                 return {
                   categoryId: category._id,
                   categoryName: category.categoryName,
-                  subCategories: subCategories // Include subcategories with their own subcategories
+                  subCategories: subCategories.map(subCat => ({
+                    _id: subCat._id,
+                    categoryName: subCat.categoryName,
+                    slug: subCat.slug,
+                  }))
                 };
               })
           );
@@ -441,35 +456,14 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
         })
     );
 
-    return updatedProducts;
+    return updatedProducts; // Return the enriched product list
   } catch (error) {
+    console.error("Error fetching products:", error);
     throw error;
   }
 };
 
-
-
-
-
-
-
-
-
-
 module.exports = {
-  addProduct,
-  updateProductById,
-  getAllProducts,
-  deleteProductById,
-  getProductByIdService,
-  getProductByCategoryId,
-  getProductByproductStatus,
-  getProductBySlug,
-  updateProductSpecification,
-  deleteProductSpecification,
-  addProductSpecifications,
-  changeProductSpecifications,
-  getFilteredProducts,
   getAllProductsByAllowedCategoryIdsService
+};
 
-}
