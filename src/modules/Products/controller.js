@@ -264,6 +264,7 @@ const getAllProductsByAllowedCategoryIdsController = asyncHandler(async (req, re
 
 
 
+
 router.get('/getProductByproductStatus', getProductByproductStatusHandler);
 router.post('/addProduct', authMiddleware, roleMiddleware([HEAD_OFFICE, BRANCH_ADMIN]), addProductHandler);
 router.put('/updateProduct/:id',updateProductByIdHandler);
