@@ -246,15 +246,16 @@ const getAllProductsByAllowedCategoryIdsController = asyncHandler(async (req, re
         const products = await productService.getAllProductsByAllowedCategoryIdsService();
 
         res.status(200).json({
-            message: `Products retrieved successfully.`,
+            message: 'Products retrieved successfully.',
             products
         });
     } catch (error) {
         res.status(400).json({
-            message: error.message || "Failed to retrieve products",
+            message: error.message || 'Failed to retrieve products',
         });
     }
 });
+
 
 
 
