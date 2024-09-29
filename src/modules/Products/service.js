@@ -343,15 +343,21 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
     const products = await Product.find()
         .populate({
           path: 'categoryId',
-          select: 'categoryName slug subCategories', // Include subCategories in the selected fields
+          select: '_id', // Select only the category ID
           match: { _id: { $in: allowedCategoryIds } },
           populate: {
             path: 'subCategories', // Populate the subCategories
-            select: 'categoryName slug' // Select fields from subCategories
+            select: '_id' // Select only the subCategory IDs if necessary
           }
         });
 
-    return products;
+    // Map products to extract categoryId as an array of category IDs
+    const updatedProducts = products.map(product => ({
+      ...product.toObject(),
+      categoryId: product.categoryId ? product.categoryId.map(cat => cat._id) : []
+    }));
+
+    return updatedProducts;
   } catch (error) {
     throw error;
   }
