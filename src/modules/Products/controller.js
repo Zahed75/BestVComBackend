@@ -265,6 +265,8 @@ const getAllProductsByAllowedCategoryIdsController = asyncHandler(async (req, re
 
 
 
+
+
 router.get('/getProductByproductStatus', getProductByproductStatusHandler);
 router.post('/addProduct', authMiddleware, roleMiddleware([HEAD_OFFICE, BRANCH_ADMIN]), addProductHandler);
 router.put('/updateProduct/:id',updateProductByIdHandler);
@@ -276,12 +278,9 @@ router.get('/getProductBySlugHandler/:productSlug', getProductBySlugHandler);
 router.patch('/:productId/specification/:specId', updateProductSpecificationHandler);
 router.delete('/:productId/specification/:specificationId', deleteProductSpecificationHandler);
 router.post('/:productId/addSpecifications', addProductSpecificationsHandler);
-
 router.put('/:productId/changeSpecifications', changeProductSpecificationsHandler);
-
-
 router.get('/Productfilters', filterProducts);
-
 router.get('/get-AllProductsSlug',getAllProductsByAllowedCategoryIdsController)
+
 module.exports = router;
 
