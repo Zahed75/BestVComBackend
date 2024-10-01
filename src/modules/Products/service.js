@@ -413,46 +413,40 @@ const allowedCategoryIds = [
   "66defcc7b146be859e284ab0",
   "66bc25165a4a8987716eed9e"
 ];
+
+// Function to get allowed categories with their subcategories and filter products
 const getAllProductsByAllowedCategoryIdsService = async () => {
   try {
-    // Fetch the top-level categories that match allowedCategoryIds
+    // Fetch all categories that match the allowedCategoryIds
     const allowedCategories = await CategoryModel.find({
       _id: { $in: allowedCategoryIds }
-    })
-        .select('categoryName slug')
-        .lean()
-        .exec();
+    }).lean().exec();
 
-    // Function to recursively fetch subcategories
+    // Function to recursively fetch allowed subcategories
     const fetchAllowedSubCategories = async (categoryId) => {
-      // Find subcategories where the parentCategory is the given categoryId
       const subCategories = await CategoryModel.find({ parentCategory: categoryId })
-          .select('_id categoryName slug parentCategory')
           .lean()
           .exec();
 
-      // If no subcategories are found, return an empty array
-      if (!subCategories.length) return [];
+      // Filter subcategories that match the allowedCategoryIds
+      const filteredSubCategories = subCategories.filter(subCat =>
+          allowedCategoryIds.includes(subCat._id.toString())
+      );
 
-      // Recursively fetch allowed subcategories for each subcategory
+      // Recursively fetch allowed subcategories for each filtered subcategory
       const subCategoriesWithChildren = await Promise.all(
-          subCategories.map(async (subCat) => {
-            // Check if the subcategory's _id is in allowedCategoryIds
-            const isAllowed = allowedCategoryIds.includes(subCat._id.toString());
-
-            return {
-              _id: subCat._id,
-              categoryName: subCat.categoryName,
-              slug: subCat.slug,
-              subCategories: isAllowed ? await fetchAllowedSubCategories(subCat._id) : [] // Recursive call
-            };
-          })
+          filteredSubCategories.map(async (subCat) => ({
+            _id: subCat._id,
+            categoryName: subCat.categoryName,
+            slug: subCat.slug,
+            subCategories: await fetchAllowedSubCategories(subCat._id) // Recursive call for nested subcategories
+          }))
       );
 
       return subCategoriesWithChildren;
     };
 
-    // Update allowed categories to include their subcategories
+    // For each allowed category, fetch its allowed subcategories
     const updatedCategories = await Promise.all(
         allowedCategories.map(async (category) => {
           const subCategories = await fetchAllowedSubCategories(category._id);
@@ -460,19 +454,39 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
           return {
             categoryId: category._id,
             categoryName: category.categoryName,
-            subCategories: subCategories // Attach the fetched subcategories
+            subCategories: subCategories // Attach filtered subcategories
           };
         })
     );
 
-    return updatedCategories;
+    // Fetch products where the category or subcategory matches the allowed ones
+    const products = await Product.find({
+      $or: [
+        { categoryId: { $in: allowedCategoryIds } }, // Products where main category matches
+        { 'subCategories._id': { $in: allowedCategoryIds } } // Products where subcategory matches
+      ]
+    })
+        .lean()
+        .exec();
+
+    // Attach matching products to each category/subcategory
+    const categoriesWithProducts = updatedCategories.map((category) => {
+      const categoryProducts = products.filter(product =>
+          product.categoryId.some(catId => catId.toString() === category.categoryId.toString())
+      );
+
+      return {
+        ...category,
+        products: categoryProducts // Attach the products that match this category
+      };
+    });
+
+    return categoriesWithProducts;
   } catch (error) {
-    console.error('Error fetching allowed categories and subcategories:', error);
+    console.error('Error fetching allowed categories and products:', error);
     throw error;
   }
 };
-
-
 
 
 
