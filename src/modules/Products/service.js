@@ -404,90 +404,6 @@ const getFilteredProducts = async (filterOptions) => {
 
 
 
-//
-// const allowedCategoryIds = [
-//   "66bad6ec5a4a8987716ee701",
-//   "66e66d9344c7641816db25d4",
-//   "66e50d06e39a0fec145142d3",
-//   "66e50c8ae39a0fec145141a6",
-//   "66defcc7b146be859e284ab0",
-//   "66bc25165a4a8987716eed9e"
-// ];
-//
-// // Function to get allowed categories with their subcategories and filter products
-// const getAllProductsByAllowedCategoryIdsService = async () => {
-//   try {
-//     // Fetch all categories that match the allowedCategoryIds
-//     const allowedCategories = await CategoryModel.find({
-//       _id: { $in: allowedCategoryIds }
-//     }).lean().exec();
-//
-//     // Function to recursively fetch allowed subcategories
-//     const fetchAllowedSubCategories = async (categoryId) => {
-//       const subCategories = await CategoryModel.find({ parentCategory: categoryId })
-//           .lean()
-//           .exec();
-//
-//       // Filter subcategories that match the allowedCategoryIds
-//       const filteredSubCategories = subCategories.filter(subCat =>
-//           allowedCategoryIds.includes(subCat._id.toString())
-//       );
-//
-//       // Recursively fetch allowed subcategories for each filtered subcategory
-//       const subCategoriesWithChildren = await Promise.all(
-//           filteredSubCategories.map(async (subCat) => ({
-//             _id: subCat._id,
-//             categoryName: subCat.categoryName,
-//             slug: subCat.slug,
-//             subCategories: await fetchAllowedSubCategories(subCat._id) // Recursive call for nested subcategories
-//           }))
-//       );
-//
-//       return subCategoriesWithChildren;
-//     };
-//
-//     // For each allowed category, fetch its allowed subcategories
-//     const updatedCategories = await Promise.all(
-//         allowedCategories.map(async (category) => {
-//           const subCategories = await fetchAllowedSubCategories(category._id);
-//
-//           return {
-//             categoryId: category._id,
-//             categoryName: category.categoryName,
-//             subCategories: subCategories // Attach filtered subcategories
-//           };
-//         })
-//     );
-//
-//     // Fetch products where the category or subcategory matches the allowed ones
-//     const products = await Product.find({
-//       $or: [
-//         { categoryId: { $in: allowedCategoryIds } }, // Products where main category matches
-//         { 'subCategories._id': { $in: allowedCategoryIds } } // Products where subcategory matches
-//       ]
-//     })
-//         .lean()
-//         .exec();
-//
-//     // Attach matching products to each category/subcategory
-//     const categoriesWithProducts = updatedCategories.map((category) => {
-//       const categoryProducts = products.filter(product =>
-//           product.categoryId.some(catId => catId.toString() === category.categoryId.toString())
-//       );
-//
-//       return {
-//         ...category,
-//         products: categoryProducts // Attach the products that match this category
-//       };
-//     });
-//
-//     return categoriesWithProducts;
-//   } catch (error) {
-//     console.error('Error fetching allowed categories and products:', error);
-//     throw error;
-//   }
-// };
-
 
 const allowedCategoryIds = [
   "66bad6ec5a4a8987716ee701",
@@ -498,19 +414,13 @@ const allowedCategoryIds = [
   "66bc25165a4a8987716eed9e"
 ];
 
-// Function to get allowed categories with their products
+// Function to get allowed categories with their subcategories and products
 const getAllProductsByAllowedCategoryIdsService = async () => {
   try {
     // Step 1: Fetch all categories that match the allowedCategoryIds
     const allowedCategories = await CategoryModel.find({
       _id: { $in: allowedCategoryIds }
-    })
-        .select('_id categoryName') // Select only necessary fields
-        .lean()
-        .exec();
-
-    // Debug: Log allowed categories to ensure they are fetched correctly
-    console.log("Allowed Categories:", allowedCategories);
+    }).lean().exec();
 
     // Step 2: Fetch products where the category matches the allowed ones
     const products = await Product.find({
@@ -520,39 +430,38 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
         .lean()
         .exec();
 
-    // Debug: Log fetched products
-    console.log("Fetched Products:", products);
+    // Step 3: Attach matching products and subcategories to each allowed category by category ID
+    const categoriesWithProducts = await Promise.all(allowedCategories.map(async (category) => {
+      // Fetch subcategories for the current category
+      const subCategories = await CategoryModel.find({ parentCategory: category._id })
+          .select('_id categoryName slug') // Select relevant subcategory fields
+          .lean()
+          .exec();
 
-    // Step 3: Attach matching products to each allowed category by category ID
-    const categoriesWithProducts = allowedCategories.map((category) => {
+      // Filter products for the current category
       const categoryProducts = products.filter(product =>
-          product.categoryId && product.categoryId.some(catId => catId.toString() === category._id.toString()) // Match categoryId
-      );
-
-      // Debug: Log which products are associated with which category
-      console.log(`Category: ${category.categoryName}, Products:`, categoryProducts);
+          product.categoryId && product.categoryId.some(catId => catId.toString() === category._id.toString())
+      ).map(product => ({
+        _id: product._id,
+        productName: product.productName,
+        productSlug: product.productSlug,
+        productImage: product.productImage,
+        productPrice: product.general ? product.general.regularPrice : 0,
+        salePrice: product.general ? product.general.salePrice : 0,
+        stockStatus: product.inventory ? product.inventory.stockStatus : 'Unknown',
+        sku: product.inventory ? product.inventory.sku : 'Unknown'
+      }));
 
       return {
         categoryId: category._id,
         categoryName: category.categoryName,
-        products: categoryProducts.map(product => ({
-          _id: product._id,
-          productName: product.productName,
-          productSlug: product.productSlug,
-          productImage: product.productImage,
-          productPrice: product.general ? product.general.regularPrice : 0,
-          salePrice: product.general ? product.general.salePrice : 0,
-          stockStatus: product.inventory ? product.inventory.stockStatus : 'Unknown',
-          sku: product.inventory ? product.inventory.sku : 'Unknown'
-        }))
+        subCategories: subCategories,
+        products: categoryProducts // Attach the filtered products
       };
-    });
+    }));
 
-    // Step 4: Filter out categories with no products
-    const result = categoriesWithProducts.filter(category => category.products.length > 0);
-
-    // Debug: Log final result
-    console.log("Categories with Products:", result);
+    // Filter out categories with no products
+    const result = categoriesWithProducts.filter(category => category.products.length > 0 || category.subCategories.length > 0);
 
     // Return the final result
     return result;
@@ -561,6 +470,9 @@ const getAllProductsByAllowedCategoryIdsService = async () => {
     throw error;
   }
 };
+
+
+
 
 
 
