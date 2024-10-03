@@ -348,17 +348,31 @@ const createOrder = async (orderData) => {
     const savedOrder = await newOrder.save();
 
     // Prepare products info for SMS and the response
+    // const productInfoForSMS = savedOrder.products.map(product => {
+    //   const validProduct = validProducts.find(p => p._id.equals(product._id));
+    //   return {
+    //     _id: product._id,  // Keep the existing _id
+    //     quantity: product.quantity,  // Keep the existing quantity
+    //     productName: validProduct ? validProduct.productName : 'Unnamed Product',  // Add product name
+    //     productImage: validProduct ? validProduct.general.productImage : null, // Add product image
+    //     regularPrice: validProduct ? validProduct.general.regularPrice : 0,  // Add regular price
+    //     salePrice: validProduct ? validProduct.general.salePrice : 0  // Add sale price
+    //   };
+    // });
+
+    // Prepare products info for SMS and the response
     const productInfoForSMS = savedOrder.products.map(product => {
       const validProduct = validProducts.find(p => p._id.equals(product._id));
       return {
         _id: product._id,  // Keep the existing _id
         quantity: product.quantity,  // Keep the existing quantity
         productName: validProduct ? validProduct.productName : 'Unnamed Product',  // Add product name
-        productImage: validProduct ? validProduct.general.productImage : null, // Add product image
+        productImage: validProduct ? validProduct.productImage : null, // Add product image
         regularPrice: validProduct ? validProduct.general.regularPrice : 0,  // Add regular price
         salePrice: validProduct ? validProduct.general.salePrice : 0  // Add sale price
       };
     });
+
 
     // Send SMS to customer
     const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
