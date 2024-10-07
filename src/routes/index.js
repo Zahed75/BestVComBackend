@@ -23,8 +23,12 @@ const brandRoute = require('../modules/Brand/controller');
 const gridRoute = require('../modules/ProductsGrid/controller');
 const emailRoute = require('../modules/Email/controller');
 const menuRoute = require('../modules/Menu/controller');
+const cityRoute = require('../modules/City/controller');
+const areaRoute = require('../modules/Area/controller');
 
 //EndPoint
+router.use('/city',cityRoute);
+router.use('/area',areaRoute);
 router.use('/menu',menuRoute);
 router.use('/grid',gridRoute);
 router.use('/auth', authRoute);
