@@ -9,7 +9,7 @@ const OutletSchema= new mongoose.Schema({
     },
     outletLocation:{
         type:String,
-        max:[100,'Must Be Outlet Location in 100 characters'],
+        max:[100,'Must Be Outlet City in 100 characters'],
         required:true
     },
     outletImage :{
