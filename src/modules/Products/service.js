@@ -490,6 +490,73 @@ const getFilteredProducts = async (filterOptions) => {
 //
 //
 
+// step-2 -okay
+
+// const allowedCategoryIds = [
+//   "66bad6ec5a4a8987716ee701",
+//   "66e66d9344c7641816db25d4",
+//   "66e50d06e39a0fec145142d3",
+//   "66e50c8ae39a0fec145141a6",
+//   "66defcc7b146be859e284ab0",
+//   "66bc25165a4a8987716eed9e"
+// ];
+// const getAllProductsByAllowedCategoryIdsService = async () => {
+//   try {
+//     // Fetch all categories that match the allowedCategoryIds
+//     const allowedCategories = await CategoryModel.find({
+//       _id: { $in: allowedCategoryIds }
+//     }).lean().exec();
+//
+//     // Recursive function to fetch category hierarchy (subcategories)
+//     const fetchCategoryHierarchy = async (categoryId) => {
+//       const category = await CategoryModel.findById(categoryId).lean().exec();
+//       if (!category) return null;
+//
+//       const subcategories = await CategoryModel.find({ parentCategory: categoryId }).lean().exec();
+//
+//       // For each subcategory, recursively fetch its subcategories
+//       const subcategoryHierarchy = await Promise.all(
+//           subcategories.map(async (subCat) => ({
+//             ...subCat,
+//             subCategories: await fetchCategoryHierarchy(subCat._id)
+//           }))
+//       );
+//
+//       return {
+//         ...category,
+//         subCategories: subcategoryHierarchy
+//       };
+//     };
+//
+//     // Fetch all products that belong to the allowed categories
+//     const products = await Product.find({
+//       categoryId: { $in: allowedCategoryIds }
+//     }).lean().exec();
+//
+//     // Attach category and subcategory information to products
+//     const productsWithCategories = await Promise.all(
+//         products.map(async (product) => {
+//           const categories = await Promise.all(
+//               product.categoryId.map(async (categoryId) => await fetchCategoryHierarchy(categoryId))
+//           );
+//           return {
+//             ...product,
+//             categories: categories.filter(Boolean) // Ensure valid categories are included
+//           };
+//         })
+//     );
+//
+//     return productsWithCategories;
+//   } catch (error) {
+//     console.error('Error fetching products by allowed categories:', error);
+//     throw error;
+//   }
+// };
+
+
+
+
+
 const allowedCategoryIds = [
   "66bad6ec5a4a8987716ee701",
   "66e66d9344c7641816db25d4",
@@ -498,58 +565,35 @@ const allowedCategoryIds = [
   "66defcc7b146be859e284ab0",
   "66bc25165a4a8987716eed9e"
 ];
+
 const getAllProductsByAllowedCategoryIdsService = async () => {
   try {
-    // Fetch all categories that match the allowedCategoryIds
-    const allowedCategories = await CategoryModel.find({
-      _id: { $in: allowedCategoryIds }
-    }).lean().exec();
-
-    // Recursive function to fetch category hierarchy (subcategories)
-    const fetchCategoryHierarchy = async (categoryId) => {
-      const category = await CategoryModel.findById(categoryId).lean().exec();
-      if (!category) return null;
-
-      const subcategories = await CategoryModel.find({ parentCategory: categoryId }).lean().exec();
-
-      // For each subcategory, recursively fetch its subcategories
-      const subcategoryHierarchy = await Promise.all(
-          subcategories.map(async (subCat) => ({
-            ...subCat,
-            subCategories: await fetchCategoryHierarchy(subCat._id)
-          }))
-      );
-
-      return {
-        ...category,
-        subCategories: subcategoryHierarchy
-      };
-    };
-
-    // Fetch all products that belong to the allowed categories
+    // Fetch all products that belong to any allowed categories
     const products = await Product.find({
       categoryId: { $in: allowedCategoryIds }
     }).lean().exec();
 
-    // Attach category and subcategory information to products
-    const productsWithCategories = await Promise.all(
-        products.map(async (product) => {
-          const categories = await Promise.all(
-              product.categoryId.map(async (categoryId) => await fetchCategoryHierarchy(categoryId))
-          );
-          return {
-            ...product,
-            categories: categories.filter(Boolean) // Ensure valid categories are included
-          };
-        })
-    );
+    // For each product, filter out categoryId entries that are not in the allowed list
+    const filteredProducts = products.map((product) => {
+      const filteredCategoryIds = product.categoryId.filter(catId =>
+          allowedCategoryIds.includes(catId.toString())
+      );
 
-    return productsWithCategories;
+      // Return the product with only allowed category IDs
+      return {
+        ...product,
+        categoryId: filteredCategoryIds // Include only matching allowed categories
+      };
+    });
+
+    // Return the filtered products
+    return filteredProducts;
   } catch (error) {
-    console.error('Error fetching products by allowed categories:', error);
+    console.error('Error fetching allowed categories and products:', error);
     throw error;
   }
 };
+
 
 
 
