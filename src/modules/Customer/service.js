@@ -183,23 +183,73 @@ const resetPass = async (email, newPassword) => {
 
 
 
+// const updateCustomerService = async (customerId, customerData) => {
+//   try {
+//     // Ensure that profilePicture is always a string
+//     if (!customerData.profilePicture || typeof customerData.profilePicture !== 'string') {
+//       customerData.profilePicture = '';
+//     }
+//
+//     const updatedCustomer = await customerModel.findByIdAndUpdate(
+//       customerId,
+//       customerData,
+//       { new: true }
+//     );
+//     return updatedCustomer;
+//   } catch (error) {
+//     throw error;
+//   }
+// };
+
+
+
+
+
+
 const updateCustomerService = async (customerId, customerData) => {
   try {
-    // Ensure that profilePicture is always a string
-    if (!customerData.profilePicture || typeof customerData.profilePicture !== 'string') {
-      customerData.profilePicture = '';
+    // Find customer by ID
+    const customer = await customerModel.findById(customerId);
+
+    if (!customer) {
+      throw new Error('Customer not found');
     }
 
+    // Check if password update is requested
+    if (customerData.currentPassword) {
+      // Authenticate current password
+      const isMatch = await customer.authenticate(customerData.currentPassword);
+
+      if (!isMatch) {
+        throw new Error('Current password is incorrect');
+      }
+
+      // Check if newPassword and confirmPassword match
+      if (customerData.newPassword !== customerData.confirmPassword) {
+        throw new Error('New password and confirm password do not match');
+      }
+
+      // Hash the new password before updating
+      const salt = await bcrypt.genSalt(10);
+      customerData.password = await bcrypt.hash(customerData.newPassword, salt);
+    }
+
+    // Update other customer fields
     const updatedCustomer = await customerModel.findByIdAndUpdate(
-      customerId,
-      customerData,
-      { new: true }
+        customerId,
+        customerData,
+        { new: true }
     );
+
     return updatedCustomer;
   } catch (error) {
     throw error;
   }
 };
+
+
+
+
 
 
 
