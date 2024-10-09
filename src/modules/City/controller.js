@@ -21,6 +21,7 @@ const createCityHandler = asyncHandler(async (req, res) => {
 
 
 // Get all cities
+
 const getAllCitiesHandler = asyncHandler(async (req, res) => {
     try {
         const cities = await cityService.getAllCities();
@@ -28,7 +29,8 @@ const getAllCitiesHandler = asyncHandler(async (req, res) => {
     } catch (error) {
         return res.status(400).json({ error: error.message });
     }
-})
+});
+
 
 
 
