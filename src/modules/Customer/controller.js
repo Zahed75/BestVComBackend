@@ -101,8 +101,9 @@ const resetPassHandler = asyncHandler(async(req,res)=>{
 const updateCustomerHandler = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const customer = await customerService.updateCustomerService(id, req.body);
+
   res.status(200).json({
-    message: "Customer Updated Successfully!",
+    message: 'Customer Updated Successfully!',
     customer
   });
 });
