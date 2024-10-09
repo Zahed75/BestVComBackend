@@ -21,11 +21,21 @@ const createCity = async (cityData) => {
 // Get all cities
 const getAllCities = async () => {
     try {
-        return await cityModel.find();
+        // Populate the areas associated with each city
+        return await cityModel.find().populate({
+            path: 'areas',  // Populate the 'areas' field
+            model: 'Area',  // Specify the Area model
+            select: 'areaName'  // Select the fields you want to return (optional)
+        }).lean().exec();
     } catch (error) {
         throw new Error('Error fetching cities: ' + error.message);
     }
 };
+
+
+
+
+
 
 // Get city by ID
 const getCityById = async (cityId) => {
