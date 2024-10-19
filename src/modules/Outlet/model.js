@@ -24,6 +24,10 @@ const OutletSchema= new mongoose.Schema({
         type:String,
         max:[100,'Must Be City Name in 100 characters']
     },
+    areaName:{
+        type:String,
+        max:[1000,'Must Be City Area Name in 100 characters'],
+    },
     outletManagerEmail:{
         type:String,
         required:true
