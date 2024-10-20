@@ -10,7 +10,10 @@ const { HEAD_OFFICE, BRANCH_ADMIN,ADMIN,CUSTOMER } = require('../../config/const
 
 
 
+
+
 // addProducts
+
 
 const addProductHandler = asyncHandler(async (req, res) => {
     const product = await productService.addProduct(req.body);
@@ -19,6 +22,9 @@ const addProductHandler = asyncHandler(async (req, res) => {
         product
     });
 });
+
+
+
 
 
 

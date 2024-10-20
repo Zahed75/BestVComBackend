@@ -2,12 +2,17 @@ const Product = require('../Products/model');
 const { generateSlug } = require('../../utility/slug');
 
 const { BadRequest } = require('../../utility/errors');
-
 const CategoryModel = require('../Category/model');
+const InventoryModel = require('../Inventory/model');
+
+
+
+
+
+
+
 
 // addProducts
-
-
 const addProduct = async (productData) => {
   try {
     const { productName } = productData;
@@ -39,6 +44,9 @@ const addProduct = async (productData) => {
     throw new Error('Failed to add product');
   }
 };
+
+
+
 
 
 

@@ -25,6 +25,8 @@ const emailRoute = require('../modules/Email/controller');
 const menuRoute = require('../modules/Menu/controller');
 const cityRoute = require('../modules/City/controller');
 const areaRoute = require('../modules/Area/controller');
+const inventoryRoute = require('../modules/Inventory/controller');
+
 
 //EndPoint
 router.use('/city',cityRoute);
@@ -36,7 +38,7 @@ router.use('/user',userRoute);
 router.use('/outlet',outletRoute);
 router.use('/category',categoryRoute);
 router.use('/customer',customerRoute);
-
+router.use('/inventory',inventoryRoute);
 router.use('/product',productRoute);
 router.use('/discount',discountRoute);
 router.use('/order',orderRoute);
