@@ -9,11 +9,10 @@ const multerMiddleware = require('../../middlewares/multerMiddleware');
 const outletCreate = asyncHandler(async (req, res) => {
   const { outletName, outletLocation, outletManager, outletImage, outletManagerEmail, outletManagerPhone, cityName, areaName } = req.body;
 
-  // Pass arguments in the correct order
   const createdOutlet = await outletService.outletCreateService(
       outletName,
       cityName,
-      outletLocation,  // Correct order
+      outletLocation,
       outletImage,
       outletManager,
       outletManagerEmail,
@@ -21,7 +20,10 @@ const outletCreate = asyncHandler(async (req, res) => {
       areaName
   );
 
-  res.status(200).json({ createdOutlet });
+  res.status(200).json({
+    message: 'Outlet created Successfully',
+    createdOutlet
+  })
 });
 
 

@@ -118,21 +118,59 @@ const deleteInventoryProductById = async (outletId, productId) => {
 
 
 
+
+
+
+
+
 const getAllProductsByOutletId = async (outletId) => {
     try {
-        // Find the inventory for the given outlet
-        const inventory = await InventoryModel.findOne({ outletId }).populate('products._id');
+        // Find the inventory for the given outlet and populate products
+        const inventory = await InventoryModel.findOne({ outletId })
+            .populate({
+                path: 'products._id',
+                select: '-__v', // Exclude unnecessary fields like '__v'
+            });
 
         if (!inventory) {
             throw new Error('No inventory found for this outlet');
         }
 
-        return inventory;
+        // Format the products array to exclude the '_id'
+        const formattedProducts = inventory.products.map(product => {
+            return {
+                seo: product._id.seo,
+                general: product._id.general,
+                inventory: product._id.inventory,
+                shipping: product._id.shipping,
+                categoryId: product._id.categoryId,
+                productBrand: product._id.productBrand,
+                productName: product._id.productName,
+                productSlug: product._id.productSlug,
+                productCode: product._id.productCode,
+                productImage: product._id.productImage,
+                productGallery: product._id.productGallery,
+                productVideos: product._id.productVideos,
+                productStatus: product._id.productStatus,
+                productSpecification: product._id.productSpecification,
+                productShortDescription: product._id.productShortDescription,
+                createdAt: product._id.createdAt,
+                updatedAt: product._id.updatedAt,
+                quantity: product.quantity // Include the quantity from the products array
+            };
+        });
+
+        // Return inventory with formatted products
+        return {
+            _id: inventory._id,
+            outletId: inventory.outletId,
+            quantity: inventory.quantity,
+            products: formattedProducts
+        };
     } catch (error) {
         throw new Error(error.message);
     }
 };
-
 
 
 

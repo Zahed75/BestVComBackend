@@ -60,6 +60,7 @@ const deleteInventoryProductHandler = asyncHandler(async (req, res) => {
 
 
 
+
 const getAllProductsByOutletIdHandler = asyncHandler(async (req, res) => {
     const { outletId } = req.params;
 
