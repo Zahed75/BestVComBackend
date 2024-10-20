@@ -7,20 +7,42 @@ const multerMiddleware = require('../../middlewares/multerMiddleware');
 
 
 const outletCreate = asyncHandler(async (req, res) => {
-  const { outletName, outletLocation, outletManager, outletImage, outletManagerEmail, outletManagerPhone, cityName } = req.body;
-  const createdOutlet = await outletService.outletCreateService(outletName, cityName, outletLocation, outletImage, outletManager, outletManagerEmail, outletManagerPhone);
+  const { outletName, outletLocation, outletManager, outletImage, outletManagerEmail, outletManagerPhone, cityName, areaName } = req.body;
+
+  // Pass arguments in the correct order
+  const createdOutlet = await outletService.outletCreateService(
+      outletName,
+      cityName,
+      outletLocation,  // Correct order
+      outletImage,
+      outletManager,
+      outletManagerEmail,
+      outletManagerPhone,
+      areaName
+  );
+
   res.status(200).json({ createdOutlet });
 });
+
+
+
+
 
 const getAllOutlet = asyncHandler(async (req, res) => {
   const outlet = await outletService.getAllUsers();
   res.status(200).json({ outlet });
 });
 
+
+
+
+
 const updateOutlet = asyncHandler(async (req, res) => {
   const outlet = await outletService.updateOutlet(req.params.id, req.body);
   res.status(200).json({ outlet });
 });
+
+
 
 
 const deleteOutlet = asyncHandler(async (req, res) => {
@@ -29,10 +51,14 @@ const deleteOutlet = asyncHandler(async (req, res) => {
 });
 
 
+
+
 const searchOutlet = asyncHandler(async (req, res) => {
   const searchInfo = await outletService.searchOutlet(req.query.outletName.split(","));
   res.status(200).json({ message: "Search successful", searchInfo });
 });
+
+
 
 
 const outletEmailSetPassword = asyncHandler(async (req, res) => {
@@ -43,6 +69,7 @@ const outletEmailSetPassword = asyncHandler(async (req, res) => {
   }
   res.status(200).json({ message: "Email sent successfully" });
 });
+
 
 
 

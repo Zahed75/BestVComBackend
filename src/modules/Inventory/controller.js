@@ -10,20 +10,20 @@ const {HEAD_OFFICE, BRANCH_ADMIN, ADMIN, CUSTOMER} = require('../../config/const
 
 
 const addInventoryHandler = asyncHandler(async (req, res) => {
-    const {outletId, productId, quantity} = req.body;
+    const { outletId, productId, quantity } = req.body;
 
-    // Check for missing fields
-    if (!outletId || !productId || !quantity) {
-        return res.status(400).json({message: 'outletId, productId, and quantity are required.'});
+    // Check for missing fields (explicitly check for null or undefined for quantity)
+    if (!outletId || !productId || quantity === null || quantity === undefined) {
+        return res.status(400).json({ message: 'outletId, productId, and quantity are required.' });
     }
 
     // Call the service function to add the product to the inventory
     const inventory = await InventoryService.addProductToInventory(outletId, productId, quantity);
 
     // Send the updated inventory as a response
-    return res.status(200).json({message: 'Product added to inventory successfully', inventory});
+    return res.status(200).json({ message: 'Product added to inventory successfully', inventory });
+});
 
-})
 
 
 
@@ -60,9 +60,26 @@ const deleteInventoryProductHandler = asyncHandler(async (req, res) => {
 
 
 
+const getAllProductsByOutletIdHandler = asyncHandler(async (req, res) => {
+    const { outletId } = req.params;
+
+    // Check if outletId is provided
+    if (!outletId) {
+        return res.status(400).json({ message: 'outletId is required.' });
+    }
+
+    // Call the service function to get all products by outletId
+    const inventory = await InventoryService.getAllProductsByOutletId(outletId);
+
+    // Send the inventory as a response
+    return res.status(200).json({ message: 'Inventory fetched successfully', inventory });
+});
+
+
 
 
 router.post('/add-Inventory', addInventoryHandler);
 router.put('/update-inventory', updateInventoryQuantityHandler);
 router.delete('/delete-inventory-product', deleteInventoryProductHandler);
+router.get('/all-products-inventory/:outletId', getAllProductsByOutletIdHandler);
 module.exports = router;
