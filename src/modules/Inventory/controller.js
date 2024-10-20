@@ -10,20 +10,20 @@ const {HEAD_OFFICE, BRANCH_ADMIN, ADMIN, CUSTOMER} = require('../../config/const
 
 
 const addInventoryHandler = asyncHandler(async (req, res) => {
-    const {outletId, productId, quantity} = req.body;
+    const { outletId, productId, quantity } = req.body;
 
-    // Check for missing fields
-    if (!outletId || !productId || !quantity) {
-        return res.status(400).json({message: 'outletId, productId, and quantity are required.'});
+    // Check for missing fields (explicitly check for null or undefined for quantity)
+    if (!outletId || !productId || quantity === null || quantity === undefined) {
+        return res.status(400).json({ message: 'outletId, productId, and quantity are required.' });
     }
 
     // Call the service function to add the product to the inventory
     const inventory = await InventoryService.addProductToInventory(outletId, productId, quantity);
 
     // Send the updated inventory as a response
-    return res.status(200).json({message: 'Product added to inventory successfully', inventory});
+    return res.status(200).json({ message: 'Product added to inventory successfully', inventory });
+});
 
-})
 
 
 

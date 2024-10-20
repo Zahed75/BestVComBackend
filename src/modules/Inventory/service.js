@@ -1,14 +1,14 @@
 const InventoryModel = require('../Inventory/model');
 const { BadRequest } = require('../../utility/errors');
 const ProductModel = require('../Products/model');
-
+const OutletModel = require('../Outlet/model');
 
 
 
 
 
 // Function to add product to inventory for a specific outlet
-const addProductToInventory = async (outletId, productId, quantity)=>{
+const addProductToInventory = async (outletId, productId, quantity) => {
     try {
         // Check if the product exists
         const product = await ProductModel.findById(productId);
@@ -32,8 +32,8 @@ const addProductToInventory = async (outletId, productId, quantity)=>{
         const existingProductIndex = inventory.products.findIndex(p => p._id.toString() === productId);
 
         if (existingProductIndex !== -1) {
-            // If product exists, update its quantity
-            inventory.products[existingProductIndex].quantity += quantity;
+            // If product exists, replace its quantity with the new one
+            inventory.products[existingProductIndex].quantity = quantity;
         } else {
             // Add new product to the inventory
             inventory.products.push({ _id: productId, quantity });
