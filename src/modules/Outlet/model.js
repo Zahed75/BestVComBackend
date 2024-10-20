@@ -14,7 +14,7 @@ const OutletSchema= new mongoose.Schema({
     },
     outletImage :{
         type : String,
-        required:true
+        default:""
     },
     outletManager: {
         type: mongoose.Schema.Types.ObjectId,
