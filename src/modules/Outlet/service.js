@@ -11,28 +11,20 @@ const outletCreateService = async (outletName, cityName, outletLocation, outletI
       throw new Error('Outlet name, location, manager, and image are required');
     }
 
-    // Check if the outlet manager exists
     const managerInfo = await userModel.findById(outletManager);
 
     if (!managerInfo) {
       throw new Error('Outlet manager not found');
     }
-
-    // Log the retrieved manager info for debugging
-    console.log(`Manager Info: `, managerInfo);
-
-    // Check if email and phone number match
     if (managerInfo.email !== outletManagerEmail || managerInfo.phoneNumber !== outletManagerPhone) {
       throw new Error('Invalid outlet manager email or phone number');
     }
 
-    // Check if an outlet with the same name already exists
     const existingOutlet = await OutletModel.findOne({ outletName });
     if (existingOutlet) {
       throw new Error('Outlet with the same name already exists');
     }
 
-    // Create the new outlet
     const newOutlet = await OutletModel.create({
       outletName,
       outletLocation,
