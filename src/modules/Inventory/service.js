@@ -118,9 +118,29 @@ const deleteInventoryProductById = async (outletId, productId) => {
 
 
 
+const getAllProductsByOutletId = async (outletId) => {
+    try {
+        // Find the inventory for the given outlet
+        const inventory = await InventoryModel.findOne({ outletId }).populate('products._id');
+
+        if (!inventory) {
+            throw new Error('No inventory found for this outlet');
+        }
+
+        return inventory;
+    } catch (error) {
+        throw new Error(error.message);
+    }
+};
+
+
+
+
+
 
 module.exports = {
     addProductToInventory,
     updateInventoryProductQuantity,
-    deleteInventoryProductById
+    deleteInventoryProductById,
+    getAllProductsByOutletId
 }

@@ -60,9 +60,26 @@ const deleteInventoryProductHandler = asyncHandler(async (req, res) => {
 
 
 
+const getAllProductsByOutletIdHandler = asyncHandler(async (req, res) => {
+    const { outletId } = req.params;
+
+    // Check if outletId is provided
+    if (!outletId) {
+        return res.status(400).json({ message: 'outletId is required.' });
+    }
+
+    // Call the service function to get all products by outletId
+    const inventory = await InventoryService.getAllProductsByOutletId(outletId);
+
+    // Send the inventory as a response
+    return res.status(200).json({ message: 'Inventory fetched successfully', inventory });
+});
+
+
 
 
 router.post('/add-Inventory', addInventoryHandler);
 router.put('/update-inventory', updateInventoryQuantityHandler);
 router.delete('/delete-inventory-product', deleteInventoryProductHandler);
+router.get('/all-products-inventory/:outletId', getAllProductsByOutletIdHandler);
 module.exports = router;
