@@ -136,9 +136,10 @@ const getAllProductsByOutletId = async (outletId) => {
             throw new Error('No inventory found for this outlet');
         }
 
-        // Format the products array to exclude the '_id'
+        // Format the products array to include the '_id' as well
         const formattedProducts = inventory.products.map(product => {
             return {
+                _id: product._id._id, // Include the product ID here
                 seo: product._id.seo,
                 general: product._id.general,
                 inventory: product._id.inventory,
@@ -171,7 +172,6 @@ const getAllProductsByOutletId = async (outletId) => {
         throw new Error(error.message);
     }
 };
-
 
 
 
