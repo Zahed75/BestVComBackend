@@ -176,9 +176,60 @@ const getAllProductsByOutletId = async (outletId) => {
 
 
 
+
+
+const checkMultipleProductsAvailability = async (outletId, productIds) => {
+    try {
+        // Check if inventory exists for the outlet
+        const inventory = await InventoryModel.findOne({ outletId })
+            .populate({
+                path: 'products._id',
+                select: '-__v',
+            });
+
+        if (!inventory) {
+            throw new Error('No inventory found for this outlet');
+        }
+
+        // Create an array to hold the availability status of each product
+        const productAvailability = productIds.map(productId => {
+            const product = inventory.products.find(p => p._id._id.toString() === productId);
+
+            if (!product) {
+                return {
+                    productId,
+                    available: false,
+                    message: 'Product not found in inventory'
+                };
+            }
+
+            const isAvailable = product.quantity > 0;
+
+            return {
+                productId: product._id._id,
+                productName: product._id.productName,
+                available: isAvailable,
+                quantity: product.quantity,
+                message: isAvailable ? 'Product is available' : 'Product is out of stock'
+            };
+        });
+
+        return productAvailability;
+    } catch (error) {
+        throw new Error(error.message);
+    }
+};
+
+
+
+
+
 module.exports = {
     addProductToInventory,
     updateInventoryProductQuantity,
     deleteInventoryProductById,
-    getAllProductsByOutletId
+    getAllProductsByOutletId,
+    checkMultipleProductsAvailability
+
+
 }

@@ -78,7 +78,32 @@ const getAllProductsByOutletIdHandler = asyncHandler(async (req, res) => {
 
 
 
+const checkProductsAvailabilityHandler = asyncHandler(async (req, res) => {
+    const { outletId, productIds } = req.body;
 
+    // Validate if outletId and productIds are provided
+    if (!outletId || !Array.isArray(productIds) || productIds.length === 0) {
+        return res.status(400).json({ message: 'outletId and productIds array are required.' });
+    }
+
+    // Call the service function to check availability for multiple products
+    const availability = await InventoryService.checkMultipleProductsAvailability(outletId, productIds);
+
+    // Send the availability response
+    return res.status(200).json({
+        message: 'Product availability check completed',
+        availability
+    });
+});
+
+
+
+
+
+
+
+
+router.get('/check-products-availability', checkProductsAvailabilityHandler);
 router.post('/add-Inventory', addInventoryHandler);
 router.put('/update-inventory', updateInventoryQuantityHandler);
 router.delete('/delete-inventory-product', deleteInventoryProductHandler);
