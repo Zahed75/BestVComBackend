@@ -178,48 +178,61 @@ const getAllProductsByOutletId = async (outletId) => {
 
 
 
-const checkMultipleProductsAvailability = async (outletId, productIds) => {
-    try {
-        // Check if inventory exists for the outlet
-        const inventory = await InventoryModel.findOne({ outletId })
-            .populate({
-                path: 'products._id',
-                select: '-__v',
-            });
 
-        if (!inventory) {
-            throw new Error('No inventory found for this outlet');
+const checkMultipleProductsAvailabilityAcrossOutlets = async (productIds) => {
+    try {
+        // Get all outlets
+        const outlets = await OutletModel.find({}, '_id outletName');
+
+        if (!outlets.length) {
+            throw new Error('No outlets found');
         }
 
-        // Create an array to hold the availability status of each product
-        const productAvailability = productIds.map(productId => {
-            const product = inventory.products.find(p => p._id._id.toString() === productId);
+        const availability = [];
 
-            if (!product) {
-                return {
-                    productId,
-                    available: false,
-                    message: 'Product not found in inventory'
-                };
+        // Loop through each outlet and check for the products
+        for (const outlet of outlets) {
+            const inventory = await InventoryModel.findOne({ outletId: outlet._id })
+                .populate({
+                    path: 'products._id',
+                    select: '-__v',
+                });
+
+            if (inventory) {
+                const outletProductAvailability = productIds.map(productId => {
+                    const product = inventory.products.find(p => p._id._id.toString() === productId);
+
+                    if (!product) {
+                        return {
+                            outletName: outlet.outletName,
+                            productId,
+                            available: false,
+                            message: 'Product not found in inventory'
+                        };
+                    }
+
+                    const isAvailable = product.quantity > 0;
+
+                    return {
+                        outletName: outlet.outletName,
+                        productId: product._id._id,
+                        productName: product._id.productName,
+                        available: isAvailable,
+                        quantity: product.quantity,
+                        message: isAvailable ? 'Product is available' : 'Product is out of stock'
+                    };
+                });
+
+                // Push availability of current outlet to overall result
+                availability.push(...outletProductAvailability);
             }
+        }
 
-            const isAvailable = product.quantity > 0;
-
-            return {
-                productId: product._id._id,
-                productName: product._id.productName,
-                available: isAvailable,
-                quantity: product.quantity,
-                message: isAvailable ? 'Product is available' : 'Product is out of stock'
-            };
-        });
-
-        return productAvailability;
+        return availability;
     } catch (error) {
         throw new Error(error.message);
     }
 };
-
 
 
 
@@ -229,7 +242,7 @@ module.exports = {
     updateInventoryProductQuantity,
     deleteInventoryProductById,
     getAllProductsByOutletId,
-    checkMultipleProductsAvailability
+    checkMultipleProductsAvailabilityAcrossOutlets
 
 
 }
