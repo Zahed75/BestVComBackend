@@ -67,8 +67,8 @@ const getAllOutlet = async (productIds) => {
       throw new Error('productIds array is required.');
     }
 
-    // Get all outlets
-    const outlets = await OutletModel.find({}, '_id outletName outletLocation');
+    // Get all outlets and include all relevant fields
+    const outlets = await OutletModel.find({}, '_id outletName outletLocation outletImage outletManager outletManagerEmail outletManagerPhone cityName areaName');
 
     if (!outlets.length) {
       throw new Error('No outlets found');
@@ -92,8 +92,17 @@ const getAllOutlet = async (productIds) => {
 
           if (!product) {
             return {
-              outletName: outlet.outletName,
-              outletLocation: outlet.outletLocation,
+              outletDetails: {
+                outletId: outlet._id,
+                outletName: outlet.outletName,
+                outletLocation: outlet.outletLocation,
+                outletImage: outlet.outletImage,
+                outletManager: outlet.outletManager,
+                outletManagerEmail: outlet.outletManagerEmail,
+                outletManagerPhone: outlet.outletManagerPhone,
+                cityName: outlet.cityName,
+                areaName: outlet.areaName,
+              },
               productId,
               available: false,
               message: 'Product not found in inventory',
@@ -103,8 +112,17 @@ const getAllOutlet = async (productIds) => {
           const isAvailable = product.quantity > 0;
 
           return {
-            outletName: outlet.outletName,
-            outletLocation: outlet.outletLocation,
+            outletDetails: {
+              outletId: outlet._id,
+              outletName: outlet.outletName,
+              outletLocation: outlet.outletLocation,
+              outletImage: outlet.outletImage,
+              outletManager: outlet.outletManager,
+              outletManagerEmail: outlet.outletManagerEmail,
+              outletManagerPhone: outlet.outletManagerPhone,
+              cityName: outlet.cityName,
+              areaName: outlet.areaName,
+            },
             productId: product._id._id,
             productName: product._id.productName,
             available: isAvailable,
@@ -125,6 +143,10 @@ const getAllOutlet = async (productIds) => {
     throw new Error(error.message);
   }
 };
+
+
+
+
 
 
 
