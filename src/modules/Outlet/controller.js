@@ -30,29 +30,34 @@ const outletCreate = asyncHandler(async (req, res) => {
 
 
 
-// const getAllOutlet = asyncHandler(async (req, res) => {
-//   const outlet = await outletService.getAllOutlet();
-//   res.status(200).json({ outlet });
-// });
-
-
 const getAllOutlet = asyncHandler(async (req, res) => {
-  const { productIds } = req.body;
+  const outlet = await outletService.getAllOutlet();
+  res.status(200).json({ outlet });
+});
 
-  // Validate if productIds are provided
-  if (!Array.isArray(productIds) || productIds.length === 0) {
-    return res.status(400).json({ message: 'productIds array is required.' });
-  }
 
-  // Call the service function to check availability across all outlets
-  const availability = await outletService.getAllOutlet(productIds);
 
-  // Send the availability response
-  return res.status(200).json({
-    message: 'Product availability check across all outlets completed',
-    availability,
-  });
-})
+
+
+
+
+// const getAllOutlet = asyncHandler(async (req, res) => {
+//   const { productIds } = req.body;
+//
+//   // Validate if productIds are provided
+//   if (!Array.isArray(productIds) || productIds.length === 0) {
+//     return res.status(400).json({ message: 'productIds array is required.' });
+//   }
+//
+//   // Call the service function to check availability across all outlets
+//   const availability = await outletService.getAllOutlet(productIds);
+//
+//   // Send the availability response
+//   return res.status(200).json({
+//     message: 'Product availability check across all outlets completed',
+//     availability,
+//   });
+// })
 
 
 
