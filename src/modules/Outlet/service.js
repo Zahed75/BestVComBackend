@@ -1,7 +1,8 @@
 const OutletModel = require("./model");
 const userModel = require("../User/model");
 const { passEmailForOutlet } = require('../../utility/email');
-
+const InventoryModel = require('../Inventory/model');
+const ProductModel = require('../Products/model');
 
 
 
@@ -49,17 +50,81 @@ const outletCreateService = async (outletName, cityName, outletLocation, outletI
 
 
 
-const getAllUsers = async () => {
+// const getAllOutlet = async () => {
+//   try {
+//     const users = await OutletModel.find();
+//     return users;
+//   } catch (error) {
+//     console.error('Error in getAllUsers:', error.message);
+//     throw new Error('Failed to retrieve users: ' + error.message);
+//   }
+// };
+
+
+const getAllOutlet = async (productIds) => {
   try {
-    const users = await OutletModel.find();
-    return users;
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      throw new Error('productIds array is required.');
+    }
+
+    // Get all outlets
+    const outlets = await OutletModel.find({}, '_id outletName outletLocation');
+
+    if (!outlets.length) {
+      throw new Error('No outlets found');
+    }
+
+    const availability = [];
+
+    // Loop through each outlet and check for the products in its inventory
+    for (const outlet of outlets) {
+      const inventory = await InventoryModel.findOne({ outletId: outlet._id })
+          .populate({
+            path: 'products._id',
+            select: '-__v', // Exclude unneeded fields
+          });
+
+      if (inventory) {
+        const outletProductAvailability = productIds.map((productId) => {
+          const product = inventory.products.find(
+              (p) => p._id._id.toString() === productId
+          );
+
+          if (!product) {
+            return {
+              outletName: outlet.outletName,
+              outletLocation: outlet.outletLocation,
+              productId,
+              available: false,
+              message: 'Product not found in inventory',
+            };
+          }
+
+          const isAvailable = product.quantity > 0;
+
+          return {
+            outletName: outlet.outletName,
+            outletLocation: outlet.outletLocation,
+            productId: product._id._id,
+            productName: product._id.productName,
+            available: isAvailable,
+            quantity: product.quantity,
+            message: isAvailable
+                ? 'Product is available'
+                : 'Product is out of stock',
+          };
+        });
+
+        // Push availability of current outlet to overall result
+        availability.push(...outletProductAvailability);
+      }
+    }
+
+    return availability;
   } catch (error) {
-    console.error('Error in getAllUsers:', error.message);
-    throw new Error('Failed to retrieve users: ' + error.message);
+    throw new Error(error.message);
   }
 };
-
-
 
 
 
@@ -88,6 +153,9 @@ const updateOutlet = async (userId, updatedInfo) => {
     throw new Error('Failed to update outlet: ' + error.message);
   }
 };
+
+
+
 
 const deleteOutlet = async (id) => {
   try {
@@ -144,6 +212,9 @@ const getOutletManagerByIdService = async (id) => {
 };
   
 
+
+
+
 const getOutletById = async (id) => {
   try {
     if (!id) {
@@ -162,9 +233,12 @@ const getOutletById = async (id) => {
   }
 }
 
+
+
+
 module.exports = {
   outletCreateService,
-  getAllUsers,
+  getAllOutlet,
   updateOutlet,
   deleteOutlet,
   searchOutlet,
