@@ -41,26 +41,6 @@ const getAllOutlet = asyncHandler(async (req, res) => {
 
 
 
-// const getAllOutlet = asyncHandler(async (req, res) => {
-//   const { productIds } = req.body;
-//
-//   // Validate if productIds are provided
-//   if (!Array.isArray(productIds) || productIds.length === 0) {
-//     return res.status(400).json({ message: 'productIds array is required.' });
-//   }
-//
-//   // Call the service function to check availability across all outlets
-//   const availability = await outletService.getAllOutlet(productIds);
-//
-//   // Send the availability response
-//   return res.status(200).json({
-//     message: 'Product availability check across all outlets completed',
-//     availability,
-//   });
-// })
-
-
-
 
 
 const updateOutlet = asyncHandler(async (req, res) => {
@@ -115,11 +95,72 @@ const getOutletById = asyncHandler(async (req, res) => {
 
 
 
+const transferOrderController = asyncHandler(async (req, res) => {
+  const { orderId, outletId } = req.body;
+
+  if (!orderId || !outletId) {
+    return res.status(400).json({ message: 'Order ID and Outlet ID are required' });
+  }
+
+  try {
+    const result = await outletService.transferOrderToOutlet(orderId, outletId);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
 
 
 
+
+const getOrdersByOutletManagerController = asyncHandler(async (req, res) => {
+  const { managerId } = req.params;
+
+  if (!managerId) {
+    return res.status(400).json({ message: 'Manager ID is required' });
+  }
+
+  try {
+    const orders = await outletService.getOrdersByOutletManager(managerId);
+    return res.status(200).json({
+      message: `Orders for outlet manager ${managerId} retrieved successfully`,
+      orders
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+
+const getOrdersByOutletNameController = asyncHandler(async (req, res) => {
+  const { outletName } = req.params; // assuming the outletName is passed as a URL parameter
+
+  if (!outletName) {
+    return res.status(400).json({ message: 'Outlet name is required' });
+  }
+
+  try {
+    const orders = await outletService.getOrdersByOutletName(outletName);
+
+    if (!orders.length) {
+      return res.status(404).json({ message: 'No orders found for this outlet' });
+    }
+
+    return res.status(200).json({
+      message: `Orders found for outlet: ${outletName}`,
+      orders,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+});
+
+
+
+
+
+router.get('/orders/:outletName', getOrdersByOutletNameController);
 router.get("/getOutletById/:id", getOutletById);
-
 router.post("/outletCreate", multerMiddleware.upload.fields([
   { name: 'outletImage', maxCount: 1 }
 ]), outletCreate);
@@ -129,5 +170,6 @@ router.delete("/deleteOutlet/:id", deleteOutlet);
 router.get("/searchOutlet", searchOutlet);
 router.post("/outletEmailSetPassword", outletEmailSetPassword);
 router.get("/getOutletManagerById/:id", getOutletManagerById);
-
+router.post('/transfer-order', transferOrderController);
+router.get('/orders-by-manager/:managerId', getOrdersByOutletManagerController);
 module.exports = router;

@@ -32,14 +32,15 @@ const OrderSchema = new mongoose.Schema({
     type: String,
     enum: [
       'Received',
-      'Confirmed',
-      'Dispatched',
-      'Delivered',
-      'On-Hold',
+      'Order Placed',
+      'Order Confirmed',
+      'Order Processing',
+      'Ready for Delivery',
+      'Order Dispatched',
       'Cancelled',
-      'Spammed'
+      'Order Delivered'
     ],
-    default: "Received"
+    default: 'Received'
   },
   deliveryAddress: {
     type: String,
@@ -115,7 +116,7 @@ const OrderSchema = new mongoose.Schema({
       default:""
     },
 
-  // vatRate: Number,
+
 
   orderLogs: [{
     status: {
