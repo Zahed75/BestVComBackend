@@ -409,7 +409,7 @@ const getOrderById = async (id) => {
       })
       .populate({
         path: 'customer',
-        model: 'customer',
+        model: 'Customer',
         select: 'firstName lastName email phoneNumber district address'
       });
 
@@ -454,6 +454,8 @@ const getOrderById = async (id) => {
     return { success: false, error: error.message };
   }
 };
+
+
 
 
 
