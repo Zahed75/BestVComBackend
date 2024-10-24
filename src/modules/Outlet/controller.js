@@ -132,6 +132,8 @@ const getOrdersByOutletManagerController = asyncHandler(async (req, res) => {
 });
 
 
+
+
 const getOrdersByOutletNameController = asyncHandler(async (req, res) => {
   const { outletName } = req.params; // assuming the outletName is passed as a URL parameter
 
@@ -154,6 +156,8 @@ const getOrdersByOutletNameController = asyncHandler(async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 });
+
+
 
 
 

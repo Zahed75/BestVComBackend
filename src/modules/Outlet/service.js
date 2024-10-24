@@ -225,6 +225,8 @@ const getOrdersByOutletManager = async (managerId) => {
 };
 
 
+
+
 const getOrdersByOutletName = async (outletName) => {
   try {
     // Find the outlet by name
