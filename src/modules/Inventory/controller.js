@@ -44,7 +44,7 @@ const updateInventoryQuantityHandler = asyncHandler(async (req, res) => {
 
 
 const deleteInventoryProductHandler = asyncHandler(async (req, res) => {
-    const { outletId, productId } = req.body;
+    const { outletId, productId } = req.params;
 
     // Check for missing fields
     if (!outletId || !productId) {
