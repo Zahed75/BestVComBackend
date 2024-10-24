@@ -102,7 +102,7 @@ const checkProductsAvailabilityHandler = asyncHandler(async (req, res) => {
 
 
 
-router.get('/check-products-availability', checkProductsAvailabilityHandler);
+router.post('/check-products-availability', checkProductsAvailabilityHandler);
 router.post('/add-Inventory', addInventoryHandler);
 router.put('/update-inventory', updateInventoryQuantityHandler);
 router.delete('/delete-inventory-product', deleteInventoryProductHandler);
