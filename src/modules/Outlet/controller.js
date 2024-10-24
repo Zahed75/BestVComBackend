@@ -3,6 +3,7 @@ const router = express.Router();
 const outletService = require('./service');
 const { asyncHandler } = require('../../utility/common');
 const multerMiddleware = require('../../middlewares/multerMiddleware');
+const {getOrderById} = require("../Order/service");
 
 
 
@@ -134,8 +135,11 @@ const getOrdersByOutletManagerController = asyncHandler(async (req, res) => {
 
 
 
-const getOrdersByOutletNameController = asyncHandler(async (req, res) => {
-  const { outletName } = req.params; // assuming the outletName is passed as a URL parameter
+
+
+
+const getOrdersByOutletNameController =asyncHandler(async (req, res) => {
+  const { outletName } = req.params;
 
   if (!outletName) {
     return res.status(400).json({ message: 'Outlet name is required' });
@@ -152,6 +156,35 @@ const getOrdersByOutletNameController = asyncHandler(async (req, res) => {
       message: `Orders found for outlet: ${outletName}`,
       orders,
     });
+
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+
+})
+
+
+
+
+
+const getOrdersByOutletIdController = asyncHandler(async (req, res) => {
+  const { outletId } = req.params; // assuming the outletId is passed as a URL parameter
+
+  if (!outletId) {
+    return res.status(400).json({ message: 'Outlet ID is required' });
+  }
+
+  try {
+    const orders = await outletService.getOrdersByOutletId(outletId);
+
+    if (!orders.length) {
+      return res.status(404).json({ message: 'No orders found for this outlet' });
+    }
+
+    return res.status(200).json({
+      message: `Orders found for outlet ID: ${outletId}`,
+      orders,
+    });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }
@@ -161,13 +194,11 @@ const getOrdersByOutletNameController = asyncHandler(async (req, res) => {
 
 
 
-
-
-router.get('/orders/:outletName', getOrdersByOutletNameController);
 router.get("/getOutletById/:id", getOutletById);
 router.post("/outletCreate", multerMiddleware.upload.fields([
   { name: 'outletImage', maxCount: 1 }
 ]), outletCreate);
+
 router.get("/getAllOutlet", getAllOutlet);
 router.put("/updateOutlet/:id", updateOutlet);
 router.delete("/deleteOutlet/:id", deleteOutlet);
@@ -176,4 +207,7 @@ router.post("/outletEmailSetPassword", outletEmailSetPassword);
 router.get("/getOutletManagerById/:id", getOutletManagerById);
 router.post('/transfer-order', transferOrderController);
 router.get('/orders-by-manager/:managerId', getOrdersByOutletManagerController);
+router.get('/orders/:outletName', getOrdersByOutletNameController);
+router.get('/all-orders/:outletId', getOrdersByOutletIdController);
+
 module.exports = router;

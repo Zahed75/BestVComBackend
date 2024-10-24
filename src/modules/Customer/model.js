@@ -1,5 +1,3 @@
-
-
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -149,6 +147,6 @@ CustomerSchema.path('phoneNumber').validate(function (value) {
   return regex.test(value);
 }, 'Please enter a valid Phone Number');
 
-const CustomerModel = mongoose.model('customer', CustomerSchema);
+const CustomerModel = mongoose.model('Customer', CustomerSchema);
 
 module.exports = CustomerModel;

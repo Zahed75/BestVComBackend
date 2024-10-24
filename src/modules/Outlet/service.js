@@ -1,9 +1,10 @@
-const OutletModel = require("./model");
+const OutletModel = require("../Outlet/model");
 const userModel = require("../User/model");
 const { passEmailForOutlet } = require('../../utility/email');
 const InventoryModel = require('../Inventory/model');
 const ProductModel = require('../Products/model');
 const orderModel = require('../Order/model');
+const CustomerModel = require('../Customer/model');
 
 
 const outletCreateService = async (outletName, cityName, outletLocation, outletImage, outletManager, outletManagerEmail, outletManagerPhone, areaName) => {
@@ -227,6 +228,8 @@ const getOrdersByOutletManager = async (managerId) => {
 
 
 
+
+
 const getOrdersByOutletName = async (outletName) => {
   try {
     // Find the outlet by name
@@ -236,7 +239,9 @@ const getOrdersByOutletName = async (outletName) => {
     }
 
     // Find orders that belong to this outlet
-    const orders = await orderModel.find({ outlet: outlet._id }).populate('customer', '-__v').populate('products._id', '-__v');
+    const orders = await orderModel.find({ outlet: outlet._id })
+        .populate('customer', '-__v') // Populate customer information, excluding __v
+        .populate('products._id', '-__v'); // Populate products, excluding __v
 
     return orders;
   } catch (error) {
@@ -244,6 +249,20 @@ const getOrdersByOutletName = async (outletName) => {
   }
 };
 
+
+
+const getOrdersByOutletId = async (outletId) => {
+  try {
+    // Find orders that belong to this outlet
+    const orders = await orderModel.find({ outlet: outletId })
+        .populate('customer', '-__v')
+        .populate('products._id', '-__v');
+
+    return orders;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
 
 
 
@@ -260,7 +279,9 @@ module.exports = {
   getOutletById,
   transferOrderToOutlet,
   getOrdersByOutletManager,
-  getOrdersByOutletName
+  getOrdersByOutletName,
+  getOrdersByOutletId
+
 
 }
 
