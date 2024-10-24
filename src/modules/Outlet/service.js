@@ -3,7 +3,7 @@ const userModel = require("../User/model");
 const { passEmailForOutlet } = require('../../utility/email');
 const InventoryModel = require('../Inventory/model');
 const ProductModel = require('../Products/model');
-
+const orderModel = require('../Order/model');
 
 
 const outletCreateService = async (outletName, cityName, outletLocation, outletImage, outletManager, outletManagerEmail, outletManagerPhone, areaName) => {
@@ -60,96 +60,6 @@ const getAllOutlet = async () => {
   }
 };
 
-
-
-
-
-
-
-//
-// const getAllOutlet = async (productIds) => {
-//   try {
-//     if (!Array.isArray(productIds) || productIds.length === 0) {
-//       throw new Error('productIds array is required.');
-//     }
-//
-//     // Get all outlets and include all relevant fields
-//     const outlets = await OutletModel.find({}, '_id outletName outletLocation outletImage outletManager outletManagerEmail outletManagerPhone cityName areaName');
-//
-//     if (!outlets.length) {
-//       throw new Error('No outlets found');
-//     }
-//
-//     const availability = [];
-//
-//     // Loop through each outlet and check for the products in its inventory
-//     for (const outlet of outlets) {
-//       const inventory = await InventoryModel.findOne({ outletId: outlet._id })
-//           .populate({
-//             path: 'products._id',
-//             select: '-__v', // Exclude unneeded fields
-//           });
-//
-//       if (inventory) {
-//         const outletProductAvailability = productIds.map((productId) => {
-//           const product = inventory.products.find(
-//               (p) => p._id._id.toString() === productId
-//           );
-//
-//           if (!product) {
-//             return {
-//               outletDetails: {
-//                 outletId: outlet._id,
-//                 outletName: outlet.outletName,
-//                 outletLocation: outlet.outletLocation,
-//                 outletImage: outlet.outletImage,
-//                 outletManager: outlet.outletManager,
-//                 outletManagerEmail: outlet.outletManagerEmail,
-//                 outletManagerPhone: outlet.outletManagerPhone,
-//                 cityName: outlet.cityName,
-//                 areaName: outlet.areaName,
-//               },
-//               productId,
-//               available: false,
-//               message: 'Product not found in inventory',
-//             };
-//           }
-//
-//           const isAvailable = product.quantity > 0;
-//
-//           return {
-//             outletDetails: {
-//               outletId: outlet._id,
-//               outletName: outlet.outletName,
-//               outletLocation: outlet.outletLocation,
-//               outletImage: outlet.outletImage,
-//               outletManager: outlet.outletManager,
-//               outletManagerEmail: outlet.outletManagerEmail,
-//               outletManagerPhone: outlet.outletManagerPhone,
-//               cityName: outlet.cityName,
-//               areaName: outlet.areaName,
-//             },
-//             productId: product._id._id,
-//             productName: product._id.productName,
-//             available: isAvailable,
-//             quantity: product.quantity,
-//             message: isAvailable
-//                 ? 'Product is available'
-//                 : 'Product is out of stock',
-//           };
-//         });
-//
-//         // Push availability of current outlet to overall result
-//         availability.push(...outletProductAvailability);
-//       }
-//     }
-//
-//     return availability;
-//   } catch (error) {
-//     throw new Error(error.message);
-//   }
-// };
-//
 
 
 
@@ -263,6 +173,80 @@ const getOutletById = async (id) => {
 
 
 
+const transferOrderToOutlet = async (orderId, outletId) => {
+  try {
+    // Check if the outlet exists
+    const outlet = await OutletModel.findById(outletId);
+    if (!outlet) {
+      throw new Error('Outlet not found');
+    }
+
+    // Update the order's outlet field
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      throw new Error('Order not found');
+    }
+
+    order.outlet = outletId;
+    await order.save();
+
+    return {
+      message: 'Order transferred successfully',
+      orderId: orderId,
+      newOutlet: outletId
+    };
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
+
+
+const getOrdersByOutletManager = async (managerId) => {
+  try {
+    // Get all outlets managed by the given manager
+    const outlets = await OutletModel.find({ outletManager: managerId });
+
+    if (!outlets.length) {
+      throw new Error('No outlets found for this manager');
+    }
+
+    const outletIds = outlets.map(outlet => outlet._id);
+
+    // Find all orders associated with these outlets
+    const orders = await orderModel.find({ outlet: { $in: outletIds } })
+        .populate('customer', 'firstName lastName phoneNumber')
+        .populate('products._id', 'productName');
+
+    return orders;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
+
+const getOrdersByOutletName = async (outletName) => {
+  try {
+    // Find the outlet by name
+    const outlet = await OutletModel.findOne({ outletName });
+    if (!outlet) {
+      throw new Error('Outlet not found');
+    }
+
+    // Find orders that belong to this outlet
+    const orders = await orderModel.find({ outlet: outlet._id }).populate('customer', '-__v').populate('products._id', '-__v');
+
+    return orders;
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
+
+
+
+
+
 
 module.exports = {
   outletCreateService,
@@ -271,7 +255,10 @@ module.exports = {
   deleteOutlet,
   searchOutlet,
   getOutletManagerByIdService,
-  getOutletById
+  getOutletById,
+  transferOrderToOutlet,
+  getOrdersByOutletManager,
+  getOrdersByOutletName
 
 }
 
