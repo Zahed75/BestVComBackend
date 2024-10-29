@@ -66,7 +66,7 @@ const createOrder = async (orderData) => {
     const orderId = await generateCustomOrderId();
     const orderTime = formatOrderTime(new Date());
 
-    // Destructure orderData and add city and area
+    // Destructure orderData
     const {
       email, orderType, deliveryAddress, deliveryCharge = 0,
       city, area, phoneNumber, paymentMethod, transactionId,
@@ -82,18 +82,19 @@ const createOrder = async (orderData) => {
       ]
     }).lean().exec();
 
+    // If no customer found, throw an error
     if (!customer) {
       throw new NotFound('Customer not found');
     }
 
-    // Find the outlet by ID (validate the outlet ID)
-    const outletData = await OutletModel.findById(outlet);
-    if (!outletData) {
-      throw new NotFound('Outlet not found');
-    }
+    // Try finding the outlet by ID, but proceed if not found
+    const outletData = outlet ? await OutletModel.findById(outlet) : null;
 
+    // Set firstName and lastName from customer if not provided in the request
     const customerFirstName = firstName || customer.firstName;
     const customerLastName = lastName || customer.lastName;
+
+    // Use phoneNumber from the request, or fallback to customer's phoneNumber
     const customerPhoneNumber = phoneNumber || customer.phoneNumber;
 
     // Validate products
@@ -101,6 +102,7 @@ const createOrder = async (orderData) => {
       throw new BadRequest('No products provided');
     }
 
+    // Ensure each product has a valid price
     const productIds = products.map(product => product._id);
     const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
 
@@ -110,6 +112,7 @@ const createOrder = async (orderData) => {
 
     // Calculate total price based on valid products
     const totalPrice = calculateOrderValue(validProducts, products);
+
     if (!totalPrice || isNaN(totalPrice)) {
       throw new BadRequest('Invalid total price');
     }
@@ -129,18 +132,12 @@ const createOrder = async (orderData) => {
     }
 
     const validDeliveryCharge = isNaN(deliveryCharge) ? 0 : deliveryCharge;
-    const vatRate = 5; // Fixed VAT rate of 5%
+    const vatRate = 5;
     const vat = (vatRate / 100) * totalPrice;
-    if (isNaN(vat)) {
-      throw new BadRequest('VAT calculation resulted in NaN');
-    }
 
     const finalTotalPrice = totalPrice - discountAmount + validDeliveryCharge;
-    if (isNaN(finalTotalPrice)) {
-      throw new BadRequest('Final total price calculation resulted in NaN');
-    }
 
-    // Create new order with city and area fields
+    // Create new order
     const newOrder = new OrderModel({
       orderId,
       customer: customer._id,
@@ -149,9 +146,9 @@ const createOrder = async (orderData) => {
       orderType,
       orderTime,
       deliveryAddress,
-      city,                 // Add city
-      area,                 // Add area
       orderStatus: 'Received',
+      city,
+      area,
       phoneNumber: customerPhoneNumber,
       email: email || customer.email,
       paymentMethod,
@@ -163,7 +160,7 @@ const createOrder = async (orderData) => {
       deliveryCharge: validDeliveryCharge,
       customerIp,
       channel,
-      outlet: outletData._id
+      outlet: outletData ? outletData._id : null // Set to null if outlet is not found
     });
 
     const savedOrder = await newOrder.save();
@@ -193,12 +190,10 @@ const createOrder = async (orderData) => {
       await sendOrderInvoiceEmail(savedOrder.email, {
         orderId: savedOrder.orderId,
         firstName: customerFirstName,
-        lastName: customerLastName,
         paymentMethod,
+        lastName: customerLastName,
         email: savedOrder.email,
         deliveryAddress,
-        city,               // Add city to the email data
-        area,               // Add area to the email data
         phoneNumber: customerPhoneNumber,
         products: productInfoForSMS,
         totalPrice: totalPrice - discountAmount,
@@ -224,8 +219,8 @@ const createOrder = async (orderData) => {
           deliveryAddress: savedOrder.deliveryAddress,
           deliveryCharge: savedOrder.deliveryCharge,
           email: savedOrder.email,
-          city: savedOrder.city,        // Include city in response
-          area: savedOrder.area,        // Include area in response
+          city: savedOrder.city,
+          area: savedOrder.area,
           phoneNumber: savedOrder.phoneNumber,
           paymentMethod: savedOrder.paymentMethod,
           products: productInfoForSMS,
@@ -251,7 +246,6 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
-
 
 
 
