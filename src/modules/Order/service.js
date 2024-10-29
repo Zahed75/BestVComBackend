@@ -8,6 +8,7 @@ const sendSMS = require('../../utility/aamarPayOTP');
 const { getSMSText } = require('../../utility/getSMS');
 const { sendOrderInvoiceEmail } = require('../../utility/email');
 const OutletModel = require('../Outlet/model');
+const axios = require('axios');
 
 
 function calculateOrderValue(products, orderProducts, couponId) {
@@ -65,10 +66,10 @@ const createOrder = async (orderData) => {
     const orderId = await generateCustomOrderId();
     const orderTime = formatOrderTime(new Date());
 
-    // Destructure orderData
+    // Destructure orderData and add city and area
     const {
       email, orderType, deliveryAddress, deliveryCharge = 0,
-      district, phoneNumber, paymentMethod, transactionId,
+      city, area, phoneNumber, paymentMethod, transactionId,
       products, couponName, firstName, lastName, customerIp,
       channel, outlet
     } = orderData;
@@ -81,7 +82,6 @@ const createOrder = async (orderData) => {
       ]
     }).lean().exec();
 
-    // If no customer found, throw an error
     if (!customer) {
       throw new NotFound('Customer not found');
     }
@@ -92,11 +92,8 @@ const createOrder = async (orderData) => {
       throw new NotFound('Outlet not found');
     }
 
-    // Set firstName and lastName from customer if not provided in the request
     const customerFirstName = firstName || customer.firstName;
     const customerLastName = lastName || customer.lastName;
-
-    // Use phoneNumber from the request, or fallback to customer's phoneNumber
     const customerPhoneNumber = phoneNumber || customer.phoneNumber;
 
     // Validate products
@@ -104,7 +101,6 @@ const createOrder = async (orderData) => {
       throw new BadRequest('No products provided');
     }
 
-    // Ensure each product has a valid price
     const productIds = products.map(product => product._id);
     const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
 
@@ -114,7 +110,6 @@ const createOrder = async (orderData) => {
 
     // Calculate total price based on valid products
     const totalPrice = calculateOrderValue(validProducts, products);
-
     if (!totalPrice || isNaN(totalPrice)) {
       throw new BadRequest('Invalid total price');
     }
@@ -125,81 +120,66 @@ const createOrder = async (orderData) => {
 
     // Apply coupon logic if couponName is provided
     if (couponName) {
-      // Fetch the coupon from the database
       coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
-
-      // If coupon is invalid, throw an error
       if (!coupon) throw new BadRequest('Invalid coupon name');
-
-      // Validate coupon expiration
       if (new Date() > new Date(coupon.general.couponExpiry)) {
         throw new BadRequest('Coupon has expired');
       }
-
-      // Calculate discount based on the coupon
       discountAmount = calculateDiscount(coupon, totalPrice);
     }
 
-    // Ensure delivery charge is a valid number
     const validDeliveryCharge = isNaN(deliveryCharge) ? 0 : deliveryCharge;
-
-    // Calculate VAT (5% fixed rate)
     const vatRate = 5; // Fixed VAT rate of 5%
     const vat = (vatRate / 100) * totalPrice;
-
     if (isNaN(vat)) {
       throw new BadRequest('VAT calculation resulted in NaN');
     }
 
-    // Calculate final total price including discount and delivery charge
     const finalTotalPrice = totalPrice - discountAmount + validDeliveryCharge;
-
     if (isNaN(finalTotalPrice)) {
       throw new BadRequest('Final total price calculation resulted in NaN');
     }
 
-    // Create new order
+    // Create new order with city and area fields
     const newOrder = new OrderModel({
       orderId,
-      customer: customer._id, // Ensure customer is not null
+      customer: customer._id,
       firstName: customerFirstName,
       lastName: customerLastName,
       orderType,
       orderTime,
       deliveryAddress,
+      city,                 // Add city
+      area,                 // Add area
       orderStatus: 'Received',
-      district,
       phoneNumber: customerPhoneNumber,
-      email: email || customer.email,  // Use email from orderData if customer registered with phone only
+      email: email || customer.email,
       paymentMethod,
       transactionId,
       products,
-      coupon: coupon ? coupon._id : null,  // Assign coupon only if it is valid
+      coupon: coupon ? coupon._id : null,
       discountAmount,
       totalPrice: finalTotalPrice,
       deliveryCharge: validDeliveryCharge,
       customerIp,
       channel,
-      outlet: outletData._id // Now using the validated outlet ID
+      outlet: outletData._id
     });
 
-    // Save the order to the database
     const savedOrder = await newOrder.save();
 
-    // Prepare products info for SMS and response
     const productInfoForSMS = savedOrder.products.map(product => {
       const validProduct = validProducts.find(p => p._id.equals(product._id));
       return {
-        _id: product._id,  // Keep the existing _id
-        quantity: product.quantity,  // Keep the existing quantity
-        productName: validProduct ? validProduct.productName : 'Unnamed Product',  // Add product name
-        productImage: validProduct ? validProduct.productImage : null,  // Add product image
-        regularPrice: validProduct ? validProduct.general.regularPrice : 0,  // Add regular price
-        salePrice: validProduct ? validProduct.general.salePrice : 0  // Add sale price
+        _id: product._id,
+        quantity: product.quantity,
+        productName: validProduct ? validProduct.productName : 'Unnamed Product',
+        productImage: validProduct ? validProduct.productImage : null,
+        regularPrice: validProduct ? validProduct.general.regularPrice : 0,
+        salePrice: validProduct ? validProduct.general.salePrice : 0
       };
     });
 
-    // Send SMS to customer
     const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
       orderId: savedOrder.orderId,
       products: productInfoForSMS,
@@ -209,15 +189,16 @@ const createOrder = async (orderData) => {
 
     await sendSMS(customerPhoneNumber, smsText);
 
-    // Send email invoice to customer if email is available
     if (savedOrder.email) {
       await sendOrderInvoiceEmail(savedOrder.email, {
         orderId: savedOrder.orderId,
         firstName: customerFirstName,
-        paymentMethod,
         lastName: customerLastName,
+        paymentMethod,
         email: savedOrder.email,
         deliveryAddress,
+        city,               // Add city to the email data
+        area,               // Add area to the email data
         phoneNumber: customerPhoneNumber,
         products: productInfoForSMS,
         totalPrice: totalPrice - discountAmount,
@@ -229,7 +210,6 @@ const createOrder = async (orderData) => {
       });
     }
 
-    // Return the order response with the totalPrice explicitly included
     return {
       message: "Order created successfully",
       createdOrder: {
@@ -244,13 +224,14 @@ const createOrder = async (orderData) => {
           deliveryAddress: savedOrder.deliveryAddress,
           deliveryCharge: savedOrder.deliveryCharge,
           email: savedOrder.email,
-          district: savedOrder.district,
+          city: savedOrder.city,        // Include city in response
+          area: savedOrder.area,        // Include area in response
           phoneNumber: savedOrder.phoneNumber,
           paymentMethod: savedOrder.paymentMethod,
-          products: productInfoForSMS,  // Updated products with additional fields
+          products: productInfoForSMS,
           coupon: savedOrder.coupon ? savedOrder.coupon : null,
           discountAmount: savedOrder.discountAmount,
-          totalPrice: savedOrder.totalPrice,  // Ensure totalPrice is included here
+          totalPrice: savedOrder.totalPrice,
           orderNote: savedOrder.orderNote,
           channel: savedOrder.channel,
           outlet: savedOrder.outlet,
@@ -274,11 +255,224 @@ const createOrder = async (orderData) => {
 
 
 
+
+
+
+// const createOrder = async (orderData) => {
+//   try {
+//     // Generate custom orderId and orderTime
+//     const orderId = await generateCustomOrderId();
+//     const orderTime = formatOrderTime(new Date());
+//
+//     // Destructure orderData
+//     const {
+//       email, orderType, deliveryAddress, deliveryCharge = 0,
+//       district, phoneNumber, paymentMethod, transactionId,
+//       products, couponName, firstName, lastName, customerIp,
+//       channel, outlet
+//     } = orderData;
+//
+//     // Find the customer by phone number or email
+//     const customer = await CustomerModel.findOne({
+//       $or: [
+//         { email: email || null },
+//         { phoneNumber }
+//       ]
+//     }).lean().exec();
+//
+//     // If no customer found, throw an error
+//     if (!customer) {
+//       throw new NotFound('Customer not found');
+//     }
+//
+//     // Find the outlet by ID (validate the outlet ID)
+//     const outletData = await OutletModel.findById(outlet);
+//     if (!outletData) {
+//       throw new NotFound('Outlet not found');
+//     }
+//
+//     // Set firstName and lastName from customer if not provided in the request
+//     const customerFirstName = firstName || customer.firstName;
+//     const customerLastName = lastName || customer.lastName;
+//
+//     // Use phoneNumber from the request, or fallback to customer's phoneNumber
+//     const customerPhoneNumber = phoneNumber || customer.phoneNumber;
+//
+//     // Validate products
+//     if (!Array.isArray(products) || products.length === 0) {
+//       throw new BadRequest('No products provided');
+//     }
+//
+//     // Ensure each product has a valid price
+//     const productIds = products.map(product => product._id);
+//     const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
+//
+//     if (validProducts.length !== products.length) {
+//       throw new BadRequest('Invalid product IDs');
+//     }
+//
+//     // Calculate total price based on valid products
+//     const totalPrice = calculateOrderValue(validProducts, products);
+//
+//     if (!totalPrice || isNaN(totalPrice)) {
+//       throw new BadRequest('Invalid total price');
+//     }
+//
+//     // Initialize discount variables
+//     let discountAmount = 0;
+//     let coupon = null;
+//
+//     // Apply coupon logic if couponName is provided
+//     if (couponName) {
+//       // Fetch the coupon from the database
+//       coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
+//
+//       // If coupon is invalid, throw an error
+//       if (!coupon) throw new BadRequest('Invalid coupon name');
+//
+//       // Validate coupon expiration
+//       if (new Date() > new Date(coupon.general.couponExpiry)) {
+//         throw new BadRequest('Coupon has expired');
+//       }
+//
+//       // Calculate discount based on the coupon
+//       discountAmount = calculateDiscount(coupon, totalPrice);
+//     }
+//
+//     // Ensure delivery charge is a valid number
+//     const validDeliveryCharge = isNaN(deliveryCharge) ? 0 : deliveryCharge;
+//
+//     // Calculate VAT (5% fixed rate)
+//     const vatRate = 5; // Fixed VAT rate of 5%
+//     const vat = (vatRate / 100) * totalPrice;
+//
+//     if (isNaN(vat)) {
+//       throw new BadRequest('VAT calculation resulted in NaN');
+//     }
+//
+//     // Calculate final total price including discount and delivery charge
+//     const finalTotalPrice = totalPrice - discountAmount + validDeliveryCharge;
+//
+//     if (isNaN(finalTotalPrice)) {
+//       throw new BadRequest('Final total price calculation resulted in NaN');
+//     }
+//
+//     // Create new order
+//     const newOrder = new OrderModel({
+//       orderId,
+//       customer: customer._id, // Ensure customer is not null
+//       firstName: customerFirstName,
+//       lastName: customerLastName,
+//       orderType,
+//       orderTime,
+//       deliveryAddress,
+//       orderStatus: 'Received',
+//       district,
+//       phoneNumber: customerPhoneNumber,
+//       email: email || customer.email,  // Use email from orderData if customer registered with phone only
+//       paymentMethod,
+//       transactionId,
+//       products,
+//       coupon: coupon ? coupon._id : null,  // Assign coupon only if it is valid
+//       discountAmount,
+//       totalPrice: finalTotalPrice,
+//       deliveryCharge: validDeliveryCharge,
+//       customerIp,
+//       channel,
+//       outlet: outletData._id // Now using the validated outlet ID
+//     });
+//
+//     // Save the order to the database
+//     const savedOrder = await newOrder.save();
+//
+//     // Prepare products info for SMS and response
+//     const productInfoForSMS = savedOrder.products.map(product => {
+//       const validProduct = validProducts.find(p => p._id.equals(product._id));
+//       return {
+//         _id: product._id,  // Keep the existing _id
+//         quantity: product.quantity,  // Keep the existing quantity
+//         productName: validProduct ? validProduct.productName : 'Unnamed Product',  // Add product name
+//         productImage: validProduct ? validProduct.productImage : null,  // Add product image
+//         regularPrice: validProduct ? validProduct.general.regularPrice : 0,  // Add regular price
+//         salePrice: validProduct ? validProduct.general.salePrice : 0  // Add sale price
+//       };
+//     });
+//
+//     // Send SMS to customer
+//     const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
+//       orderId: savedOrder.orderId,
+//       products: productInfoForSMS,
+//       totalPrice: savedOrder.totalPrice,
+//       discountAmount: savedOrder.discountAmount
+//     });
+//
+//     await sendSMS(customerPhoneNumber, smsText);
+//
+//     // Prepare the data for the Django webhook
+//     const orderWebhookData = {
+//       orderId: savedOrder.orderId,
+//       email: savedOrder.email,
+//       products: productInfoForSMS,
+//       totalPrice: savedOrder.totalPrice,
+//       // Include any other necessary data
+//     };
+//
+//     // Send webhook request to Django API for invoice generation
+//     await axios.post('http://localhost:8000/feature/api/order/webhook/', orderWebhookData);
+//
+//     // Return the order response with the totalPrice explicitly included
+//     return {
+//       message: "Order created successfully",
+//       createdOrder: {
+//         order: {
+//           orderId: savedOrder.orderId,
+//           customer: savedOrder.customer,
+//           customerIp: savedOrder.customerIp,
+//           orderType: savedOrder.orderType,
+//           firstName: savedOrder.firstName,
+//           lastName: savedOrder.lastName,
+//           orderStatus: savedOrder.orderStatus,
+//           deliveryAddress: savedOrder.deliveryAddress,
+//           deliveryCharge: savedOrder.deliveryCharge,
+//           email: savedOrder.email,
+//           district: savedOrder.district,
+//           phoneNumber: savedOrder.phoneNumber,
+//           paymentMethod: savedOrder.paymentMethod,
+//           products: productInfoForSMS,  // Updated products with additional fields
+//           coupon: savedOrder.coupon ? savedOrder.coupon : null,
+//           discountAmount: savedOrder.discountAmount,
+//           totalPrice: savedOrder.totalPrice,  // Ensure totalPrice is included here
+//           orderNote: savedOrder.orderNote,
+//           channel: savedOrder.channel,
+//           outlet: savedOrder.outlet,
+//           orderLogs: savedOrder.orderLogs,
+//           createdAt: savedOrder.createdAt,
+//           updatedAt: savedOrder.updatedAt,
+//           __v: savedOrder.__v
+//         },
+//         customerEmail: savedOrder.email,
+//         totalOrderValue: savedOrder.totalPrice,
+//         couponName: couponName || null
+//       }
+//     };
+//
+//   } catch (error) {
+//     console.error("Error creating order:", error);
+//     throw error; // Propagate error for handling elsewhere
+//   }
+// };
+//
+
+
+
+
+
+
+
+
 //updateOrderByOrder ID
 
 const updateOrder = async (orderId, orderData) => {
-
-  // Find the order by OrderId and update it with the provided data
   const updatedOrder = await OrderModel.findByIdAndUpdate(orderId, orderData, { new: true });
   return updatedOrder;
 

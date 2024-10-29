@@ -55,10 +55,15 @@ const OrderSchema = new mongoose.Schema({
     type: String,
   },
 
-  district: {
+  city: {
     type: String,
     required: true
   },
+  area: {
+    type: String,
+    required: true
+  },
+
   phoneNumber: {
     type: String,
     required: true
