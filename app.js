@@ -12,8 +12,8 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 
 const routes = require('./src/routes');
-const { connectWithDB } = require('./src/config/mongo');
-const { handleError } = require('./src/utility/errors.js');
+const {connectWithDB} = require('./src/config/mongo');
+const {handleError} = require('./src/utility/errors.js');
 
 const app = express();
 const Bottleneck = require('bottleneck');
@@ -26,12 +26,12 @@ app.use(helmet());
 app.use(mongoSanitize());
 app.use(xss());
 app.use(hpp());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({extended: true}));
 
 app.use('/uploads', express.static(path.join(__dirname, 'src', 'modules', 'uploads')));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.json({limit: '50mb'}));
+app.use(express.urlencoded({limit: '50mb', extended: true}));
 
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
@@ -39,17 +39,18 @@ app.use(cookieParser());
 
 // CORS CONFIGURATIONS
 const whitelist = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:3004',
-  'http://localhost:3005',
-  '*',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3004',
+    'http://localhost:3005',
+    'http://localhost:8000',
+    '*',
 ];
 const corsOptions = {
-  credentials: true, // This is important.
-  origin: (origin, callback) => {
-    return callback(null, true);
-  },
+    credentials: true, // This is important.
+    origin: (origin, callback) => {
+        return callback(null, true);
+    },
 };
 
 app.use(cors(corsOptions));
@@ -64,18 +65,18 @@ app.use(cors(corsOptions));
 
 // Set up a Bottleneck instance to throttle specific requests
 const bottleneckLimiter = new Bottleneck({
-  minTime: 200, // Minimum 200ms between requests
-  maxConcurrent: 5 // Limit concurrent requests to 5
+    minTime: 200, // Minimum 200ms between requests
+    maxConcurrent: 5 // Limit concurrent requests to 5
 });
 
 // Example function that will use Bottleneck to throttle requests
 const fetchExternalData = async () => {
-  // Simulate an external API call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ message: 'Data fetched' });
-    }, 1000);
-  });
+    // Simulate an external API call
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve({message: 'Data fetched'});
+        }, 1000);
+    });
 };
 
 // Throttle external API call using Bottleneck
@@ -83,12 +84,12 @@ const fetchExternalDataWithLimit = bottleneckLimiter.wrap(fetchExternalData);
 
 // Example route that makes a throttled request
 app.get('/throttled-route', async (req, res) => {
-  try {
-    const data = await fetchExternalDataWithLimit();
-    res.json(data);
-  } catch (error) {
-    res.status(500).json({ message: 'Error occurred', error });
-  }
+    try {
+        const data = await fetchExternalDataWithLimit();
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({message: 'Error occurred', error});
+    }
 });
 
 // Mongo DB Database Connection
@@ -101,7 +102,7 @@ app.use(handleError);
 
 // Undefined Route Implement
 app.use('*', (req, res) => {
-  res.status(404).json({ status: 'fail', data: 'Server is Okay, its Undefined Route' });
+    res.status(404).json({status: 'fail', data: 'Server is Okay, its Undefined Route'});
 });
 
 // Export app module
