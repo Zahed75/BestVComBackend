@@ -14,6 +14,11 @@ const OutletModel = require("../Outlet/model");
 const axios = require("axios");
 const puppeteer = require("puppeteer");
 
+const PDFDocument = require("pdfkit");
+const nodemailer = require("nodemailer");
+const { Buffer } = require("buffer");
+
+
 function calculateOrderValue(products, orderProducts, couponId) {
   return orderProducts.reduce((total, orderProduct) => {
     const product = products.find((p) => p._id.equals(orderProduct._id));
@@ -251,9 +256,6 @@ function calculateDiscount(coupon, totalPrice, products, validProducts) {
 //   }
 // };
 
-const PDFDocument = require("pdfkit");
-const nodemailer = require("nodemailer");
-const { Buffer } = require("buffer");
 
 const generatePDFInvoice = (orderDetails) => {
   console.log(orderDetails);
@@ -697,6 +699,9 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
+
+
+
 
 //updateOrderByOrder ID
 
