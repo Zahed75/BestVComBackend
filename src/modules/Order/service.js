@@ -1,64 +1,68 @@
-const OrderModel = require('../Order/model');
-const ProductModel = require('../Products/model');
-const CouponModel = require('../Discount/model');
-const { BadRequest, NotFound } = require('../../utility/errors');
-const CustomerModel = require('../Customer/model');
-const { generateCustomOrderId, formatOrderTime } = require('../../utility/customOrder');
-const sendSMS = require('../../utility/aamarPayOTP');
-const { getSMSText } = require('../../utility/getSMS');
-const { sendOrderInvoiceEmail } = require('../../utility/email');
-const OutletModel = require('../Outlet/model');
-const axios = require('axios');
-
+const OrderModel = require("../Order/model");
+const ProductModel = require("../Products/model");
+const CouponModel = require("../Discount/model");
+const { BadRequest, NotFound } = require("../../utility/errors");
+const CustomerModel = require("../Customer/model");
+const {
+  generateCustomOrderId,
+  formatOrderTime,
+} = require("../../utility/customOrder");
+const sendSMS = require("../../utility/aamarPayOTP");
+const { getSMSText } = require("../../utility/getSMS");
+const { sendOrderInvoiceEmail } = require("../../utility/email");
+const OutletModel = require("../Outlet/model");
+const axios = require("axios");
+const puppeteer = require("puppeteer");
 
 function calculateOrderValue(products, orderProducts, couponId) {
   return orderProducts.reduce((total, orderProduct) => {
-    const product = products.find(p => p._id.equals(orderProduct._id));
-    if (product && product.general && orderProduct.quantity && typeof orderProduct.quantity === 'number') {
+    const product = products.find((p) => p._id.equals(orderProduct._id));
+    if (
+      product &&
+      product.general &&
+      orderProduct.quantity &&
+      typeof orderProduct.quantity === "number"
+    ) {
       const price = couponId
         ? product.general.regularPrice // Use regular price if coupon is applied
         : product.general.salePrice || product.general.regularPrice; // Use sale price if available, else regular price
       if (isNaN(price)) {
-        console.warn('Invalid price for product:', product);
+        console.warn("Invalid price for product:", product);
         return total;
       }
-
-      return total + (price * orderProduct.quantity);
+      console.log(price);
+      return total + price * orderProduct.quantity;
     } else {
-      console.warn('Invalid product or quantity:', orderProduct);
+      console.warn("Invalid product or quantity:", orderProduct);
       return total;
     }
   }, 0);
 }
-
 
 // Define calculateDiscount function
 function calculateDiscount(coupon, totalPrice, products, validProducts) {
   if (!coupon) {
     let disc = 0;
 
-    validProducts.forEach(item => {
+    validProducts.forEach((item) => {
       const { regularPrice, salePrice = 0 } = item.general;
-      const productQuantity = products.find(pr => pr._id === item._id.toString()).quantity;
+      const productQuantity = products.find(
+        (pr) => pr._id === item._id.toString()
+      ).quantity;
       disc += (regularPrice - salePrice) * productQuantity;
     });
 
     console.log("Total Discount:", disc);
     return disc; // No coupon, so no discount
   }
-  if (coupon?.general?.discountType === 'percentage') {
+  if (coupon?.general?.discountType === "percentage") {
     return (coupon.general.couponAmount / 100) * totalPrice;
-  } else if (coupon.general?.discountType === 'fixed') {
+  } else if (coupon.general?.discountType === "fixed") {
     return coupon.general.couponAmount;
   } else {
     return 0; // Unknown discount type, so no discount
   }
 }
-
-
-
-
-
 
 // const createOrder = async (orderData) => {
 //   try {
@@ -247,67 +251,197 @@ function calculateDiscount(coupon, totalPrice, products, validProducts) {
 //   }
 // };
 
-
-
-
-const PDFDocument = require('pdfkit');
-const nodemailer = require('nodemailer');
-const { Buffer } = require('buffer');
+const PDFDocument = require("pdfkit");
+const nodemailer = require("nodemailer");
+const { Buffer } = require("buffer");
 
 const generatePDFInvoice = (orderDetails) => {
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument();
-    let buffers = [];
+  console.log(orderDetails);
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Launch a new browser instance
+      const browser = await puppeteer.launch();
+      const page = await browser.newPage();
 
-    // Capture PDF data in memory
-    doc.on('data', buffers.push.bind(buffers));
-    doc.on('end', () => {
-      const pdfData = Buffer.concat(buffers);
-      resolve(pdfData);
-    });
+      // Define the HTML content template with placeholders for order details
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 40px;
+      }
 
-    // PDF generation logic
-    doc.fontSize(20).text('Invoice', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(16).text(`Order ID: ${orderDetails.orderId}`);
-    doc.text(`Customer: ${orderDetails.firstName} ${orderDetails.lastName}`);
-    doc.text(`Email: ${orderDetails.email}`);
-    doc.text(`Delivery Address: ${orderDetails.deliveryAddress}`);
-    doc.text(`Phone Number: ${orderDetails.phoneNumber}`);
-    doc.moveDown();
+      .text-4xl {
+        font-size: 30px;
+        line-height: 0px;
+      }
+      p {
+        line-height: 10px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-size: 15px;
+        text-align: left;
+      }
+      th,
+      td {
+        padding: 12px;
+        border: 1px solid #ddd;
+      }
+      th {
+        background-color: #f4f4f4;
+        color: #333;
+        font-weight: bold;
+      }
+      tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+    		<img src="https://www.bestelectronics.com.bd/wp-content/uploads/2022/07/Best-Electronics-PNG.png" style="width: 200px;"></img>
+        <p>Address: Level 16, 90/1, City Centre, 1000 Motijheel Rd, Dhaka 1000</p>
+<hr></hr>
+      <p>${orderDetails?.orderTime}</p>
+      <p class="text-4xl"><strong>Order ID:</strong> #${
+        orderDetails?.orderId || "N/A"
+      }</p>
+	  <p style="font-size: 18px;font-weight: 500; margin-top: 50px;">Customer Details:</p>
+	  <div style="display: flex; flex-direction: column;; gap: 0px;">
+		<div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
+			<p><strong>Name:</strong> ${
+        orderDetails?.firstName + " " + orderDetails?.lastName || "N/A"
+      }</p>
+		<p><strong>Phone:</strong> ${orderDetails?.phoneNumber || "N/A"}</p>
+		<p><strong>Address:</strong> ${orderDetails?.customerAddress || "N/A"}</p>
+		<p><strong>City:</strong> ${orderDetails?.customerCity || "N/A"}</p>
 
-    doc.fontSize(14).text('Products:');
-    orderDetails.products.forEach(product => {
-      doc.text(`- ${product.productName} (x${product.quantity}) - Price: ${product.salePrice}`);
-    });
+	</div>
+	<p style="font-size: 18px;font-weight: 500;">Order Summary:</p>
 
-    doc.moveDown();
-    doc.text(`Total Price: ${orderDetails.totalPrice}`);
-    doc.text(`Discount Amount: ${orderDetails.discountAmount}`);
-    doc.text(`Delivery Charge: ${orderDetails.deliveryCharge}`);
-    doc.text(`Created At: ${new Date().toLocaleString()}`);
+	  <div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
+		
+    <p><strong>Order Status:</strong> ${
+      `<span style="background-color: #D67229; padding:3px; border-radius: 5px; color: #ffffff">${orderDetails?.orderStatus}</span>` || "N/A"
+    }</p>
+		  <p><strong>Delivery Address:</strong> ${
+        orderDetails?.deliveryAddress || "N/A"
+      }</p>
+		  <p><strong>Order Type:</strong> ${orderDetails?.orderType || "N/A"}</p>
+		  <p><strong>Payment Method:</strong> ${
+        orderDetails?.paymentMethod || "N/A"
+      }</p>
+		  <p><strong>Transaction Id:</strong> ${
+        orderDetails?.transactionId || "N/A"
+      }</p>
+		</div>
+  
+	</div>
 
-    doc.end();
+      <table>
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>SKU</th>
+            <th>Quantity</th>
+            <th>Regular Price</th>
+            <th>Sale Price</th>
+          </tr>
+        </thead>
+        <tbody>
+        ${
+          orderDetails?.products
+            ?.map(
+              (item) => `
+          <tr>
+            <td>${item?.productName || "N/A"}</td>
+            <td>${item?.sku || "N/A"}</td>
+            <td>${item?.quantity || "N/A"}</td>
+            <td>${item?.regularPrice || "N/A"}</td>
+            <td>${item?.salePrice || "N/A"}</td>
+          </tr>
+        `
+            )
+            .join("") || '<tr><td colspan="4">No products available</td></tr>'
+        }
+        </tbody>
+      </table>
+      <div style="display: flex; justify-content: right">
+        <div
+          style="
+            display: flex;
+            gap: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+          "
+        >
+          <div>
+            <p><strong>Delivery Charge:</strong></p>
+            <p><strong>Discount Amount ${
+              orderDetails?.couponCode && ` (${orderDetails?.couponCode})`
+            }:</strong> </p>
+            <p><strong>VAT:</strong></p>
+            <p><strong>Total Price:</strong></p>
+          </div>
+          <div>
+            <p>${orderDetails?.deliveryCharge || "N/A"}</p>
+            <p>${orderDetails?.discountAmount || "N/A"}</p>
+            <p>5% (inclusive)</p>
+            <p>${orderDetails?.totalPrice || "N/A"}</p>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 50px">
+        <p style="font-weight: 600">Important Information About Your Order</p>
+        <p style="line-height: 20px">In the event that a product is exchanged in store, the exchange receipt issued will be your new proof of purchase.</p>
+        <p>Thank you. Please retain this invoice as proof of your purchase.</p>
+      </div>
+    </div>
+  </body>
+</html>
+`;
+
+      // Set HTML content to the page
+      await page.setContent(htmlContent, { waitUntil: "load" });
+
+      // Generate the PDF as a buffer
+      const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+      });
+
+      // Close the browser
+      await browser.close();
+
+      // Resolve the PDF buffer to be used in an email
+      resolve(pdfBuffer);
+    } catch (error) {
+      reject(error);
+    }
   });
 };
-
-
-
-
 
 // Helper function to send email with invoice attachment
 const sendInvoiceEmail = async (to, subject, orderDetails, pdfBuffer) => {
   const transporter = nodemailer.createTransport({
     // Configure your SMTP transport here
-    service: 'Gmail', // Example using Gmail, change it according to your needs
+    service: "Gmail", // Example using Gmail, change it according to your needs
     auth: {
-      user: 'tech.syscomatic@gmail.com', // Your email
-      pass: 'nfkb rcqg wdez ionc'     // Your email password
-    }
+      user: "tech.syscomatic@gmail.com", // Your email
+      pass: "nfkb rcqg wdez ionc", // Your email password
+    },
   });
 
   const mailOptions = {
-    from: 'tech.syscomatic@gmail.com',
+    from: "tech.syscomatic@gmail.com",
     to,
     subject,
     text: `Thank you for your order! Your order ID is ${orderDetails.orderId}. Please find the invoice attached.`,
@@ -315,8 +449,8 @@ const sendInvoiceEmail = async (to, subject, orderDetails, pdfBuffer) => {
       {
         filename: `invoice-${orderDetails.orderId}.pdf`,
         content: pdfBuffer,
-      }
-    ]
+      },
+    ],
   };
 
   return transporter.sendMail(mailOptions);
@@ -331,23 +465,34 @@ const createOrder = async (orderData) => {
 
     // Destructure orderData
     const {
-      email, orderType, deliveryAddress, deliveryCharge = 0,
-      city, area, phoneNumber, paymentMethod, transactionId,
-      products, couponName, firstName, lastName, customerIp,
-      channel, outlet
+      email,
+      orderType,
+      deliveryAddress,
+      deliveryCharge = 0,
+      city,
+      area,
+      phoneNumber,
+      paymentMethod,
+      transactionId,
+      products,
+      couponName,
+      firstName,
+      lastName,
+      customerIp,
+      channel,
+      outlet,
     } = orderData;
 
     // Find the customer by phone number or email
     const customer = await CustomerModel.findOne({
-      $or: [
-        { email: email || null },
-        { phoneNumber }
-      ]
-    }).lean().exec();
-
+      $or: [{ email: email || null }, { phoneNumber }],
+    })
+      .lean()
+      .exec();
+    console.log(customer);
     // If no customer found, throw an error
     if (!customer) {
-      throw new NotFound('Customer not found');
+      throw new NotFound("Customer not found");
     }
 
     // Try finding the outlet by ID, but proceed if not found
@@ -362,34 +507,43 @@ const createOrder = async (orderData) => {
 
     // Validate products
     if (!Array.isArray(products) || products.length === 0) {
-      throw new BadRequest('No products provided');
+      throw new BadRequest("No products provided");
     }
 
     // Ensure each product has a valid price
-    const productIds = products.map(product => product._id);
-    const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
+    const productIds = products.map((product) => product._id);
+    const validProducts = await ProductModel.find({ _id: { $in: productIds } })
+      .lean()
+      .exec();
 
     if (validProducts.length !== products.length) {
-      throw new BadRequest('Invalid product IDs');
+      throw new BadRequest("Invalid product IDs");
     }
 
     // Calculate total price based on valid products
-    const totalPrice = calculateOrderValue(validProducts, products);
+    let coupon =
+      couponName &&
+      (await CouponModel.findOne({ "general.couponName": couponName })
+        .lean()
+        .exec());
 
+    const totalPrice = calculateOrderValue(
+      validProducts,
+      products,
+      coupon?._id
+    );
     if (!totalPrice || isNaN(totalPrice)) {
-      throw new BadRequest('Invalid total price');
+      throw new BadRequest("Invalid total price");
     }
 
     // Initialize discount variables
     let discountAmount = 0;
-    let coupon = null;
 
     // Apply coupon logic if couponName is provided
     if (couponName) {
-      coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
-      if (!coupon) throw new BadRequest('Invalid coupon name');
+      if (!coupon) throw new BadRequest("Invalid coupon name");
       if (new Date() > new Date(coupon.general.couponExpiry)) {
-        throw new BadRequest('Coupon has expired');
+        throw new BadRequest("Coupon has expired");
       }
       discountAmount = calculateDiscount(coupon, totalPrice);
     }
@@ -409,7 +563,7 @@ const createOrder = async (orderData) => {
       orderType,
       orderTime,
       deliveryAddress,
-      orderStatus: 'Received',
+      orderStatus: "Received",
       city,
       area,
       phoneNumber: customerPhoneNumber,
@@ -423,29 +577,35 @@ const createOrder = async (orderData) => {
       deliveryCharge: validDeliveryCharge,
       customerIp,
       channel,
-      outlet: outletData ? outletData._id : null // Set to null if outlet is not found
+      outlet: outletData ? outletData._id : null, // Set to null if outlet is not found
     });
-
     const savedOrder = await newOrder.save();
-
-    const productInfoForSMS = savedOrder.products.map(product => {
-      const validProduct = validProducts.find(p => p._id.equals(product._id));
+    console.log(validProducts);
+    const productInfoForSMS = savedOrder.products.map((product) => {
+      const validProduct = validProducts.find((p) => p._id.equals(product._id));
       return {
         _id: product._id,
         quantity: product.quantity,
-        productName: validProduct ? validProduct.productName : 'Unnamed Product',
+        productName: validProduct
+          ? validProduct.productName
+          : "Unnamed Product",
         productImage: validProduct ? validProduct.productImage : null,
         regularPrice: validProduct ? validProduct.general.regularPrice : 0,
-        salePrice: validProduct ? validProduct.general.salePrice : 0
+        salePrice: validProduct ? validProduct.general.salePrice : 0,
+        sku: validProduct ? validProduct?.inventory?.sku : null,
       };
     });
 
-    const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
-      orderId: savedOrder.orderId,
-      products: productInfoForSMS,
-      totalPrice: savedOrder.totalPrice,
-      discountAmount: savedOrder.discountAmount
-    });
+    const smsText = getSMSText(
+      "Received",
+      `${customerFirstName} ${customerLastName}`,
+      {
+        orderId: savedOrder.orderId,
+        products: productInfoForSMS,
+        totalPrice: savedOrder.totalPrice,
+        discountAmount: savedOrder.discountAmount,
+      }
+    );
 
     await sendSMS(customerPhoneNumber, smsText);
 
@@ -463,30 +623,44 @@ const createOrder = async (orderData) => {
       deliveryCharge: validDeliveryCharge,
       vatRate,
       vat,
-      coupon
+      coupon,
+      paymentMethod,
+      orderTime,
+      transactionId,
+      couponCode: coupon?.general?.couponName,
+      orderType,
+      customerAddress: customer?.address,
+      customerCity: customer?.city,
+      orderStatus: savedOrder?.orderStatus
     });
 
     // Send invoice email
-    await sendInvoiceEmail(savedOrder.email, `Your Invoice for Order ${savedOrder.orderId}`, {
-      orderId: savedOrder.orderId,
-      firstName: customerFirstName,
-      lastName: customerLastName,
-      email: savedOrder.email,
-      deliveryAddress,
-      phoneNumber: customerPhoneNumber,
-      products: productInfoForSMS,
-      totalPrice: finalTotalPrice,
-      discountAmount,
-      deliveryCharge: validDeliveryCharge,
-      vatRate,
-      vat,
-      coupon
-    }, pdfInvoice);
+    await sendInvoiceEmail(
+      savedOrder.email,
+      `Your Invoice for Order ${savedOrder.orderId}`,
+      {
+        orderId: savedOrder.orderId,
+        firstName: customerFirstName,
+        lastName: customerLastName,
+        email: savedOrder.email,
+        deliveryAddress,
+        phoneNumber: customerPhoneNumber,
+        products: productInfoForSMS,
+        totalPrice: finalTotalPrice,
+        discountAmount,
+        deliveryCharge: validDeliveryCharge,
+        vatRate,
+        vat,
+        coupon,
+      },
+      pdfInvoice
+    );
 
     return {
       message: "Order created successfully",
       createdOrder: {
         order: {
+          _id: savedOrder?._id,
           orderId: savedOrder.orderId,
           customer: savedOrder.customer,
           customerIp: savedOrder.customerIp,
@@ -511,31 +685,26 @@ const createOrder = async (orderData) => {
           orderLogs: savedOrder.orderLogs,
           createdAt: savedOrder.createdAt,
           updatedAt: savedOrder.updatedAt,
-          __v: savedOrder.__v
+          __v: savedOrder.__v,
         },
         customerEmail: savedOrder.email,
         totalOrderValue: savedOrder.totalPrice,
-        couponName: couponName || null
-      }
+        couponName: couponName || null,
+      },
     };
-
   } catch (error) {
     console.error("Error creating order:", error);
     throw error;
   }
 };
 
-
-
-
-
-
 //updateOrderByOrder ID
 
 const updateOrder = async (orderId, orderData) => {
-  const updatedOrder = await OrderModel.findByIdAndUpdate(orderId, orderData, { new: true });
+  const updatedOrder = await OrderModel.findByIdAndUpdate(orderId, orderData, {
+    new: true,
+  });
   return updatedOrder;
-
 };
 
 // delete OrderBy ID
@@ -549,46 +718,53 @@ const deleteOrder = async (orderId) => {
   }
 };
 
-
-
-
 const getAllOrders = async () => {
   try {
-    const orders = await OrderModel.find().populate({
-      path: 'products._id',
-      model: 'Product',
-      select: 'productName productImage general.regularPrice inventory.sku general.salePrice'
-    }).populate({
-      path: 'customer',
-      model: 'Customer', // Ensure this matches the model name
-      select: 'firstName lastName email phoneNumber district address'
-    });
+    const orders = await OrderModel.find()
+      .populate({
+        path: "products._id",
+        model: "Product",
+        select:
+          "productName productImage general.regularPrice inventory.sku general.salePrice",
+      })
+      .populate({
+        path: "customer",
+        model: "Customer", // Ensure this matches the model name
+        select: "firstName lastName email phoneNumber district address",
+      });
 
-    const formattedOrders = orders.map(order => {
+    const formattedOrders = orders.map((order) => {
       return {
         ...order.toObject(),
         customerFirstName: order.customer?.firstName || "",
         customerLastName: order.customer?.lastName || "",
-        products: order.products.map(productItem => {
-          const productDetails = productItem._id;
-          return productDetails ? {
-            _id: productDetails._id,
-            productName: productDetails.productName,
-            productImage: productDetails.productImage,
-            sku: productDetails.inventory.sku,
-            quantity: productItem.quantity,
-            price: productDetails.general.regularPrice,
-            offerPrice: productDetails.general.salePrice,
-            totalPrice: productDetails.general.salePrice * productItem.quantity,
-          } : null;
-        }).filter(product => product !== null),
-        customer: order.customer ? {
-          _id: order.customer._id,
-          email: order.customer.email,
-          phoneNumber: order.customer.phoneNumber,
-          district: order.customer.district,
-          address: order.customer.address,
-        } : null,
+        products: order.products
+          .map((productItem) => {
+            const productDetails = productItem._id;
+            return productDetails
+              ? {
+                  _id: productDetails._id,
+                  productName: productDetails.productName,
+                  productImage: productDetails.productImage,
+                  sku: productDetails.inventory.sku,
+                  quantity: productItem.quantity,
+                  price: productDetails.general.regularPrice,
+                  offerPrice: productDetails.general.salePrice,
+                  totalPrice:
+                    productDetails.general.salePrice * productItem.quantity,
+                }
+              : null;
+          })
+          .filter((product) => product !== null),
+        customer: order.customer
+          ? {
+              _id: order.customer._id,
+              email: order.customer.email,
+              phoneNumber: order.customer.phoneNumber,
+              district: order.customer.district,
+              address: order.customer.address,
+            }
+          : null,
       };
     });
 
@@ -599,18 +775,7 @@ const getAllOrders = async () => {
   }
 };
 
-
-
-
-
-
-
-
-
-
-
 // Update Order Status
-
 
 const updateOrderStatus = async (id, orderStatus) => {
   // Find and update the order, and populate the products field
@@ -619,52 +784,116 @@ const updateOrderStatus = async (id, orderStatus) => {
     { orderStatus },
     { new: true }
   ).populate({
-    path: 'products._id',
-    select: 'productName general.salePrice', // Select appropriate fields
+    path: "products._id",
+    select: "productName general.salePrice", // Select appropriate fields
   });
 
   // Check if the order was found
   if (!order) {
-    throw new Error('Order not found');
+    throw new Error("Order not found");
   }
-
+  const customer = await CustomerModel.findById(order?.customer).lean().exec();
   // Prepare SMS details
   const customerName = `${order.firstName} ${order.lastName}`;
   const customerPhone = order.phoneNumber;
+  const customerFirstName = customer.firstName || "";
+  const customerLastName = customer.lastName || "";
+  const productIds = order?.products?.map((product) => product._id);
+  const validProducts = await ProductModel.find({
+    _id: { $in: productIds.map((item) => item._id) },
+  })
+    .lean()
+    .exec();
+  const productInfoForSMS = order.products.map((product) => {
+    const validProduct = validProducts.find((p) =>
+      p._id.equals(product._id._id)
+    );
+    console.log("test", validProduct);
+    return {
+      _id: product._id,
+      quantity: product.quantity,
+      productName: validProduct ? validProduct.productName : "Unnamed Product",
+      productImage: validProduct ? validProduct.productImage : null,
+      regularPrice: validProduct ? validProduct.general.regularPrice : 0,
+      salePrice: validProduct ? validProduct.general.salePrice : 0,
+      sku: validProduct ? validProduct?.inventory?.sku : null,
+    };
+  });
+  let coupon =
+    order?.coupon?._id &&
+    (await CouponModel.findOne({ "general._id": order?.coupon?._id })
+      .lean()
+      .exec());
+  const vatRate = 5;
+  const totalPrice = order?.totalPrice;
+  const vat = (vatRate / 100) * totalPrice;
+  // Use phoneNumber from the request, or fallback to customer's phoneNumber
   const message = getSMSText(orderStatus, customerName, order);
-
 
   // Send SMS to customer
   await sendSMS(customerPhone, message);
+  // Generate PDF Invoice
+  const pdfInvoice = await generatePDFInvoice({
+    orderId: order.orderId,
+    firstName: customerFirstName,
+    lastName: customerLastName,
+    email: order.email,
+    deliveryAddress: order?.deliveryAddress,
+    phoneNumber: customerPhone,
+    products: productInfoForSMS,
+    totalPrice: order?.totalPrice, // Use finalTotalPrice for invoice
+    discountAmount: order?.discountAmount,
+    deliveryCharge: order?.deliveryCharge,
+    vatRate,
+    vat,
+    coupon: coupon,
+    paymentMethod: order?.paymentMethod,
+    orderTime: formatOrderTime(order?.createdAt),
+    transactionId: order?.transactionId,
+    couponCode: coupon?.general?.couponName,
+    orderType: order?.orderType,
+    customerAddress: customer?.address,
+    customerCity: customer?.city,
+    orderStatus: order?.orderStatus
+  });
 
+  // Send invoice email
+  await sendInvoiceEmail(
+    order?.email,
+    `Your Invoice for Order ${order.orderId}`,
+    {
+      orderId: order.orderId,
+      firstName: customerFirstName,
+      lastName: customerLastName,
+      email: order.email,
+      deliveryAddress: order?.deliveryAddress,
+      phoneNumber: customerPhone,
+      products: productInfoForSMS,
+      totalPrice: order?.totalPrice, // Use finalTotalPrice for invoice
+      discountAmount: order?.discountAmount,
+      deliveryCharge: order?.deliveryCharge,
+      vatRate,
+      vat,
+      coupon: coupon,
+    },
+    pdfInvoice
+  );
   return order;
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
 const getOrderById = async (id) => {
   try {
-
     const orderInfo = await OrderModel.findById(id)
       .populate({
-        path: 'products._id',
-        model: 'Product',
-        select: 'productName productImage general.regularPrice inventory.sku general.salePrice'
+        path: "products._id",
+        model: "Product",
+        select:
+          "productName productImage general.regularPrice inventory.sku general.salePrice",
       })
       .populate({
-        path: 'customer',
-        model: 'Customer',
-        select: 'firstName lastName email phoneNumber district address'
+        path: "customer",
+        model: "Customer",
+        select: "firstName lastName email phoneNumber district address",
       });
 
     if (!orderInfo) {
@@ -673,12 +902,11 @@ const getOrderById = async (id) => {
 
     const formattedOrder = {
       ...orderInfo.toObject(),
-      products: orderInfo.products.map(productItem => {
+      products: orderInfo.products.map((productItem) => {
         const productDetails = productItem._id;
         if (!productDetails) {
-          console.warn('Product not found:', productItem);
+          console.warn("Product not found:", productItem);
           return null;
-
         }
         return {
           _id: productDetails._id,
@@ -691,28 +919,25 @@ const getOrderById = async (id) => {
           totalPrice: productDetails.general.salePrice * productItem.quantity,
         };
       }),
-      customer: orderInfo.customer ? {
-        _id: orderInfo.customer._id,
-        firstName: orderInfo.customer.firstName,
-        lastName: orderInfo.customer.lastName,
-        email: orderInfo.customer.email,
-        phoneNumber: orderInfo.customer.phoneNumber,
-        district: orderInfo.customer.district,
-        address: orderInfo.customer.address,
-      } : null,
+      customer: orderInfo.customer
+        ? {
+            _id: orderInfo.customer._id,
+            firstName: orderInfo.customer.firstName,
+            lastName: orderInfo.customer.lastName,
+            email: orderInfo.customer.email,
+            phoneNumber: orderInfo.customer.phoneNumber,
+            district: orderInfo.customer.district,
+            address: orderInfo.customer.address,
+          }
+        : null,
     };
 
     return { success: true, order: formattedOrder };
   } catch (error) {
-    console.error('Error in getOrderById:', error.message);
+    console.error("Error in getOrderById:", error.message);
     return { success: false, error: error.message };
   }
 };
-
-
-
-
-
 
 const getCustomerHistory = async (customerId) => {
   try {
@@ -725,25 +950,14 @@ const getCustomerHistory = async (customerId) => {
     const averageOrderValue = totalOrderValue / totalOrders;
     return { totalOrders, averageOrderValue };
   } catch (error) {
-    console.error('Error in getCustomerHistory:', error.message);
+    console.error("Error in getCustomerHistory:", error.message);
     throw error;
   }
-}
-
-
-
-
-
-
-
-
-
-
+};
 
 // update OrderNoteStatus
 
 const updateOrderNoteById = async (orderId, orderNote) => {
-
   const updatedOrder = await OrderModel.findOneAndUpdate(
     { _id: orderId },
     { $set: { orderNote } },
@@ -755,12 +969,7 @@ const updateOrderNoteById = async (orderId, orderNote) => {
   }
 
   return { success: true, order: updatedOrder };
-
 };
-
-
-
-
 
 // chnage outletByOrderId
 const updateOutletByOrderId = async (orderId, outlet) => {
@@ -772,7 +981,7 @@ const updateOutletByOrderId = async (orderId, outlet) => {
     );
 
     if (!updatedOrder) {
-      throw new Error('Order not found');
+      throw new Error("Order not found");
     }
 
     return updatedOrder;
@@ -781,38 +990,30 @@ const updateOutletByOrderId = async (orderId, outlet) => {
   }
 };
 
-
-
-
-
-
-
-
-
 const getOrderHistoryByCustomerId = async (customerId) => {
   try {
     const orders = await OrderModel.find({ customer: customerId })
-        .populate('products._id', 'productName productImage general') // Adjust the path based on your Product schema
-        .exec();
+      .populate("products._id", "productName productImage general") // Adjust the path based on your Product schema
+      .exec();
 
     if (!orders || orders.length === 0) {
-      throw new Error('No orders found for this customer');
+      throw new Error("No orders found for this customer");
     }
 
     const customer = await CustomerModel.findById(customerId).exec();
     if (!customer) {
-      throw new Error('Customer not found');
+      throw new Error("Customer not found");
     }
 
     const billingInfo = customer.billingInfo;
 
-    const orderHistory = orders.map(order => {
-      const products = order.products.map(product => {
+    const orderHistory = orders.map((order) => {
+      const products = order.products.map((product) => {
         if (product._id) {
           const regularPrice = product._id.general.regularPrice || 0;
           const productPrice = product._id.general.salePrice || regularPrice;
           return {
-            _id: product._id._id,  // Include the product's default _id
+            _id: product._id._id, // Include the product's default _id
             productName: product._id.productName,
             productImage: product._id.productImage,
             quantity: product.quantity,
@@ -822,22 +1023,28 @@ const getOrderHistoryByCustomerId = async (customerId) => {
         }
         return {
           _id: product._id ? product._id._id : null, // Handle case if _id is missing
-          productName: 'Product not found',
-          productImage: 'image not available',
+          productName: "Product not found",
+          productImage: "image not available",
           quantity: product.quantity,
           productPrice: 0,
           regularPrice: 0,
         };
       });
 
-      const total = products.reduce((acc, product) => acc + product.productPrice, 0);
-      const regularTotal = products.reduce((acc, product) => acc + product.regularPrice, 0);
+      const total = products.reduce(
+        (acc, product) => acc + product.productPrice,
+        0
+      );
+      const regularTotal = products.reduce(
+        (acc, product) => acc + product.regularPrice,
+        0
+      );
       const discount = regularTotal - total;
-      const VAT = (total * 0.15); // Assuming VAT is 15%
+      const VAT = total * 0.15; // Assuming VAT is 15%
       const subtotal = total + VAT;
 
       return {
-        _id: order._id,  // Include the order's default _id
+        _id: order._id, // Include the order's default _id
         orderId: order.orderId,
         date: order.createdAt,
         status: order.orderStatus,
@@ -847,15 +1054,17 @@ const getOrderHistoryByCustomerId = async (customerId) => {
         VAT,
         products,
         paymentMethod: order.paymentMethod,
-        billingDetails: billingInfo ? {
-          firstName: billingInfo.firstName,
-          lastName: billingInfo.lastName,
-          fullAddress: billingInfo.fullAddress,
-          phoneNumber: billingInfo.phoneNumber,
-          email: billingInfo.email,
-          zipCode: billingInfo.zipCode,
-          district: billingInfo.district,
-        } : null,
+        billingDetails: billingInfo
+          ? {
+              firstName: billingInfo.firstName,
+              lastName: billingInfo.lastName,
+              fullAddress: billingInfo.fullAddress,
+              phoneNumber: billingInfo.phoneNumber,
+              email: billingInfo.email,
+              zipCode: billingInfo.zipCode,
+              district: billingInfo.district,
+            }
+          : null,
       };
     });
 
@@ -864,32 +1073,6 @@ const getOrderHistoryByCustomerId = async (customerId) => {
     throw error;
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 module.exports = {
   createOrder,
@@ -902,5 +1085,4 @@ module.exports = {
   updateOrderNoteById,
   updateOutletByOrderId,
   getOrderHistoryByCustomerId,
-
-}
+};
