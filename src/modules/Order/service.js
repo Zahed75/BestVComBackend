@@ -266,7 +266,7 @@ const generatePDFInvoice = (orderDetails) => {
     try {
       // Launch a new browser instance
       const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
     });
       const page = await browser.newPage();
 
