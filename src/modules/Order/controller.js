@@ -174,16 +174,16 @@ const getOrderHistory = async (req, res) => {
     }
   };
 
-  
 
 
 
 
 
+router.post('/orderCreate', createOrder);
 router.put('/:id',updateOrderStatusHandler);
 router.get('/customerHistory/:customerId', getCustomerHistoryHandler);
 router.get('/orders', getAllOrders);
-router.post('/orderCreate', createOrder);
+
 router.put('/:orderId', updateOrder);
 router.delete('/deleteOrder/:id',deleteOrder);
 router.put('/:id',updateOrderStatusHandler);
