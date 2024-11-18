@@ -258,484 +258,98 @@ function calculateDiscount(coupon, totalPrice, products, validProducts) {
 
 
 
-//
-//
-// const generatePDFInvoice = (orderDetails) => {
-//   console.log(orderDetails);
-//   return new Promise(async (resolve, reject) => {
-//     try {
-//       // Launch a new browser instance
-//       const browser = await puppeteer.launch();
-//       const page = await browser.newPage();
-//
-//       // Define the HTML content template with placeholders for order details
-//       const htmlContent = `
-// <!DOCTYPE html>
-// <html>
-//   <head>
-//     <style>
-//       body {
-//         font-family: Arial, sans-serif;
-//         margin: 0;
-//         padding: 40px;
-//       }
-//
-//       .text-4xl {
-//         font-size: 30px;
-//         line-height: 0px;
-//       }
-//       p {
-//         line-height: 10px;
-//       }
-//       table {
-//         width: 100%;
-//         border-collapse: collapse;
-//         margin: 20px 0;
-//         font-size: 15px;
-//         text-align: left;
-//       }
-//       th,
-//       td {
-//         padding: 12px;
-//         border: 1px solid #ddd;
-//       }
-//       th {
-//         background-color: #f4f4f4;
-//         color: #333;
-//         font-weight: bold;
-//       }
-//       tr:nth-child(even) {
-//         background-color: #f9f9f9;
-//       }
-//     </style>
-//   </head>
-//   <body>
-//     <div>
-//     		<img src="https://www.bestelectronics.com.bd/wp-content/uploads/2022/07/Best-Electronics-PNG.png" style="width: 200px;"></img>
-//         <p>Address: Level 16, 90/1, City Centre, 1000 Motijheel Rd, Dhaka 1000</p>
-// <hr></hr>
-//       <p>${orderDetails?.orderTime}</p>
-//       <p class="text-4xl"><strong>Order ID:</strong> #${
-//         orderDetails?.orderId || "N/A"
-//       }</p>
-// 	  <p style="font-size: 18px;font-weight: 500; margin-top: 50px;">Customer Details:</p>
-// 	  <div style="display: flex; flex-direction: column;; gap: 0px;">
-// 		<div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
-// 			<p><strong>Name:</strong> ${
-//         orderDetails?.firstName + " " + orderDetails?.lastName || "N/A"
-//       }</p>
-// 		<p><strong>Phone:</strong> ${orderDetails?.phoneNumber || "N/A"}</p>
-// 		<p><strong>Address:</strong> ${orderDetails?.customerAddress || "N/A"}</p>
-// 		<p><strong>City:</strong> ${orderDetails?.customerCity || "N/A"}</p>
-//
-// 	</div>
-// 	<p style="font-size: 18px;font-weight: 500;">Order Summary:</p>
-//
-// 	  <div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
-//
-//     <p><strong>Order Status:</strong> ${
-//       `<span style="background-color: #D67229; padding:3px; border-radius: 5px; color: #ffffff">${orderDetails?.orderStatus}</span>` || "N/A"
-//     }</p>
-// 		  <p><strong>Delivery Address:</strong> ${
-//         orderDetails?.deliveryAddress || "N/A"
-//       }</p>
-// 		  <p><strong>Order Type:</strong> ${orderDetails?.orderType || "N/A"}</p>
-// 		  <p><strong>Payment Method:</strong> ${
-//         orderDetails?.paymentMethod || "N/A"
-//       }</p>
-// 		  <p><strong>Transaction Id:</strong> ${
-//         orderDetails?.transactionId || "N/A"
-//       }</p>
-// 		</div>
-//
-// 	</div>
-//
-//       <table>
-//         <thead>
-//           <tr>
-//             <th>Product</th>
-//             <th>SKU</th>
-//             <th>Quantity</th>
-//             <th>Regular Price</th>
-//             <th>Sale Price</th>
-//           </tr>
-//         </thead>
-//         <tbody>
-//         ${
-//           orderDetails?.products
-//             ?.map(
-//               (item) => `
-//           <tr>
-//             <td>${item?.productName || "N/A"}</td>
-//             <td>${item?.sku || "N/A"}</td>
-//             <td>${item?.quantity || "N/A"}</td>
-//             <td>${item?.regularPrice || "N/A"}</td>
-//             <td>${item?.salePrice || "N/A"}</td>
-//           </tr>
-//         `
-//             )
-//             .join("") || '<tr><td colspan="4">No products available</td></tr>'
-//         }
-//         </tbody>
-//       </table>
-//       <div style="display: flex; justify-content: right">
-//         <div
-//           style="
-//             display: flex;
-//             gap: 15px;
-//             padding: 10px;
-//             background-color: #f9f9f9;
-//             border: 1px solid #ddd;
-//           "
-//         >
-//           <div>
-//             <p><strong>Delivery Charge:</strong></p>
-//             <p><strong>Discount Amount ${
-//               orderDetails?.couponCode && ` (${orderDetails?.couponCode})`
-//             }:</strong> </p>
-//             <p><strong>VAT:</strong></p>
-//             <p><strong>Total Price:</strong></p>
-//           </div>
-//           <div>
-//             <p>${orderDetails?.deliveryCharge || "N/A"}</p>
-//             <p>${orderDetails?.discountAmount || "N/A"}</p>
-//             <p>5% (inclusive)</p>
-//             <p>${orderDetails?.totalPrice || "N/A"}</p>
-//           </div>
-//         </div>
-//       </div>
-//       <div style="margin-top: 50px">
-//         <p style="font-weight: 600">Important Information About Your Order</p>
-//         <p style="line-height: 20px">In the event that a product is exchanged in store, the exchange receipt issued will be your new proof of purchase.</p>
-//         <p>Thank you. Please retain this invoice as proof of your purchase.</p>
-//       </div>
-//     </div>
-//   </body>
-// </html>
-// `;
-//
-//       // Set HTML content to the page
-//       await page.setContent(htmlContent, { waitUntil: "load" });
-//
-//       // Generate the PDF as a buffer
-//       const pdfBuffer = await page.pdf({
-//         format: "A4",
-//         printBackground: true,
-//       });
-//
-//       // Close the browser
-//       await browser.close();
-//
-//       // Resolve the PDF buffer to be used in an email
-//       resolve(pdfBuffer);
-//     } catch (error) {
-//       reject(error);
-//     }
-//   });
-// };
-//
-// // Helper function to send email with invoice attachment
-// const sendInvoiceEmail = async (to, subject, orderDetails, pdfBuffer) => {
-//   const transporter = nodemailer.createTransport({
-//     // Configure your SMTP transport here
-//     service: "Gmail", // Example using Gmail, change it according to your needs
-//     auth: {
-//       user: "tech.syscomatic@gmail.com", // Your email
-//       pass: "nfkb rcqg wdez ionc", // Your email password
-//     },
-//   });
-//
-//   const mailOptions = {
-//     from: "tech.syscomatic@gmail.com",
-//     to,
-//     subject,
-//     text: `Thank you for your order! Your order ID is ${orderDetails.orderId}. Please find the invoice attached.`,
-//     attachments: [
-//       {
-//         filename: `invoice-${orderDetails.orderId}.pdf`,
-//         content: pdfBuffer,
-//       },
-//     ],
-//   };
-//
-//   return transporter.sendMail(mailOptions);
-// };
-//
-// // Main createOrder function
-// const createOrder = async (orderData) => {
-//   try {
-//     // Generate custom orderId and orderTime
-//     const orderId = await generateCustomOrderId();
-//     const orderTime = formatOrderTime(new Date());
-//
-//     // Destructure orderData
-//     const {
-//       email,
-//       orderType,
-//       deliveryAddress,
-//       deliveryCharge = 0,
-//       city,
-//       area,
-//       phoneNumber,
-//       paymentMethod,
-//       transactionId,
-//       products,
-//       couponName,
-//       firstName,
-//       lastName,
-//       customerIp,
-//       channel,
-//       outlet,
-//     } = orderData;
-//
-//     // Find the customer by phone number or email
-//     const customer = await CustomerModel.findOne({
-//       $or: [{ email: email || null }, { phoneNumber }],
-//     })
-//       .lean()
-//       .exec();
-//     console.log(customer);
-//     // If no customer found, throw an error
-//     if (!customer) {
-//       throw new NotFound("Customer not found");
-//     }
-//
-//     // Try finding the outlet by ID, but proceed if not found
-//     const outletData = outlet ? await OutletModel.findById(outlet) : null;
-//
-//     // Set firstName and lastName from customer if not provided in the request
-//     const customerFirstName = firstName || customer.firstName;
-//     const customerLastName = lastName || customer.lastName;
-//
-//     // Use phoneNumber from the request, or fallback to customer's phoneNumber
-//     const customerPhoneNumber = phoneNumber || customer.phoneNumber;
-//
-//     // Validate products
-//     if (!Array.isArray(products) || products.length === 0) {
-//       throw new BadRequest("No products provided");
-//     }
-//
-//     // Ensure each product has a valid price
-//     const productIds = products.map((product) => product._id);
-//     const validProducts = await ProductModel.find({ _id: { $in: productIds } })
-//       .lean()
-//       .exec();
-//
-//     if (validProducts.length !== products.length) {
-//       throw new BadRequest("Invalid product IDs");
-//     }
-//
-//     // Calculate total price based on valid products
-//     let coupon =
-//       couponName &&
-//       (await CouponModel.findOne({ "general.couponName": couponName })
-//         .lean()
-//         .exec());
-//
-//     const totalPrice = calculateOrderValue(
-//       validProducts,
-//       products,
-//       coupon?._id
-//     );
-//     if (!totalPrice || isNaN(totalPrice)) {
-//       throw new BadRequest("Invalid total price");
-//     }
-//
-//     // Initialize discount variables
-//     let discountAmount = 0;
-//
-//     // Apply coupon logic if couponName is provided
-//     if (couponName) {
-//       if (!coupon) throw new BadRequest("Invalid coupon name");
-//       if (new Date() > new Date(coupon.general.couponExpiry)) {
-//         throw new BadRequest("Coupon has expired");
-//       }
-//       discountAmount = calculateDiscount(coupon, totalPrice);
-//     }
-//
-//     const validDeliveryCharge = isNaN(deliveryCharge) ? 0 : deliveryCharge;
-//     const vatRate = 5;
-//     const vat = (vatRate / 100) * totalPrice;
-//
-//     const finalTotalPrice = totalPrice - discountAmount + validDeliveryCharge;
-//
-//     // Create new order
-//     const newOrder = new OrderModel({
-//       orderId,
-//       customer: customer._id,
-//       firstName: customerFirstName,
-//       lastName: customerLastName,
-//       orderType,
-//       orderTime,
-//       deliveryAddress,
-//       orderStatus: "Received",
-//       city,
-//       area,
-//       phoneNumber: customerPhoneNumber,
-//       email: email || customer.email,
-//       paymentMethod,
-//       transactionId,
-//       products,
-//       coupon: coupon ? coupon._id : null,
-//       discountAmount,
-//       totalPrice: finalTotalPrice,
-//       deliveryCharge: validDeliveryCharge,
-//       customerIp,
-//       channel,
-//       outlet: outletData ? outletData._id : null, // Set to null if outlet is not found
-//     });
-//     const savedOrder = await newOrder.save();
-//     console.log(validProducts);
-//     const productInfoForSMS = savedOrder.products.map((product) => {
-//       const validProduct = validProducts.find((p) => p._id.equals(product._id));
-//       return {
-//         _id: product._id,
-//         quantity: product.quantity,
-//         productName: validProduct
-//           ? validProduct.productName
-//           : "Unnamed Product",
-//         productImage: validProduct ? validProduct.productImage : null,
-//         regularPrice: validProduct ? validProduct.general.regularPrice : 0,
-//         salePrice: validProduct ? validProduct.general.salePrice : 0,
-//         sku: validProduct ? validProduct?.inventory?.sku : null,
-//       };
-//     });
-//
-//     const smsText = getSMSText(
-//       "Received",
-//       `${customerFirstName} ${customerLastName}`,
-//       {
-//         orderId: savedOrder.orderId,
-//         products: productInfoForSMS,
-//         totalPrice: savedOrder.totalPrice,
-//         discountAmount: savedOrder.discountAmount,
-//       }
-//     );
-//
-//     await sendSMS(customerPhoneNumber, smsText);
-//
-//     // Generate PDF Invoice
-//     const pdfInvoice = await generatePDFInvoice({
-//       orderId: savedOrder.orderId,
-//       firstName: customerFirstName,
-//       lastName: customerLastName,
-//       email: savedOrder.email,
-//       deliveryAddress,
-//       phoneNumber: customerPhoneNumber,
-//       products: productInfoForSMS,
-//       totalPrice: finalTotalPrice, // Use finalTotalPrice for invoice
-//       discountAmount,
-//       deliveryCharge: validDeliveryCharge,
-//       vatRate,
-//       vat,
-//       coupon,
-//       paymentMethod,
-//       orderTime,
-//       transactionId,
-//       couponCode: coupon?.general?.couponName,
-//       orderType,
-//       customerAddress: customer?.address,
-//       customerCity: customer?.city,
-//       orderStatus: savedOrder?.orderStatus
-//     });
-//
-//     // Send invoice email
-//     await sendInvoiceEmail(
-//       savedOrder.email,
-//       `Your Invoice for Order ${savedOrder.orderId}`,
-//       {
-//         orderId: savedOrder.orderId,
-//         firstName: customerFirstName,
-//         lastName: customerLastName,
-//         email: savedOrder.email,
-//         deliveryAddress,
-//         phoneNumber: customerPhoneNumber,
-//         products: productInfoForSMS,
-//         totalPrice: finalTotalPrice,
-//         discountAmount,
-//         deliveryCharge: validDeliveryCharge,
-//         vatRate,
-//         vat,
-//         coupon,
-//       },
-//       pdfInvoice
-//     );
-//
-//     return {
-//       message: "Order created successfully",
-//       createdOrder: {
-//         order: {
-//           _id: savedOrder?._id,
-//           orderId: savedOrder.orderId,
-//           customer: savedOrder.customer,
-//           customerIp: savedOrder.customerIp,
-//           orderType: savedOrder.orderType,
-//           firstName: savedOrder.firstName,
-//           lastName: savedOrder.lastName,
-//           orderStatus: savedOrder.orderStatus,
-//           deliveryAddress: savedOrder.deliveryAddress,
-//           deliveryCharge: savedOrder.deliveryCharge,
-//           email: savedOrder.email,
-//           city: savedOrder.city,
-//           area: savedOrder.area,
-//           phoneNumber: savedOrder.phoneNumber,
-//           paymentMethod: savedOrder.paymentMethod,
-//           products: productInfoForSMS,
-//           coupon: savedOrder.coupon ? savedOrder.coupon : null,
-//           discountAmount: savedOrder.discountAmount,
-//           totalPrice: savedOrder.totalPrice,
-//           orderNote: savedOrder.orderNote,
-//           channel: savedOrder.channel,
-//           outlet: savedOrder.outlet,
-//           orderLogs: savedOrder.orderLogs,
-//           createdAt: savedOrder.createdAt,
-//           updatedAt: savedOrder.updatedAt,
-//           __v: savedOrder.__v,
-//         },
-//         customerEmail: savedOrder.email,
-//         totalOrderValue: savedOrder.totalPrice,
-//         couponName: couponName || null,
-//       },
-//     };
-//   } catch (error) {
-//     console.error("Error creating order:", error);
-//     throw error;
-//   }
-// };
-//
-
-
 
 
 const generatePDFInvoice = (orderDetails) => {
+  console.log(orderDetails);
   return new Promise(async (resolve, reject) => {
     try {
+      // Launch a new browser instance
       const browser = await puppeteer.launch();
       const page = await browser.newPage();
 
+      // Define the HTML content template with placeholders for order details
       const htmlContent = `
 <!DOCTYPE html>
 <html>
   <head>
     <style>
-      body { font-family: Arial, sans-serif; margin: 0; padding: 40px; }
-      .text-4xl { font-size: 30px; line-height: 0px; }
-      table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 15px; text-align: left; }
-      th, td { padding: 12px; border: 1px solid #ddd; }
-      th { background-color: #f4f4f4; color: #333; font-weight: bold; }
-      tr:nth-child(even) { background-color: #f9f9f9; }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 40px;
+      }
+
+      .text-4xl {
+        font-size: 30px;
+        line-height: 0px;
+      }
+      p {
+        line-height: 10px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-size: 15px;
+        text-align: left;
+      }
+      th,
+      td {
+        padding: 12px;
+        border: 1px solid #ddd;
+      }
+      th {
+        background-color: #f4f4f4;
+        color: #333;
+        font-weight: bold;
+      }
+      tr:nth-child(even) {
+        background-color: #f9f9f9;
+      }
     </style>
   </head>
   <body>
     <div>
-      <img src="https://www.bestelectronics.com.bd/wp-content/uploads/2022/07/Best-Electronics-PNG.png" style="width: 200px;">
-      <p>Address: Level 16, 90/1, City Centre, 1000 Motijheel Rd, Dhaka 1000</p>
-      <hr>
+    		<img src="https://www.bestelectronics.com.bd/wp-content/uploads/2022/07/Best-Electronics-PNG.png" style="width: 200px;"></img>
+        <p>Address: Level 16, 90/1, City Centre, 1000 Motijheel Rd, Dhaka 1000</p>
+<hr></hr>
       <p>${orderDetails?.orderTime}</p>
-      <p class="text-4xl"><strong>Order ID:</strong> #${orderDetails?.orderId || "N/A"}</p>
-      <p><strong>Customer Name:</strong> ${orderDetails?.firstName} ${orderDetails?.lastName}</p>
-      <p><strong>Phone:</strong> ${orderDetails?.phoneNumber}</p>
-      <p><strong>Address:</strong> ${orderDetails?.deliveryAddress}</p>
+      <p class="text-4xl"><strong>Order ID:</strong> #${
+        orderDetails?.orderId || "N/A"
+      }</p>
+	  <p style="font-size: 18px;font-weight: 500; margin-top: 50px;">Customer Details:</p>
+	  <div style="display: flex; flex-direction: column;; gap: 0px;">
+		<div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
+			<p><strong>Name:</strong> ${
+        orderDetails?.firstName + " " + orderDetails?.lastName || "N/A"
+      }</p>
+		<p><strong>Phone:</strong> ${orderDetails?.phoneNumber || "N/A"}</p>
+		<p><strong>Address:</strong> ${orderDetails?.customerAddress || "N/A"}</p>
+		<p><strong>City:</strong> ${orderDetails?.customerCity || "N/A"}</p>
+
+	</div>
+	<p style="font-size: 18px;font-weight: 500;">Order Summary:</p>
+
+	  <div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
+
+    <p><strong>Order Status:</strong> ${
+      `<span style="background-color: #D67229; padding:3px; border-radius: 5px; color: #ffffff">${orderDetails?.orderStatus}</span>` || "N/A"
+    }</p>
+		  <p><strong>Delivery Address:</strong> ${
+        orderDetails?.deliveryAddress || "N/A"
+      }</p>
+		  <p><strong>Order Type:</strong> ${orderDetails?.orderType || "N/A"}</p>
+		  <p><strong>Payment Method:</strong> ${
+        orderDetails?.paymentMethod || "N/A"
+      }</p>
+		  <p><strong>Transaction Id:</strong> ${
+        orderDetails?.transactionId || "N/A"
+      }</p>
+		</div>
+
+	</div>
+
       <table>
         <thead>
           <tr>
@@ -747,34 +361,72 @@ const generatePDFInvoice = (orderDetails) => {
           </tr>
         </thead>
         <tbody>
-          ${
+        ${
           orderDetails?.products
-              ?.map(
-                  (item) => `
-              <tr>
-                <td>${item.productName}</td>
-                <td>${item.sku}</td>
-                <td>${item.quantity}</td>
-                <td>${item.regularPrice}</td>
-                <td>${item.salePrice}</td>
-              </tr>`
-              )
-              .join("") || '<tr><td colspan="5">No products available</td></tr>'
-      }
+            ?.map(
+              (item) => `
+          <tr>
+            <td>${item?.productName || "N/A"}</td>
+            <td>${item?.sku || "N/A"}</td>
+            <td>${item?.quantity || "N/A"}</td>
+            <td>${item?.regularPrice || "N/A"}</td>
+            <td>${item?.salePrice || "N/A"}</td>
+          </tr>
+        `
+            )
+            .join("") || '<tr><td colspan="4">No products available</td></tr>'
+        }
         </tbody>
       </table>
-      <p><strong>Total Price:</strong> ${orderDetails?.totalPrice}</p>
+      <div style="display: flex; justify-content: right">
+        <div
+          style="
+            display: flex;
+            gap: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+          "
+        >
+          <div>
+            <p><strong>Delivery Charge:</strong></p>
+            <p><strong>Discount Amount ${
+              orderDetails?.couponCode && ` (${orderDetails?.couponCode})`
+            }:</strong> </p>
+            <p><strong>VAT:</strong></p>
+            <p><strong>Total Price:</strong></p>
+          </div>
+          <div>
+            <p>${orderDetails?.deliveryCharge || "N/A"}</p>
+            <p>${orderDetails?.discountAmount || "N/A"}</p>
+            <p>5% (inclusive)</p>
+            <p>${orderDetails?.totalPrice || "N/A"}</p>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 50px">
+        <p style="font-weight: 600">Important Information About Your Order</p>
+        <p style="line-height: 20px">In the event that a product is exchanged in store, the exchange receipt issued will be your new proof of purchase.</p>
+        <p>Thank you. Please retain this invoice as proof of your purchase.</p>
+      </div>
     </div>
   </body>
 </html>
 `;
 
+      // Set HTML content to the page
       await page.setContent(htmlContent, { waitUntil: "load" });
 
-      const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+      // Generate the PDF as a buffer
+      const pdfBuffer = await page.pdf({
+        format: "A4",
+        printBackground: true,
+      });
 
+      // Close the browser
       await browser.close();
 
+      // Resolve the PDF buffer to be used in an email
       resolve(pdfBuffer);
     } catch (error) {
       reject(error);
@@ -782,38 +434,48 @@ const generatePDFInvoice = (orderDetails) => {
   });
 };
 
+// Helper function to send email with invoice attachment
 const sendInvoiceEmail = async (to, subject, orderDetails, pdfBuffer) => {
   const transporter = nodemailer.createTransport({
-    service: "Gmail",
+    // Configure your SMTP transport here
+    service: "Gmail", // Example using Gmail, change it according to your needs
     auth: {
-      user: "your-email@gmail.com",
-      pass: "your-email-password", // Use environment variables in production
+      user: "tech.syscomatic@gmail.com", // Your email
+      pass: "nfkb rcqg wdez ionc", // Your email password
     },
   });
 
   const mailOptions = {
-    from: "your-email@gmail.com",
+    from: "tech.syscomatic@gmail.com",
     to,
     subject,
-    text: `Your order has been successfully placed. Order ID: ${orderDetails.orderId}. Please find the invoice attached.`,
+    text: `Thank you for your order! Your order ID is ${orderDetails.orderId}. Please find the invoice attached.`,
     attachments: [
-      { filename: `invoice-${orderDetails.orderId}.pdf`, content: pdfBuffer },
+      {
+        filename: `invoice-${orderDetails.orderId}.pdf`,
+        content: pdfBuffer,
+      },
     ],
   };
 
   return transporter.sendMail(mailOptions);
 };
 
+// Main createOrder function
 const createOrder = async (orderData) => {
   try {
+    // Generate custom orderId and orderTime
     const orderId = await generateCustomOrderId();
     const orderTime = formatOrderTime(new Date());
 
+    // Destructure orderData
     const {
       email,
       orderType,
       deliveryAddress,
       deliveryCharge = 0,
+      city,
+      area,
       phoneNumber,
       paymentMethod,
       transactionId,
@@ -821,79 +483,229 @@ const createOrder = async (orderData) => {
       couponName,
       firstName,
       lastName,
+      customerIp,
+      channel,
+      outlet,
     } = orderData;
 
+    // Find the customer by phone number or email
     const customer = await CustomerModel.findOne({
-      $or: [{ email }, { phoneNumber }],
+      $or: [{ email: email || null }, { phoneNumber }],
     })
-        .lean()
-        .exec();
-    if (!customer) throw new NotFound("Customer not found");
+      .lean()
+      .exec();
+    console.log(customer);
+    // If no customer found, throw an error
+    if (!customer) {
+      throw new NotFound("Customer not found");
+    }
 
+    // Try finding the outlet by ID, but proceed if not found
+    const outletData = outlet ? await OutletModel.findById(outlet) : null;
+
+    // Set firstName and lastName from customer if not provided in the request
+    const customerFirstName = firstName || customer.firstName;
+    const customerLastName = lastName || customer.lastName;
+
+    // Use phoneNumber from the request, or fallback to customer's phoneNumber
+    const customerPhoneNumber = phoneNumber || customer.phoneNumber;
+
+    // Validate products
+    if (!Array.isArray(products) || products.length === 0) {
+      throw new BadRequest("No products provided");
+    }
+
+    // Ensure each product has a valid price
     const productIds = products.map((product) => product._id);
     const validProducts = await ProductModel.find({ _id: { $in: productIds } })
-        .lean()
-        .exec();
-    if (validProducts.length !== products.length)
+      .lean()
+      .exec();
+
+    if (validProducts.length !== products.length) {
       throw new BadRequest("Invalid product IDs");
+    }
 
-    const coupon =
-        couponName &&
-        (await CouponModel.findOne({ "general.couponName": couponName })
-            .lean()
-            .exec());
+    // Calculate total price based on valid products
+    let coupon =
+      couponName &&
+      (await CouponModel.findOne({ "general.couponName": couponName })
+        .lean()
+        .exec());
 
-    const totalPrice = calculateOrderValue(validProducts, products, coupon?._id);
-    const discountAmount = coupon
-        ? calculateDiscount(coupon, totalPrice)
-        : 0;
+    const totalPrice = calculateOrderValue(
+      validProducts,
+      products,
+      coupon?._id
+    );
+    if (!totalPrice || isNaN(totalPrice)) {
+      throw new BadRequest("Invalid total price");
+    }
 
-    const finalTotalPrice = totalPrice - discountAmount + deliveryCharge;
+    // Initialize discount variables
+    let discountAmount = 0;
 
+    // Apply coupon logic if couponName is provided
+    if (couponName) {
+      if (!coupon) throw new BadRequest("Invalid coupon name");
+      if (new Date() > new Date(coupon.general.couponExpiry)) {
+        throw new BadRequest("Coupon has expired");
+      }
+      discountAmount = calculateDiscount(coupon, totalPrice);
+    }
+
+    const validDeliveryCharge = isNaN(deliveryCharge) ? 0 : deliveryCharge;
+    const vatRate = 5;
+    const vat = (vatRate / 100) * totalPrice;
+
+    const finalTotalPrice = totalPrice - discountAmount + validDeliveryCharge;
+
+    // Create new order
     const newOrder = new OrderModel({
       orderId,
       customer: customer._id,
-      firstName: firstName || customer.firstName,
-      lastName: lastName || customer.lastName,
+      firstName: customerFirstName,
+      lastName: customerLastName,
       orderType,
       orderTime,
       deliveryAddress,
-      phoneNumber,
-      email,
+      orderStatus: "Received",
+      city,
+      area,
+      phoneNumber: customerPhoneNumber,
+      email: email || customer.email,
       paymentMethod,
       transactionId,
       products,
-      coupon: coupon?._id || null,
+      coupon: coupon ? coupon._id : null,
       discountAmount,
       totalPrice: finalTotalPrice,
-      deliveryCharge,
+      deliveryCharge: validDeliveryCharge,
+      customerIp,
+      channel,
+      outlet: outletData ? outletData._id : null, // Set to null if outlet is not found
     });
-
     const savedOrder = await newOrder.save();
-
-    const pdfInvoice = await generatePDFInvoice({
-      orderId: savedOrder.orderId,
-      firstName: savedOrder.firstName,
-      lastName: savedOrder.lastName,
-      phoneNumber: savedOrder.phoneNumber,
-      deliveryAddress: savedOrder.deliveryAddress,
-      products: validProducts,
-      totalPrice: finalTotalPrice,
+    console.log(validProducts);
+    const productInfoForSMS = savedOrder.products.map((product) => {
+      const validProduct = validProducts.find((p) => p._id.equals(product._id));
+      return {
+        _id: product._id,
+        quantity: product.quantity,
+        productName: validProduct
+          ? validProduct.productName
+          : "Unnamed Product",
+        productImage: validProduct ? validProduct.productImage : null,
+        regularPrice: validProduct ? validProduct.general.regularPrice : 0,
+        salePrice: validProduct ? validProduct.general.salePrice : 0,
+        sku: validProduct ? validProduct?.inventory?.sku : null,
+      };
     });
 
-    await sendInvoiceEmail(
-        savedOrder.email,
-        `Invoice for Order #${savedOrder.orderId}`,
-        savedOrder,
-        pdfInvoice
+    const smsText = getSMSText(
+      "Received",
+      `${customerFirstName} ${customerLastName}`,
+      {
+        orderId: savedOrder.orderId,
+        products: productInfoForSMS,
+        totalPrice: savedOrder.totalPrice,
+        discountAmount: savedOrder.discountAmount,
+      }
     );
 
-    return { message: "Order created successfully", savedOrder };
+    await sendSMS(customerPhoneNumber, smsText);
+
+    // Generate PDF Invoice
+    const pdfInvoice = await generatePDFInvoice({
+      orderId: savedOrder.orderId,
+      firstName: customerFirstName,
+      lastName: customerLastName,
+      email: savedOrder.email,
+      deliveryAddress,
+      phoneNumber: customerPhoneNumber,
+      products: productInfoForSMS,
+      totalPrice: finalTotalPrice, // Use finalTotalPrice for invoice
+      discountAmount,
+      deliveryCharge: validDeliveryCharge,
+      vatRate,
+      vat,
+      coupon,
+      paymentMethod,
+      orderTime,
+      transactionId,
+      couponCode: coupon?.general?.couponName,
+      orderType,
+      customerAddress: customer?.address,
+      customerCity: customer?.city,
+      orderStatus: savedOrder?.orderStatus
+    });
+
+    // Send invoice email
+    await sendInvoiceEmail(
+      savedOrder.email,
+      `Your Invoice for Order ${savedOrder.orderId}`,
+      {
+        orderId: savedOrder.orderId,
+        firstName: customerFirstName,
+        lastName: customerLastName,
+        email: savedOrder.email,
+        deliveryAddress,
+        phoneNumber: customerPhoneNumber,
+        products: productInfoForSMS,
+        totalPrice: finalTotalPrice,
+        discountAmount,
+        deliveryCharge: validDeliveryCharge,
+        vatRate,
+        vat,
+        coupon,
+      },
+      pdfInvoice
+    );
+
+    return {
+      message: "Order created successfully",
+      createdOrder: {
+        order: {
+          _id: savedOrder?._id,
+          orderId: savedOrder.orderId,
+          customer: savedOrder.customer,
+          customerIp: savedOrder.customerIp,
+          orderType: savedOrder.orderType,
+          firstName: savedOrder.firstName,
+          lastName: savedOrder.lastName,
+          orderStatus: savedOrder.orderStatus,
+          deliveryAddress: savedOrder.deliveryAddress,
+          deliveryCharge: savedOrder.deliveryCharge,
+          email: savedOrder.email,
+          city: savedOrder.city,
+          area: savedOrder.area,
+          phoneNumber: savedOrder.phoneNumber,
+          paymentMethod: savedOrder.paymentMethod,
+          products: productInfoForSMS,
+          coupon: savedOrder.coupon ? savedOrder.coupon : null,
+          discountAmount: savedOrder.discountAmount,
+          totalPrice: savedOrder.totalPrice,
+          orderNote: savedOrder.orderNote,
+          channel: savedOrder.channel,
+          outlet: savedOrder.outlet,
+          orderLogs: savedOrder.orderLogs,
+          createdAt: savedOrder.createdAt,
+          updatedAt: savedOrder.updatedAt,
+          __v: savedOrder.__v,
+        },
+        customerEmail: savedOrder.email,
+        totalOrderValue: savedOrder.totalPrice,
+        couponName: couponName || null,
+      },
+    };
   } catch (error) {
     console.error("Error creating order:", error);
     throw error;
   }
 };
+
+
+
+
 
 
 
