@@ -265,7 +265,9 @@ const generatePDFInvoice = (orderDetails) => {
   return new Promise(async (resolve, reject) => {
     try {
       // Launch a new browser instance
-      const browser = await puppeteer.launch();
+      const browser = await puppeteer.launch({
+        headless: false,
+    });
       const page = await browser.newPage();
 
       // Define the HTML content template with placeholders for order details
