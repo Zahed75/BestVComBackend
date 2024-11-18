@@ -257,6 +257,9 @@ function calculateDiscount(coupon, totalPrice, products, validProducts) {
 // };
 
 
+
+
+
 const generatePDFInvoice = (orderDetails) => {
   console.log(orderDetails);
   return new Promise(async (resolve, reject) => {
@@ -331,7 +334,7 @@ const generatePDFInvoice = (orderDetails) => {
 	<p style="font-size: 18px;font-weight: 500;">Order Summary:</p>
 
 	  <div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
-		
+
     <p><strong>Order Status:</strong> ${
       `<span style="background-color: #D67229; padding:3px; border-radius: 5px; color: #ffffff">${orderDetails?.orderStatus}</span>` || "N/A"
     }</p>
@@ -346,7 +349,7 @@ const generatePDFInvoice = (orderDetails) => {
         orderDetails?.transactionId || "N/A"
       }</p>
 		</div>
-  
+
 	</div>
 
       <table>
@@ -701,6 +704,12 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
+
+
+
+
+
+
 
 
 
