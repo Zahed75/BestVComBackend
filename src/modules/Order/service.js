@@ -13,7 +13,7 @@ const { sendOrderInvoiceEmail } = require("../../utility/email");
 const OutletModel = require("../Outlet/model");
 const axios = require("axios");
 // const puppeteer = require("puppeteer");
-
+const { chromium } = require('playwright');
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 const { Buffer } = require("buffer");
@@ -255,7 +255,6 @@ function calculateDiscount(coupon, totalPrice, products, validProducts) {
 //   }
 // };
 // 
-const pdf = require("html-pdf-node");
 
 const generatePDFInvoice = async (orderDetails) => {
   try {
@@ -311,41 +310,49 @@ const generatePDFInvoice = async (orderDetails) => {
       <p class="text-4xl"><strong>Order ID:</strong> #${
         orderDetails?.orderId || "N/A"
       }</p>
-	  <p style="font-size: 18px;font-weight: 500; margin-top: 50px;">Customer Details:</p>
-	  <div style="display: flex; flex-direction: column;; gap: 0px;">
-		<div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
-			<p><strong>Name:</strong> ${
-        orderDetails?.firstName + " " + orderDetails?.lastName || "N/A"
-      }</p>
-		<p><strong>Phone:</strong> ${orderDetails?.phoneNumber || "N/A"}</p>
-		<p><strong>Address:</strong> ${orderDetails?.customerAddress || "N/A"}</p>
-		<p><strong>City:</strong> ${orderDetails?.customerCity || "N/A"}</p>
+      <div style="display: flex; gap: 10px; align-items: start; ">
+      <div style="width: 50%">
+        <p style="font-size: 18px;font-weight: 500; margin-top: 30px;">Customer Details:</p>
+        <div style="display: flex; flex-direction: column;; gap: 0px;">
+        <div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
+          <p><strong>Name:</strong> ${
+            orderDetails?.firstName + " " + orderDetails?.lastName || "N/A"
+          }</p>
+        <p><strong>Phone:</strong> ${orderDetails?.phoneNumber || "N/A"}</p>
+        <p><strong>Address:</strong> ${orderDetails?.customerAddress || "N/A"}</p>
+        <p><strong>City:</strong> ${orderDetails?.customerCity || "N/A"}</p>
+    
+      
+      </div>
+      </div>
+      </div>
+      <div style="width: 50%">
 
-	</div>
-	<p style="font-size: 18px;font-weight: 500;">Order Summary:</p>
+        <p style="font-size: 18px;font-weight: 500;">Order Summary:</p>
+      
+          <div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
+      
+          <p>
+        <strong>Order Status:</strong>
+        <span classname="orange-bg" style="backgroundColor: #D67229; padding: 3px; border-radius: 5px; color: #D67229;">
+          ${orderDetails?.orderStatus || "N/A"}
+        </span>
+      </p>
+      
+            <p><strong>Delivery Address:</strong> ${
+              orderDetails?.deliveryAddress || "N/A"
+            }</p>
+            <p><strong>Order Type:</strong> ${orderDetails?.orderType || "N/A"}</p>
+            <p><strong>Payment Method:</strong> ${
+              orderDetails?.paymentMethod || "N/A"
+            }</p>
+            <p><strong>Transaction Id:</strong> ${
+              orderDetails?.transactionId || "N/A"
+            }</p>
+          </div>
+      </div>
+      </div>
 
-	  <div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
-
-    <p>
-  <strong>Order Status:</strong>
-  <span classname="orange-bg" style="backgroundColor: #D67229; padding: 3px; border-radius: 5px; color: #D67229;">
-    ${orderDetails?.orderStatus || "N/A"}
-  </span>
-</p>
-
-		  <p><strong>Delivery Address:</strong> ${
-        orderDetails?.deliveryAddress || "N/A"
-      }</p>
-		  <p><strong>Order Type:</strong> ${orderDetails?.orderType || "N/A"}</p>
-		  <p><strong>Payment Method:</strong> ${
-        orderDetails?.paymentMethod || "N/A"
-      }</p>
-		  <p><strong>Transaction Id:</strong> ${
-        orderDetails?.transactionId || "N/A"
-      }</p>
-		</div>
-
-	</div>
 
       <table>
         <thead>
@@ -410,12 +417,16 @@ const generatePDFInvoice = async (orderDetails) => {
 </html>`;
 
     // Generate PDF from HTML
-    const pdfBuffer = await pdf.generatePdf(
-      { content: htmlContent },
-      { format: "A4" }
-    );
-
-    return pdfBuffer; // Return PDF buffer
+    // const pdfBuffer = await pdf.generatePdf(
+    //   { content: htmlContent },
+    //   { format: "A4" }
+    // );
+    const browser = await chromium.launch();
+    const page = await browser.newPage();
+    await page.setContent(htmlContent);
+    const pdfBuffer = await page.pdf();
+    await browser.close();
+    return pdfBuffer;
   } catch (error) {
     console.error("Error generating PDF:", error);
     throw error;
@@ -446,6 +457,7 @@ const sendInvoiceEmail = async (to, subject, orderDetails, pdfBuffer) => {
           content: pdfBuffer,
         },
       ],
+      // html: pdfBuffer
     };
 
     // Send the email
