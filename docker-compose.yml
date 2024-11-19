@@ -16,7 +16,7 @@ services:
     env_file:
       - .env # Environment variables for BestElectronics backend
     environment:
-      - PLAYWRIGHT_BROWSERS_PATH=0 # Add Playwright browsers path here
+      - PLAYWRIGHT_BROWSERS_PATH=0
     volumes:
       - .:/app
     ports:
@@ -52,3 +52,4 @@ services:
 
 volumes:
   cache:
+
