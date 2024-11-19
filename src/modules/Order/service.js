@@ -12,11 +12,9 @@ const { getSMSText } = require("../../utility/getSMS");
 const { sendOrderInvoiceEmail } = require("../../utility/email");
 const OutletModel = require("../Outlet/model");
 const axios = require("axios");
-// const puppeteer = require("puppeteer");
 
-const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
-const { Buffer } = require("buffer");
+
 
 function calculateOrderValue(products, orderProducts, couponId) {
   return orderProducts.reduce((total, orderProduct) => {
@@ -254,9 +252,7 @@ function calculateDiscount(coupon, totalPrice, products, validProducts) {
 //     throw error;
 //   }
 // };
-//
-
-
+// 
 const pdf = require("html-pdf-node");
 
 const generatePDFInvoice = async (orderDetails) => {
