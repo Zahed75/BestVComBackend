@@ -12,12 +12,11 @@ const { getSMSText } = require("../../utility/getSMS");
 const { sendOrderInvoiceEmail } = require("../../utility/email");
 const OutletModel = require("../Outlet/model");
 const axios = require("axios");
-const puppeteer = require("puppeteer");
+// const puppeteer = require("puppeteer");
 
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 const { Buffer } = require("buffer");
-
 
 function calculateOrderValue(products, orderProducts, couponId) {
   return orderProducts.reduce((total, orderProduct) => {
@@ -256,25 +255,11 @@ function calculateDiscount(coupon, totalPrice, products, validProducts) {
 //   }
 // };
 
+const pdf = require("html-pdf-node");
 
-
-
-
-const generatePDFInvoice = (orderDetails) => {
-  console.log(orderDetails);
-  return new Promise(async (resolve, reject) => {
-    try {
-      // Launch a new browser instance
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-
-    });
-      const page = await browser.newPage();
-
-      // Define the HTML content template with placeholders for order details
-      const htmlContent = `
-<!DOCTYPE html>
+const generatePDFInvoice = async (orderDetails) => {
+  try {
+    const htmlContent = `<!DOCTYPE html>
 <html>
   <head>
     <style>
@@ -310,6 +295,10 @@ const generatePDFInvoice = (orderDetails) => {
       }
       tr:nth-child(even) {
         background-color: #f9f9f9;
+        }
+      .orange-bg {
+          background-color: #f9f9f9;
+      
       }
     </style>
   </head>
@@ -337,9 +326,13 @@ const generatePDFInvoice = (orderDetails) => {
 
 	  <div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
 
-    <p><strong>Order Status:</strong> ${
-      `<span style="background-color: #D67229; padding:3px; border-radius: 5px; color: #ffffff">${orderDetails?.orderStatus}</span>` || "N/A"
-    }</p>
+    <p>
+  <strong>Order Status:</strong>
+  <span classname="orange-bg" style="backgroundColor: #D67229; padding: 3px; border-radius: 5px; color: #D67229;">
+    ${orderDetails?.orderStatus || "N/A"}
+  </span>
+</p>
+
 		  <p><strong>Delivery Address:</strong> ${
         orderDetails?.deliveryAddress || "N/A"
       }</p>
@@ -368,15 +361,14 @@ const generatePDFInvoice = (orderDetails) => {
         ${
           orderDetails?.products
             ?.map(
-              (item) => `
-          <tr>
+              (item) =>
+                `<tr>
             <td>${item?.productName || "N/A"}</td>
             <td>${item?.sku || "N/A"}</td>
             <td>${item?.quantity || "N/A"}</td>
             <td>${item?.regularPrice || "N/A"}</td>
             <td>${item?.salePrice || "N/A"}</td>
-          </tr>
-        `
+          </tr>`
             )
             .join("") || '<tr><td colspan="4">No products available</td></tr>'
         }
@@ -395,7 +387,7 @@ const generatePDFInvoice = (orderDetails) => {
           <div>
             <p><strong>Delivery Charge:</strong></p>
             <p><strong>Discount Amount ${
-              orderDetails?.couponCode && ` (${orderDetails?.couponCode})`
+              orderDetails?.couponCode && orderDetails?.couponCode
             }:</strong> </p>
             <p><strong>VAT:</strong></p>
             <p><strong>Total Price:</strong></p>
@@ -415,54 +407,55 @@ const generatePDFInvoice = (orderDetails) => {
       </div>
     </div>
   </body>
-</html>
-`;
+</html>`;
 
-      // Set HTML content to the page
-      await page.setContent(htmlContent, { waitUntil: "load" });
+    // Generate PDF from HTML
+    const pdfBuffer = await pdf.generatePdf(
+      { content: htmlContent },
+      { format: "A4" }
+    );
 
-      // Generate the PDF as a buffer
-      const pdfBuffer = await page.pdf({
-        format: "A4",
-        printBackground: true,
-      });
-
-      // Close the browser
-      await browser.close();
-
-      // Resolve the PDF buffer to be used in an email
-      resolve(pdfBuffer);
-    } catch (error) {
-      reject(error);
-    }
-  });
+    return pdfBuffer; // Return PDF buffer
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    throw error;
+  }
 };
 
 // Helper function to send email with invoice attachment
 const sendInvoiceEmail = async (to, subject, orderDetails, pdfBuffer) => {
-  const transporter = nodemailer.createTransport({
-    // Configure your SMTP transport here
-    service: "Gmail", // Example using Gmail, change it according to your needs
-    auth: {
-      user: "tech.syscomatic@gmail.com", // Your email
-      pass: "nfkb rcqg wdez ionc", // Your email password
-    },
-  });
-
-  const mailOptions = {
-    from: "tech.syscomatic@gmail.com",
-    to,
-    subject,
-    text: `Thank you for your order! Your order ID is ${orderDetails.orderId}. Please find the invoice attached.`,
-    attachments: [
-      {
-        filename: `invoice-${orderDetails.orderId}.pdf`,
-        content: pdfBuffer,
+  try {
+    // Create transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: "tech.syscomatic@gmail.com", // Your email
+        pass: "nfkb rcqg wdez ionc", // Your email password
       },
-    ],
-  };
+    });
 
-  return transporter.sendMail(mailOptions);
+    // Mail options
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to,
+      subject,
+      text: `Thank you for your order! Your order ID is ${orderDetails.orderId}. Please find the invoice attached.`,
+      attachments: [
+        {
+          filename: `invoice-${orderDetails.orderId}.pdf`,
+          content: pdfBuffer,
+        },
+      ],
+    };
+
+    // Send the email
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully:", info.response);
+    return info;
+  } catch (error) {
+    console.error("Error sending email:", error);
+    throw error;
+  }
 };
 
 // Main createOrder function
@@ -640,7 +633,7 @@ const createOrder = async (orderData) => {
       orderType,
       customerAddress: customer?.address,
       customerCity: customer?.city,
-      orderStatus: savedOrder?.orderStatus
+      orderStatus: savedOrder?.orderStatus,
     });
 
     // Send invoice email
@@ -706,15 +699,6 @@ const createOrder = async (orderData) => {
     throw error;
   }
 };
-
-
-
-
-
-
-
-
-
 
 //updateOrderByOrder ID
 
@@ -872,7 +856,7 @@ const updateOrderStatus = async (id, orderStatus) => {
     orderType: order?.orderType,
     customerAddress: customer?.address,
     customerCity: customer?.city,
-    orderStatus: order?.orderStatus
+    orderStatus: order?.orderStatus,
   });
 
   // Send invoice email
