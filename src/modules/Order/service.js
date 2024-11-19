@@ -254,7 +254,9 @@ function calculateDiscount(coupon, totalPrice, products, validProducts) {
 //     throw error;
 //   }
 // };
-// 
+//
+
+
 const pdf = require("html-pdf-node");
 
 const generatePDFInvoice = async (orderDetails) => {
