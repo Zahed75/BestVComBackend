@@ -15,7 +15,7 @@ const axios = require("axios");
 
 const nodemailer = require("nodemailer");
 const { Buffer } = require("buffer");
-// 
+//
 function calculateOrderValue(products, orderProducts, couponId) {
   return orderProducts.reduce((total, orderProduct) => {
     const product = products.find((p) => p._id.equals(orderProduct._id));
@@ -254,11 +254,10 @@ function calculateDiscount(coupon, totalPrice, products, validProducts) {
 // };
 //
 
-
-
 const pdf = require("html-pdf-node");
 
 const generatePDFInvoice = async (orderDetails) => {
+  console.log(orderDetails?.transactionId)
   try {
     const htmlContent = `<!DOCTYPE html>
 <html>
@@ -271,7 +270,7 @@ const generatePDFInvoice = async (orderDetails) => {
       }
 
       .text-4xl {
-        font-size: 30px;
+        font-size: 16px;
         line-height: 0px;
       }
       p {
@@ -281,7 +280,7 @@ const generatePDFInvoice = async (orderDetails) => {
         width: 100%;
         border-collapse: collapse;
         margin: 20px 0;
-        font-size: 15px;
+        font-size: 11px;
         text-align: left;
       }
       th,
@@ -303,7 +302,7 @@ const generatePDFInvoice = async (orderDetails) => {
       }
     </style>
   </head>
-  <body>
+  <body style="font-size:11px;">
     <div>
     		<img src="https://www.bestelectronics.com.bd/wp-content/uploads/2022/07/Best-Electronics-PNG.png" style="width: 200px;"></img>
         <p>Address: Level 16, 90/1, City Centre, 1000 Motijheel Rd, Dhaka 1000</p>
@@ -312,18 +311,17 @@ const generatePDFInvoice = async (orderDetails) => {
       <p class="text-4xl"><strong>Order ID:</strong> #${
         orderDetails?.orderId || "N/A"
       }</p>
-	  <p style="font-size: 18px;font-weight: 500; margin-top: 50px;">Customer Details:</p>
+	  <p style="font-size: 13px;font-weight: 500; margin-top: 30px;">Customer Details:</p>
 	  <div style="display: flex; flex-direction: column;; gap: 0px;">
 		<div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
 			<p><strong>Name:</strong> ${
         orderDetails?.firstName + " " + orderDetails?.lastName || "N/A"
       }</p>
 		<p><strong>Phone:</strong> ${orderDetails?.phoneNumber || "N/A"}</p>
-		<p><strong>Address:</strong> ${orderDetails?.customerAddress || "N/A"}</p>
-		<p><strong>City:</strong> ${orderDetails?.customerCity || "N/A"}</p>
+		<p><strong>Email:</strong> ${orderDetails?.email || "N/A"}</p>
 
 	</div>
-	<p style="font-size: 18px;font-weight: 500;">Order Summary:</p>
+	<p style="font-size: 13px;font-weight: 500;">Order Summary:</p>
 
 	  <div style="padding: 10px; border: 1px solid #ddd; background: #f4f4f4;">
 
@@ -337,13 +335,19 @@ const generatePDFInvoice = async (orderDetails) => {
 		  <p><strong>Delivery Address:</strong> ${
         orderDetails?.deliveryAddress || "N/A"
       }</p>
+		  <p><strong>City:</strong> ${orderDetails?.city || "N/A"}</p>
+		  <p><strong>Area:</strong> ${orderDetails?.area || "N/A"}</p>
 		  <p><strong>Order Type:</strong> ${orderDetails?.orderType || "N/A"}</p>
 		  <p><strong>Payment Method:</strong> ${
         orderDetails?.paymentMethod || "N/A"
       }</p>
-		  <p><strong>Transaction Id:</strong> ${
-        orderDetails?.transactionId || "N/A"
-      }</p>
+      ${
+        orderDetails?.transactionId !== undefined ?
+        `<p><strong>Transaction Id:</strong>${
+          orderDetails?.transactionId || "N/A"
+        }</p>
+          `: ``
+      }
 		</div>
 
 	</div>
@@ -388,16 +392,16 @@ const generatePDFInvoice = async (orderDetails) => {
           <div>
             <p><strong>Delivery Charge:</strong></p>
             <p><strong>Discount Amount ${
-              orderDetails?.couponCode && orderDetails?.couponCode
+              orderDetails?.couponCode ? orderDetails?.couponCode : ''
             }:</strong> </p>
             <p><strong>VAT:</strong></p>
             <p><strong>Total Price:</strong></p>
           </div>
           <div>
-            <p>${orderDetails?.deliveryCharge || "N/A"}</p>
-            <p>${orderDetails?.discountAmount || "N/A"}</p>
+            <p>${orderDetails?.deliveryCharge || "0"}</p>
+            <p>${orderDetails?.discountAmount || "0"}</p>
             <p>5% (inclusive)</p>
-            <p>${orderDetails?.totalPrice || "N/A"}</p>
+            <p>${orderDetails?.totalPrice || "0"}</p>
           </div>
         </div>
       </div>
@@ -492,7 +496,7 @@ const createOrder = async (orderData) => {
     })
       .lean()
       .exec();
-    console.log(customer);
+    console.log(orderData);
     // If no customer found, throw an error
     if (!customer) {
       throw new NotFound("Customer not found");
@@ -611,7 +615,6 @@ const createOrder = async (orderData) => {
     );
 
     await sendSMS(customerPhoneNumber, smsText);
-
     // Generate PDF Invoice
     const pdfInvoice = await generatePDFInvoice({
       orderId: savedOrder.orderId,
@@ -633,7 +636,8 @@ const createOrder = async (orderData) => {
       couponCode: coupon?.general?.couponName,
       orderType,
       customerAddress: customer?.address,
-      customerCity: customer?.city,
+      city: city,
+      area: area,
       orderStatus: savedOrder?.orderStatus,
     });
 
