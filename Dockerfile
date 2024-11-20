@@ -1,8 +1,10 @@
 # Use Node.js 18 as the base image
 FROM node:18
 
-# Install system dependencies for Puppeteer/Chromium
+# Install required dependencies
 RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg \
     libnss3 \
     libatk1.0-0 \
     libatk-bridge2.0-0 \
@@ -14,10 +16,17 @@ RUN apt-get update && apt-get install -y \
     libgbm-dev \
     libasound2 \
     fonts-liberation \
-    lsb-release \
-    wget \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Google Chrome stable version
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-linux-keyring.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/google-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && apt-get install -y google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set Puppeteer to use the installed Chrome
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 # Set the working directory
 WORKDIR /app
@@ -33,9 +42,6 @@ COPY . .
 
 # Expose port 8080
 EXPOSE 8080
-
-# Define Puppeteer's executable path for production environments
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 # Start the application
 CMD ["npm", "start"]
