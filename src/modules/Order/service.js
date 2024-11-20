@@ -17,7 +17,7 @@ const { chromium } = require('playwright');
 const PDFDocument = require("pdfkit");
 const nodemailer = require("nodemailer");
 const { Buffer } = require("buffer");
-
+// 
 function calculateOrderValue(products, orderProducts, couponId) {
   return orderProducts.reduce((total, orderProduct) => {
     const product = products.find((p) => p._id.equals(orderProduct._id));
