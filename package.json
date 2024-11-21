@@ -48,6 +48,7 @@
         "joi": "^17.8.4",
         "joi-objectid": "^4.0.2",
         "jsonwebtoken": "^8.0.0",
+        "locate-path": "^7.2.0",
         "mime": "^4.0.4",
         "moment": "^2.30.1",
         "mongoose": "^7.0.1",
