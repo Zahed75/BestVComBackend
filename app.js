@@ -44,6 +44,8 @@ const whitelist = [
     'http://localhost:3004',
     'http://localhost:3005',
     'http://localhost:8000',
+    'https://customer.bestelectronics.com.bd/',
+    'https://admin.bestelectronics.com.bd/',
     '*',
 ];
 const corsOptions = {
@@ -96,7 +98,7 @@ app.use(handleError);
 
 // Undefined Route Implement
 app.use('*', (req, res) => {
-    res.status(404).json({status: 'fail', data: 'Server is Okay, Development CI/CD check'});
+    res.status(404).json({status: 'fail', data: 'Server is Okay, Undefined Route'});
 });
 
 // Export app module
