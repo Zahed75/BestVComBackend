@@ -79,6 +79,7 @@ const getSubcategoriesHandler = asyncHandler(async (req, res) => {
     });
 
 })
+
 const getCategoryByIdHandler = asyncHandler(async (req, res) => {
     const categoryId = req.params.id;
     const { success, data, error } = await categoryService.getCategoryById(categoryId);
@@ -93,6 +94,8 @@ const getCategoryByIdHandler = asyncHandler(async (req, res) => {
         });
     }
 });
+
+
 
 const getProductByCategorySlugHandler = asyncHandler(async (req, res) => {
     const { slug } = req.params;  // or req.body if you prefer
