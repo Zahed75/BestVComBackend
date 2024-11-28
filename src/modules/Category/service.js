@@ -143,19 +143,63 @@ const getSubcategories = async (parentCategoryId) => {
   }
 };
 
+//
+// const getCategoryById = async (categoryId) => {
+//   try {
+//     const category = await Category.findById(categoryId).lean();
+//     if (category) {
+//       const allProducts = await productModel.find({ categoryId: categoryId });
+//       const productCount = allProducts.length;
+//
+//       const categoryWithProductCount = {
+//         ...category,
+//         productCount: productCount,
+//       };
+//
+//       return { success: true, data: categoryWithProductCount };
+//     } else {
+//       return { success: false, error: "Category not found" };
+//     }
+//   } catch (error) {
+//     console.error("Error in getting category by id:", error.message);
+//     return { success: false, error: "Failed to retrieve category" };
+//   }
+// };
+
+
 const getCategoryById = async (categoryId) => {
   try {
-    const category = await Category.findById(categoryId).lean();
+    // Find the category by ID and populate subCategories
+    const category = await Category.findById(categoryId)
+        .populate('subCategories', '_id categoryName slug')
+        .lean();
+
     if (category) {
+      // Fetch all products for the category
       const allProducts = await productModel.find({ categoryId: categoryId });
       const productCount = allProducts.length;
 
-      const categoryWithProductCount = {
+      // Fetch the parent category details if it exists
+      let parentCategoryDetails = null;
+      if (category.parentCategory) {
+        parentCategoryDetails = await Category.findById(category.parentCategory)
+            .select('_id categoryName slug')
+            .lean();
+      }
+
+      // Generate the category link
+      const link = category.parentCategory
+          ? `${parentCategoryDetails.slug}/${category.slug}`
+          : `${category.slug}`;
+
+      const categoryWithDetails = {
         ...category,
         productCount: productCount,
+        link,
+        parentCategory: parentCategoryDetails,
       };
 
-      return { success: true, data: categoryWithProductCount };
+      return { success: true, data: categoryWithDetails };
     } else {
       return { success: false, error: "Category not found" };
     }
