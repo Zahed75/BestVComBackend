@@ -10,6 +10,11 @@ const OrderSchema = new mongoose.Schema({
     required: true,
     ref: 'Customer'
   },
+  transferredToOutlet: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'outlet', // Optional: only if orders can be transferred
+    default: null
+  },
   customerIp: {
     type: String
   },

@@ -214,8 +214,15 @@ const getOrdersByOutletManager = async (managerId) => {
 
     const outletIds = outlets.map(outlet => outlet._id);
 
-    // Find all orders associated with these outlets
-    const orders = await orderModel.find({ outlet: { $in: outletIds } })
+    // Find all orders that either:
+    // - Were created by these outlets
+    // - Were transferred to these outlets
+    const orders = await orderModel.find({
+      $or: [
+        { outlet: { $in: outletIds } }, // Orders initially created by these outlets
+        { transferredToOutlet: { $in: outletIds } } // Orders transferred to these outlets
+      ]
+    })
         .populate('customer', 'firstName lastName phoneNumber')
         .populate('products._id', 'productName');
 
@@ -224,6 +231,7 @@ const getOrdersByOutletManager = async (managerId) => {
     throw new Error(error.message);
   }
 };
+
 
 
 
