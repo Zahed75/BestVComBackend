@@ -3,6 +3,9 @@ const { BadRequest } = require('../../utility/errors');
 const mongoose = require('mongoose');
 const Product = require('../Products/model');
 
+
+
+
 const addBrand = async (brandData) => {
     try {
         const { name, title, description } = brandData;

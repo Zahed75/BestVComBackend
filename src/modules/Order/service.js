@@ -614,6 +614,7 @@ const createOrder = async (orderData) => {
       }
     );
 
+
     await sendSMS(customerPhoneNumber, smsText);
     // Generate PDF Invoice
     const pdfInvoice = await generatePDFInvoice({

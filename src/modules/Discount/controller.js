@@ -5,6 +5,7 @@ const discountService = require('./service');
 const { addSubcategory } = require('../Category/service');
 
 
+
 const couponGenerateHandler = asyncHandler(async (req, res) => {
     try {
       const couponInfo = req.body;
