@@ -217,6 +217,7 @@ const getDiscountByCoupon = async (couponName, products, userId) => {
       throw new BadRequest(`Category ${category.categoryName} is not eligible for this coupon`);
     }
   });
+  
 
   let discount = 0;
   if (coupon.general?.discountType === 'percentage') {
