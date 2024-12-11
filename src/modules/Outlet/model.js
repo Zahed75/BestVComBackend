@@ -16,9 +16,10 @@ const OutletSchema= new mongoose.Schema({
         type : String,
         default:""
     },
+
     outletManager: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'user' 
+        ref: 'user'
     },
 
     cityName:{
@@ -38,13 +39,14 @@ const OutletSchema= new mongoose.Schema({
         type:String,
         required:true,
         max:[12,'Please Input valid Number'],
-        
+
     },
     }
- 
+
 
 ,{versionKey:false});
 
 const OutletModel=mongoose.model('outlet',OutletSchema);
 
 module.exports=OutletModel;
+
