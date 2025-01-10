@@ -715,6 +715,7 @@ const updateOrder = async (orderId, orderData) => {
   return updatedOrder;
 };
 
+
 // delete OrderBy ID
 
 const deleteOrder = async (orderId) => {
@@ -725,6 +726,7 @@ const deleteOrder = async (orderId) => {
     throw error;
   }
 };
+
 
 const getAllOrders = async () => {
   try {
