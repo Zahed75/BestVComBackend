@@ -219,6 +219,17 @@ const updateUserByIdHandler = asyncHandler(async (req, res) => {
 });
 
 
+const refreshTokenHandler = async (req, res) => {
+  const { email, token, refreshToken } = req.body;
+
+  try {
+    const result = await authService.refreshUserToken(email, token, refreshToken);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+};
+
 
 
 
@@ -238,7 +249,7 @@ router.put('/users/:userId', updateUserByIdHandler);
 router.post('/phoneRegister',registerUserByPhoneHandler);
 router.post('/phoneOTP-Verify',verifyOTPPhoneHandler);
 router.post('/resendOTPByPhone',resendOTPbyPhoneHandler);
-
+router.post("/refreshToken", refreshTokenHandler);
 
 
 module.exports = router;
