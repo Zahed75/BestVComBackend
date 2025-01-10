@@ -238,9 +238,7 @@ const expireOTP = async (data) => {
 
 const signinUser = async (email, password) => {
   try {
-
     const user = await User.findOne({ email });
-
 
     if (!user) {
       throw new BadRequest("Invalid email or password.");
@@ -249,23 +247,27 @@ const signinUser = async (email, password) => {
     // Validate password using bcrypt.compare
     const isMatch = await bcrypt.compare(password, user.password);
 
-
     if (!isMatch) {
       throw new BadRequest("Invalid email or password.");
     }
 
-    const accessToken = jwt.sign({ user }, 'SecretKey12345', { expiresIn: '3d' });
+    // Shortened expiration for accessToken and refreshToken
+    const accessToken = jwt.sign({ userId: user._id }, 'SecretKey12345', { expiresIn: '1h' }); // 1 hour expiration
+    const refreshToken = jwt.sign({ userId: user._id }, 'SecretKey12345', { expiresIn: '7d' }); // 7 days expiration
+
+    // Save the refreshToken in the user document
+    user.refreshToken.push(refreshToken);
+    await user.save();
 
     const sanitizedUser = {
       userId: user._id,
       accessToken,
+      refreshToken, // Add the refresh token
       email: user.email,
       phoneNumber: user.phoneNumber,
       role: user.role,
       isActive: user.isActive,
       isVerified: user.isVerified,
-
-
     };
 
     return sanitizedUser;
@@ -274,6 +276,7 @@ const signinUser = async (email, password) => {
     throw error;
   }
 };
+
 
 
 

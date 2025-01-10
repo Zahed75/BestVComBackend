@@ -28,6 +28,7 @@ const addBrand = async (brandData) => {
 
 
 
+
 const getAllBrands = async () => {
     try {
         // Fetch all brands
