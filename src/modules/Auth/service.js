@@ -332,6 +332,46 @@ const updateUserById = async (userId, userData) => {
 };
 
 
+const refreshUserToken = async (email, token, refreshToken) => {
+  try {
+    // Validate inputs
+    if (!email || !token || !refreshToken) {
+      throw new BadRequest("Email, token, and refreshToken are required.");
+    }
+
+    // Find the user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new BadRequest("Invalid email or token.");
+    }
+
+    // Check if the provided refreshToken exists in user's record
+    if (!user.refreshToken.includes(refreshToken)) {
+      throw new BadRequest("Invalid refresh token.");
+    }
+
+    // Verify refreshToken
+    jwt.verify(refreshToken, "SecretKey12345", (err, decoded) => {
+      if (err) {
+        throw new BadRequest("Refresh token is invalid or expired.");
+      }
+    });
+
+    // Issue a new accessToken
+    const newAccessToken = jwt.sign({ userId: user._id, email: user.email }, "SecretKey12345", {
+      expiresIn: "1h", // Shorter expiration for accessToken
+    });
+
+    return {
+      accessToken: newAccessToken,
+      message: "Access token refreshed successfully.",
+    };
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
 
 
 
@@ -352,6 +392,7 @@ module.exports = {
   registerUserByPhoneNumber,
   verifyOTPByPhone,
   resendOTPbyPhone,
+  refreshUserToken
   
 };
 
