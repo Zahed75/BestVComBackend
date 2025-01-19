@@ -66,193 +66,7 @@ function calculateDiscount(coupon, totalPrice, products, validProducts) {
   }
 }
 
-// const createOrder = async (orderData) => {
-//   try {
-//     // Generate custom orderId and orderTime
-//     const orderId = await generateCustomOrderId();
-//     const orderTime = formatOrderTime(new Date());
-//
-//     // Destructure orderData
-//     const {
-//       email, orderType, deliveryAddress, deliveryCharge = 0,
-//       city, area, phoneNumber, paymentMethod, transactionId,
-//       products, couponName, firstName, lastName, customerIp,
-//       channel, outlet
-//     } = orderData;
-//
-//     // Find the customer by phone number or email
-//     const customer = await CustomerModel.findOne({
-//       $or: [
-//         { email: email || null },
-//         { phoneNumber }
-//       ]
-//     }).lean().exec();
-//
-//     // If no customer found, throw an error
-//     if (!customer) {
-//       throw new NotFound('Customer not found');
-//     }
-//
-//     // Try finding the outlet by ID, but proceed if not found
-//     const outletData = outlet ? await OutletModel.findById(outlet) : null;
-//
-//     // Set firstName and lastName from customer if not provided in the request
-//     const customerFirstName = firstName || customer.firstName;
-//     const customerLastName = lastName || customer.lastName;
-//
-//     // Use phoneNumber from the request, or fallback to customer's phoneNumber
-//     const customerPhoneNumber = phoneNumber || customer.phoneNumber;
-//
-//     // Validate products
-//     if (!Array.isArray(products) || products.length === 0) {
-//       throw new BadRequest('No products provided');
-//     }
-//
-//     // Ensure each product has a valid price
-//     const productIds = products.map(product => product._id);
-//     const validProducts = await ProductModel.find({ _id: { $in: productIds } }).lean().exec();
-//
-//     if (validProducts.length !== products.length) {
-//       throw new BadRequest('Invalid product IDs');
-//     }
-//
-//     // Calculate total price based on valid products
-//     const totalPrice = calculateOrderValue(validProducts, products);
-//
-//     if (!totalPrice || isNaN(totalPrice)) {
-//       throw new BadRequest('Invalid total price');
-//     }
-//
-//     // Initialize discount variables
-//     let discountAmount = 0;
-//     let coupon = null;
-//
-//     // Apply coupon logic if couponName is provided
-//     if (couponName) {
-//       coupon = await CouponModel.findOne({ 'general.couponName': couponName }).lean().exec();
-//       if (!coupon) throw new BadRequest('Invalid coupon name');
-//       if (new Date() > new Date(coupon.general.couponExpiry)) {
-//         throw new BadRequest('Coupon has expired');
-//       }
-//       discountAmount = calculateDiscount(coupon, totalPrice);
-//     }
-//
-//     const validDeliveryCharge = isNaN(deliveryCharge) ? 0 : deliveryCharge;
-//     const vatRate = 5;
-//     const vat = (vatRate / 100) * totalPrice;
-//
-//     const finalTotalPrice = totalPrice - discountAmount + validDeliveryCharge;
-//
-//     // Create new order
-//     const newOrder = new OrderModel({
-//       orderId,
-//       customer: customer._id,
-//       firstName: customerFirstName,
-//       lastName: customerLastName,
-//       orderType,
-//       orderTime,
-//       deliveryAddress,
-//       orderStatus: 'Received',
-//       city,
-//       area,
-//       phoneNumber: customerPhoneNumber,
-//       email: email || customer.email,
-//       paymentMethod,
-//       transactionId,
-//       products,
-//       coupon: coupon ? coupon._id : null,
-//       discountAmount,
-//       totalPrice: finalTotalPrice,
-//       deliveryCharge: validDeliveryCharge,
-//       customerIp,
-//       channel,
-//       outlet: outletData ? outletData._id : null // Set to null if outlet is not found
-//     });
-//
-//     const savedOrder = await newOrder.save();
-//
-//     const productInfoForSMS = savedOrder.products.map(product => {
-//       const validProduct = validProducts.find(p => p._id.equals(product._id));
-//       return {
-//         _id: product._id,
-//         quantity: product.quantity,
-//         productName: validProduct ? validProduct.productName : 'Unnamed Product',
-//         productImage: validProduct ? validProduct.productImage : null,
-//         regularPrice: validProduct ? validProduct.general.regularPrice : 0,
-//         salePrice: validProduct ? validProduct.general.salePrice : 0
-//       };
-//     });
-//
-//     const smsText = getSMSText('Received', `${customerFirstName} ${customerLastName}`, {
-//       orderId: savedOrder.orderId,
-//       products: productInfoForSMS,
-//       totalPrice: savedOrder.totalPrice,
-//       discountAmount: savedOrder.discountAmount
-//     });
-//
-//     await sendSMS(customerPhoneNumber, smsText);
-//
-//     if (savedOrder.email) {
-//       await sendOrderInvoiceEmail(savedOrder.email, {
-//         orderId: savedOrder.orderId,
-//         firstName: customerFirstName,
-//         paymentMethod,
-//         lastName: customerLastName,
-//         email: savedOrder.email,
-//         deliveryAddress,
-//         phoneNumber: customerPhoneNumber,
-//         products: productInfoForSMS,
-//         totalPrice: totalPrice - discountAmount,
-//         discountAmount,
-//         deliveryCharge: validDeliveryCharge,
-//         vatRate,
-//         vat,
-//         coupon
-//       });
-//     }
-//
-//     return {
-//       message: "Order created successfully",
-//       createdOrder: {
-//         order: {
-//           orderId: savedOrder.orderId,
-//           customer: savedOrder.customer,
-//           customerIp: savedOrder.customerIp,
-//           orderType: savedOrder.orderType,
-//           firstName: savedOrder.firstName,
-//           lastName: savedOrder.lastName,
-//           orderStatus: savedOrder.orderStatus,
-//           deliveryAddress: savedOrder.deliveryAddress,
-//           deliveryCharge: savedOrder.deliveryCharge,
-//           email: savedOrder.email,
-//           city: savedOrder.city,
-//           area: savedOrder.area,
-//           phoneNumber: savedOrder.phoneNumber,
-//           paymentMethod: savedOrder.paymentMethod,
-//           products: productInfoForSMS,
-//           coupon: savedOrder.coupon ? savedOrder.coupon : null,
-//           discountAmount: savedOrder.discountAmount,
-//           totalPrice: savedOrder.totalPrice,
-//           orderNote: savedOrder.orderNote,
-//           channel: savedOrder.channel,
-//           outlet: savedOrder.outlet,
-//           orderLogs: savedOrder.orderLogs,
-//           createdAt: savedOrder.createdAt,
-//           updatedAt: savedOrder.updatedAt,
-//           __v: savedOrder.__v
-//         },
-//         customerEmail: savedOrder.email,
-//         totalOrderValue: savedOrder.totalPrice,
-//         couponName: couponName || null
-//       }
-//     };
-//
-//   } catch (error) {
-//     console.error("Error creating order:", error);
-//     throw error;
-//   }
-// };
-//
+
 
 const pdf = require("html-pdf-node");
 
@@ -435,7 +249,7 @@ const sendInvoiceEmail = async (to, subject, orderDetails, pdfBuffer) => {
       service: "gmail",
       auth: {
         user: "tech.syscomatic@gmail.com", // Your email
-        pass: "nfkb rcqg wdez ionc", // Your email password
+        pass: "bixm teob iiug bdkx", // Your email password
       },
     });
 
@@ -732,40 +546,40 @@ const getAllOrders = async () => {
   try {
     const orders = await OrderModel.find()
       .populate({
-        path: "products._id",
+        path: "products._id", // Assuming products are stored as ObjectId in the order
         model: "Product",
         select:
           "productName productImage general.regularPrice inventory.sku general.salePrice",
       })
       .populate({
         path: "customer",
-        model: "Customer", // Ensure this matches the model name
+        model: "Customer",
         select: "firstName lastName email phoneNumber district address",
       });
 
     const formattedOrders = orders.map((order) => {
       return {
         ...order.toObject(),
-        customerFirstName: order.customer?.firstName || "",
-        customerLastName: order.customer?.lastName || "",
+        customerFirstName: order.customer ? order.customer.firstName : "",
+        customerLastName: order.customer ? order.customer.lastName : "",
         products: order.products
-          .map((productItem) => {
-            const productDetails = productItem._id;
-            return productDetails
-              ? {
-                  _id: productDetails._id,
-                  productName: productDetails.productName,
-                  productImage: productDetails.productImage,
-                  sku: productDetails.inventory.sku,
-                  quantity: productItem.quantity,
-                  price: productDetails.general.regularPrice,
-                  offerPrice: productDetails.general.salePrice,
-                  totalPrice:
-                    productDetails.general.salePrice * productItem.quantity,
-                }
-              : null;
-          })
-          .filter((product) => product !== null),
+          ? order.products.map((productItem) => {
+              const productDetails = productItem._id;
+              return productDetails
+                ? {
+                    _id: productDetails._id,
+                    productName: productDetails.productName,
+                    productImage: productDetails.productImage,
+                    sku: productDetails.inventory.sku,
+                    quantity: productItem.quantity,
+                    price: productDetails.general.regularPrice,
+                    offerPrice: productDetails.general.salePrice,
+                    totalPrice:
+                      productDetails.general.salePrice * productItem.quantity,
+                  }
+                : null;
+            })
+          : [], // Return empty array if products are null
         customer: order.customer
           ? {
               _id: order.customer._id,
@@ -774,7 +588,7 @@ const getAllOrders = async () => {
               district: order.customer.district,
               address: order.customer.address,
             }
-          : null,
+          : null, // Return null if customer data is missing
       };
     });
 
@@ -784,6 +598,7 @@ const getAllOrders = async () => {
     throw error;
   }
 };
+
 
 // Update Order Status
 

@@ -95,12 +95,19 @@ const OrderSchema = new mongoose.Schema({
       required: true
     }
   }],
+  // coupon: {
+  //   _id: {
+  //     type: mongoose.Schema.Types.ObjectId,
+  //     ref: "coupon"
+  //   }
+  // },
+
   coupon: {
-    _id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "coupon"
-    }
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Coupon', // Reference to the Coupon model
+    default: null,
   },
+  
   discountAmount: Number,
 
   totalPrice: {
@@ -121,12 +128,18 @@ const OrderSchema = new mongoose.Schema({
     ]
   },
 
-    outlet:{
-      type: String,
-      default:""
-    },
+    // outlet:{
+    //   type: String,
+    //   default:""
+    // },
 
 
+    outlet: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'outlet',  // Reference the OutletModel
+      default: ""
+    }
+,    
 
   orderLogs: [{
     status: {
