@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
   port: 587,
   auth: {
     user: 'tech.syscomatic@gmail.com',
-    pass: 'nfkb rcqg wdez ionc',
+    pass: 'bixm teob iiug bdkx',
   },
 });
 

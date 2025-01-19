@@ -1,100 +1,82 @@
-const OrderModel = require('../Order/model');
-const CouponModel = require('../Discount/model');
-const OutletModel = require('../Outlet/model');
 const mongoose = require('mongoose');
+const OrderModel = require('../Order/model'); // Adjust the path if needed
+const CouponModel = require('../Discount/model'); // Adjust the path if needed
 
 
-const showOrdersByFilters = async (filters) => {
+
+
+
+
+
+const getOrdersWithFilters = async (filters) => {
   try {
-    const { outlet, orderStatus, promoCode, paymentMethod, startDate, endDate } = filters;
-    const query = {};
+    const { orderStatus, paymentMethod, startDate, endDate, promoCode, outlet } = filters;
 
-    // Check and cast outlet to ObjectId if it is provided
-    if (outlet) {
-      // Ensure the outlet filter is cast to an ObjectId
-      if (!mongoose.Types.ObjectId.isValid(outlet)) {
-        throw new Error('Invalid outlet ID');
-      }
-      query.transferredToOutlet = new mongoose.Types.ObjectId(outlet);  // Correct casting
-    }
+    const query = {}; // Initialize the query object
 
+    // Add orderStatus filter
     if (orderStatus) {
       query.orderStatus = orderStatus;
     }
 
-    if (promoCode) {
-      const coupon = await CouponModel.findOne({ couponCode: promoCode });
-      if (coupon) {
-        query.coupon = coupon._id;
-      } else {
-        query.coupon = null;
-      }
-    }
-
+    // Add paymentMethod filter
     if (paymentMethod) {
       query.paymentMethod = paymentMethod;
     }
 
-    if (startDate && endDate) {
-      query.createdAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
-      };
+   
+  // Add date range filter
+  if (startDate && endDate) {
+    // Check if endDate is today's date
+    const now = new Date(); // Current date and time
+    const isToday = new Date(endDate).toDateString() === now.toDateString();
+  
+    // Set endDate to the end of the current day (23:59:59) if it's today
+    const adjustedEndDate = isToday
+      ? new Date(now.setHours(23, 59, 59, 999))
+      : new Date(endDate);
+  
+    query.createdAt = {
+      $gte: new Date(startDate), // Records created on or after startDate
+      $lte: adjustedEndDate,    // Records created on or before adjusted endDate
+    };
+  }
+  
+
+
+    // Add promoCode filter
+    if (promoCode) {
+      const coupon = await CouponModel.findOne({ "general.couponName": promoCode });
+      if (coupon) {
+        query["coupon"] = coupon._id; // Match coupon ID
+      } else {
+        return { message: `Promo code "${promoCode}" not found`, orders: [] };
+      }
     }
 
+    // Add outlet filter
+    if (outlet) {
+      query.outlet = outlet;
+    }
+
+    console.log("Query:", JSON.stringify(query, null, 2)); // Debugging query
+
+    // Fetch orders from the database
     const orders = await OrderModel.find(query)
-      .populate({
-        path: "products._id",
-        model: "Product",
-        select: "productName productImage general.regularPrice inventory.sku general.salePrice",
-      })
-      .populate({
-        path: "customer",
-        model: "Customer",
-        select: "firstName lastName email phoneNumber district address",
-      });
+      .populate("outlet")
+      .populate("customer")
+      .populate("products._id");
 
-    const formattedOrders = orders.map((order) => {
-      return {
-        ...order.toObject(),
-        customerFirstName: order.customer?.firstName || "",
-        customerLastName: order.customer?.lastName || "",
-        products: order.products
-          .map((productItem) => {
-            const productDetails = productItem._id;
-            return productDetails
-              ? {
-                  _id: productDetails._id,
-                  productName: productDetails.productName,
-                  productImage: productDetails.productImage,
-                  sku: productDetails.inventory.sku,
-                  quantity: productItem.quantity,
-                  price: productDetails.general.regularPrice,
-                  offerPrice: productDetails.general.salePrice,
-                  totalPrice: productDetails.general.salePrice * productItem.quantity,
-                }
-              : null;
-          })
-          .filter((product) => product !== null),
-        customer: order.customer
-          ? {
-              _id: order.customer._id,
-              email: order.customer.email,
-              phoneNumber: order.customer.phoneNumber,
-              district: order.customer.district,
-              address: order.customer.address,
-            }
-          : null,
-      };
-    });
+    if (!orders || orders.length === 0) {
+      return { message: "No orders found", orders: [] };
+    }
 
-    return formattedOrders;
+    return { message: "Orders retrieved successfully", orders };
   } catch (error) {
-    console.error("Error retrieving orders with filters:", error);
-    throw error;
+    console.error("Error in getOrdersWithFilters:", error);
+    return { message: "An error occurred while retrieving orders", error: error.message };
   }
 };
 
 
-
-module.exports = { showOrdersByFilters };
+module.exports = { getOrdersWithFilters };
