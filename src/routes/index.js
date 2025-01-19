@@ -26,7 +26,7 @@ const menuRoute = require('../modules/Menu/controller');
 const cityRoute = require('../modules/City/controller');
 const areaRoute = require('../modules/Area/controller');
 const inventoryRoute = require('../modules/Inventory/controller');
-
+const adminRoute = require('../modules/Admin/controller');
 
 //EndPoint
 router.use('/city',cityRoute);
@@ -47,6 +47,7 @@ router.use('/wishlist',wishListRoute);
 router.use('/settings',settingsRoute);
 router.use('/brand',brandRoute);
 router.use('/email',emailRoute);
+router.use('/admin',adminRoute);
 
 router.use(authVerifyMiddleware);
 
