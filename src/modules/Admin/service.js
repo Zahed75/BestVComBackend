@@ -5,6 +5,7 @@ const OutletModel = require('../Outlet/model'); // Adjust the path
 
 
 
+
 const getOrdersWithFilters = async (filters) => {
   try {
     const { orderStatus, paymentMethod, startDate, endDate, promoCode, outlet } = filters;
@@ -37,10 +38,11 @@ const getOrdersWithFilters = async (filters) => {
     }
 
     // Add promoCode filter
+    let matchedCoupon = null;
     if (promoCode) {
-      const coupon = await CouponModel.findOne({ "general.couponName": promoCode });
-      if (coupon) {
-        query["coupon"] = coupon._id; // Match coupon ID
+      matchedCoupon = await CouponModel.findOne({ "general.couponName": promoCode });
+      if (matchedCoupon) {
+        query["coupon"] = matchedCoupon._id; // Match coupon ID
       } else {
         return { message: `Promo code "${promoCode}" not found`, orders: [] };
       }
@@ -72,17 +74,27 @@ const getOrdersWithFilters = async (filters) => {
       return { message: "No orders found", orders: [] };
     }
 
-    return { message: "Orders retrieved successfully", orders };
+    // Add couponName to each order if a promoCode was used
+    const enrichedOrders = orders.map((order) => {
+      const orderData = order.toObject();
+      if (matchedCoupon && orderData.coupon) {
+        orderData.coupon = {
+          _id: matchedCoupon._id,
+          name: matchedCoupon.general.couponName,
+        };
+      }
+      return orderData;
+    });
+
+    return { message: "Orders retrieved successfully", orders: enrichedOrders };
   } catch (error) {
     console.error("Error in getOrdersWithFilters:", error);
     return { message: "An error occurred while retrieving orders", error: error.message };
   }
 };
 
-
-
-
 module.exports = { getOrdersWithFilters };
+
 
 
 
