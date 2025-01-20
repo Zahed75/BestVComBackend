@@ -1,10 +1,7 @@
 const mongoose = require('mongoose');
 const OrderModel = require('../Order/model'); // Adjust the path if needed
 const CouponModel = require('../Discount/model'); // Adjust the path if needed
-
-
-
-
+const OutletModel = require('../Outlet/model'); // Adjust the path
 
 
 
@@ -24,25 +21,20 @@ const getOrdersWithFilters = async (filters) => {
       query.paymentMethod = paymentMethod;
     }
 
-   
-  // Add date range filter
-  if (startDate && endDate) {
-    // Check if endDate is today's date
-    const now = new Date(); // Current date and time
-    const isToday = new Date(endDate).toDateString() === now.toDateString();
-  
-    // Set endDate to the end of the current day (23:59:59) if it's today
-    const adjustedEndDate = isToday
-      ? new Date(now.setHours(23, 59, 59, 999))
-      : new Date(endDate);
-  
-    query.createdAt = {
-      $gte: new Date(startDate), // Records created on or after startDate
-      $lte: adjustedEndDate,    // Records created on or before adjusted endDate
-    };
-  }
-  
+    // Add date range filter
+    if (startDate && endDate) {
+      const now = new Date(); // Current date and time
+      const isToday = new Date(endDate).toDateString() === now.toDateString();
 
+      const adjustedEndDate = isToday
+        ? new Date(now.setHours(23, 59, 59, 999))
+        : new Date(endDate);
+
+      query.createdAt = {
+        $gte: new Date(startDate), // Records created on or after startDate
+        $lte: adjustedEndDate,    // Records created on or before adjusted endDate
+      };
+    }
 
     // Add promoCode filter
     if (promoCode) {
@@ -54,9 +46,18 @@ const getOrdersWithFilters = async (filters) => {
       }
     }
 
-    // Add outlet filter
+    // Add outlet filter (supports ID or outletName)
     if (outlet) {
-      query.outlet = outlet;
+      const outletQuery = mongoose.isValidObjectId(outlet)
+        ? { _id: outlet } // Match by outlet ID
+        : { outletName: { $regex: new RegExp(outlet, "i") } }; // Match by outletName (case-insensitive)
+
+      const outletDoc = await OutletModel.findOne(outletQuery);
+      if (outletDoc) {
+        query.outlet = outletDoc._id; // Use the matched outlet ID in the query
+      } else {
+        return { message: `Outlet "${outlet}" not found`, orders: [] };
+      }
     }
 
     console.log("Query:", JSON.stringify(query, null, 2)); // Debugging query
@@ -79,4 +80,10 @@ const getOrdersWithFilters = async (filters) => {
 };
 
 
+
+
 module.exports = { getOrdersWithFilters };
+
+
+
+
