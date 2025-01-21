@@ -524,10 +524,13 @@ const createOrder = async (orderData) => {
 
 const updateOrder = async (orderId, orderData) => {
   const updatedOrder = await OrderModel.findByIdAndUpdate(orderId, orderData, {
-    new: true,
+    new: true, // Return the updated document
+    runValidators: true, // Ensure validation is applied
   });
   return updatedOrder;
 };
+
+
 
 
 // delete OrderBy ID
