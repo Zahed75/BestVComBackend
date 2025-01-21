@@ -30,14 +30,33 @@ const createOrder = asyncHandler(async (req, res) => {
 //Update OrderHandlerByOderID
 
 const updateOrder = asyncHandler(async (req, res) => {
-    const { orderId } = req.params;
-    const orderData = req.body;
+  const { orderId } = req.params;
+  const { orderStatus, ...orderData } = req.body; // Exclude orderStatus from the request body
+
+  try {
+    // Validate the orderId (if needed)
+    if (!orderId) {
+      return res.status(400).json({ error: 'Order ID is required' });
+    }
+
+    // Update the order
     const updatedOrder = await orderService.updateOrder(orderId, orderData);
+
+    if (!updatedOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
     res.status(200).json({
-        message: "Order updated successfully",
-        updatedOrder
+      message: 'Order updated successfully',
+      updatedOrder,
     });
+  } catch (error) {
+    console.error('Error updating order:', error);
+    res.status(500).json({ error: 'An error occurred while updating the order' });
+  }
 });
+
+
 
 
 
@@ -178,13 +197,11 @@ const getOrderHistory = async (req, res) => {
 
 
 
-
+router.put('/updateOrder/:orderId', updateOrder);
 router.post('/orderCreate', createOrder);
 router.put('/:id',updateOrderStatusHandler);
 router.get('/customerHistory/:customerId', getCustomerHistoryHandler);
 router.get('/orders', getAllOrders);
-
-router.put('/:orderId', updateOrder);
 router.delete('/deleteOrder/:id',deleteOrder);
 router.put('/:id',updateOrderStatusHandler);
 router.get('/getOrderById/:id',getOrderByIdHandler);
