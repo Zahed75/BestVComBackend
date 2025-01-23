@@ -95,12 +95,7 @@ const OrderSchema = new mongoose.Schema({
       required: true
     }
   }],
-  // coupon: {
-  //   _id: {
-  //     type: mongoose.Schema.Types.ObjectId,
-  //     ref: "coupon"
-  //   }
-  // },
+ 
 
   coupon: {
     type: mongoose.Schema.Types.ObjectId,
@@ -127,11 +122,6 @@ const OrderSchema = new mongoose.Schema({
       "mobile"
     ]
   },
-
-    // outlet:{
-    //   type: String,
-    //   default:""
-    // },
 
 
     outlet: {
