@@ -31,12 +31,17 @@ const createOrder = asyncHandler(async (req, res) => {
 
 const updateOrder = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
-  const { orderStatus, ...orderData } = req.body; // Exclude orderStatus from the request body
+  const { orderStatus, ...orderData } = req.body; // Destructure to separate orderStatus
 
   try {
-    // Validate the orderId (if needed)
+    // Validate the orderId
     if (!orderId) {
       return res.status(400).json({ error: 'Order ID is required' });
+    }
+
+    // Include `orderStatus` if provided
+    if (orderStatus) {
+      orderData.orderStatus = orderStatus;
     }
 
     // Update the order
@@ -55,6 +60,7 @@ const updateOrder = asyncHandler(async (req, res) => {
     res.status(500).json({ error: 'An error occurred while updating the order' });
   }
 });
+
 
 
 
