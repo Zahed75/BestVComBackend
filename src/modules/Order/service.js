@@ -545,62 +545,6 @@ const deleteOrder = async (orderId) => {
 };
 
 
-// const getAllOrders = async () => {
-//   try {
-//     const orders = await OrderModel.find()
-//       .populate({
-//         path: "products._id", // Assuming products are stored as ObjectId in the order
-//         model: "Product",
-//         select:
-//           "productName productImage general.regularPrice inventory.sku general.salePrice",
-//       })
-//       .populate({
-//         path: "customer",
-//         model: "Customer",
-//         select: "firstName lastName email phoneNumber district address",
-//       });
-
-//     const formattedOrders = orders.map((order) => {
-//       return {
-//         ...order.toObject(),
-//         customerFirstName: order.customer ? order.customer.firstName : "",
-//         customerLastName: order.customer ? order.customer.lastName : "",
-//         products: order.products
-//           ? order.products.map((productItem) => {
-//               const productDetails = productItem._id;
-//               return productDetails
-//                 ? {
-//                     _id: productDetails._id,
-//                     productName: productDetails.productName,
-//                     productImage: productDetails.productImage,
-//                     sku: productDetails.inventory.sku,
-//                     quantity: productItem.quantity,
-//                     price: productDetails.general.regularPrice,
-//                     offerPrice: productDetails.general.salePrice,
-//                     totalPrice:
-//                       productDetails.general.salePrice * productItem.quantity,
-//                   }
-//                 : null;
-//             })
-//           : [], // Return empty array if products are null
-//         customer: order.customer
-//           ? {
-//               _id: order.customer._id,
-//               email: order.customer.email,
-//               phoneNumber: order.customer.phoneNumber,
-//               district: order.customer.district,
-//               address: order.customer.address,
-//             }
-//           : null, // Return null if customer data is missing
-//       };
-//     });
-
-//     return formattedOrders;
-//   } catch (error) {
-//     console.error("Error retrieving orders:", error);
-//     throw error;
-//   }
-// };
 
 const getAllOrders = async () => {
   try {
@@ -701,7 +645,7 @@ const updateOrderStatus = async (id, orderStatus) => {
     const validProduct = validProducts.find((p) =>
       p._id.equals(product._id._id)
     );
-    console.log("test", validProduct);
+   
     return {
       _id: product._id,
       quantity: product.quantity,
