@@ -252,7 +252,6 @@ const sendInvoiceEmail = async (to, subject, orderDetails, pdfBuffer) => {
         pass: "bixm teob iiug bdkx", // Your email password
       },
     });
-
     // Mail options
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -717,6 +716,10 @@ const updateOrderStatus = async (id, orderStatus) => {
   );
   return order;
 };
+
+
+
+
 
 const getOrderById = async (id) => {
   try {

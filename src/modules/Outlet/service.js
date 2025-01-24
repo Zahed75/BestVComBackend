@@ -188,8 +188,14 @@ const transferOrderToOutlet = async (orderId, outletId) => {
       throw new Error('Order not found');
     }
 
+    const { city, area } = order;
+
     order.outlet = outletId;
-    await order.save();
+    order.city = city;  
+    order.area = area;  
+
+    // Save the order, skipping validation
+    await order.save({ validateBeforeSave: false });
 
     return {
       message: 'Order transferred successfully',
@@ -200,6 +206,7 @@ const transferOrderToOutlet = async (orderId, outletId) => {
     throw new Error(error.message);
   }
 };
+
 
 
 
