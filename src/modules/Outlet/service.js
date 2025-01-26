@@ -7,30 +7,36 @@ const orderModel = require('../Order/model');
 const CustomerModel = require('../Customer/model');
 
 
+
 const outletCreateService = async (outletName, cityName, outletLocation, outletImage, outletManager, outletManagerEmail, outletManagerPhone, areaName) => {
   try {
-    if (!outletName || !outletLocation || !outletManager || !outletImage) {
-      throw new Error('Outlet name, location, manager, and image are required');
+    // Validate required fields
+    if (!outletName || !outletLocation || !outletManager) {
+      throw new Error('Outlet name, location, and manager are required');
     }
 
+    // Check if the manager exists
     const managerInfo = await userModel.findById(outletManager);
-
     if (!managerInfo) {
       throw new Error('Outlet manager not found');
     }
+
+    // Validate manager's email and phone number
     if (managerInfo.email !== outletManagerEmail || managerInfo.phoneNumber !== outletManagerPhone) {
       throw new Error('Invalid outlet manager email or phone number');
     }
 
+    // Check if an outlet with the same name already exists
     const existingOutlet = await OutletModel.findOne({ outletName });
     if (existingOutlet) {
       throw new Error('Outlet with the same name already exists');
     }
 
+    // Create the new outlet
     const newOutlet = await OutletModel.create({
       outletName,
       outletLocation,
-      outletImage,
+      outletImage: outletImage || "", // Use provided image or default to empty string
       outletManager,
       outletManagerEmail,
       outletManagerPhone,
@@ -44,7 +50,6 @@ const outletCreateService = async (outletName, cityName, outletLocation, outletI
     throw new Error('Outlet creation failed: ' + error.message);
   }
 };
-
 
 
 
