@@ -46,7 +46,10 @@ const getAllOutlet = asyncHandler(async (req, res) => {
 
 const updateOutlet = asyncHandler(async (req, res) => {
   const outlet = await outletService.updateOutlet(req.params.id, req.body);
-  res.status(200).json({ outlet });
+  res.status(200).json({
+     message: "Outlet Updated successfully",
+     outlet
+    });
 });
 
 
