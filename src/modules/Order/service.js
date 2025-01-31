@@ -209,7 +209,7 @@ const generatePDFInvoice = async (orderDetails) => {
               orderDetails?.couponCode ? orderDetails?.couponCode : ''
             }:</strong> </p>
             <p><strong>VAT:</strong></p>
-            <p><strong>Total Price:</strong></p>
+            <p><strong>Invoice Price:</strong></p>
           </div>
           <div>
             <p>${orderDetails?.deliveryCharge || "0"}</p>
@@ -365,9 +365,8 @@ const createOrder = async (orderData) => {
       if (new Date() > new Date(coupon.general.couponExpiry)) {
         throw new BadRequest("Coupon has expired");
       }
-      discountAmount = calculateDiscount(coupon, totalPrice);
     }
-
+    discountAmount = calculateDiscount(coupon, totalPrice,products, validProducts );
     const validDeliveryCharge = isNaN(deliveryCharge) ? 0 : deliveryCharge;
     const vatRate = 5;
     const vat = (vatRate / 100) * totalPrice;
@@ -400,7 +399,6 @@ const createOrder = async (orderData) => {
       outlet: outletData ? outletData._id : null, // Set to null if outlet is not found
     });
     const savedOrder = await newOrder.save();
-    console.log(validProducts);
     const productInfoForSMS = savedOrder.products.map((product) => {
       const validProduct = validProducts.find((p) => p._id.equals(product._id));
       return {
