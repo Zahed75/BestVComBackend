@@ -163,11 +163,11 @@ const getAllCategoriesName = async (req, res) => {
 
 
 
+router.put('/updateCategory/:id',updateCategoryHandler);
 
 router.get('/categories-name',getAllCategoriesName);
 router.post('/addCategory', authMiddleware, roleMiddleware([HEAD_OFFICE]), createCategoryHandler);
 router.get('/getAllCat', getAllCategoriesHandler);
-router.put('/updateCategory/:id', authMiddleware, roleMiddleware([HEAD_OFFICE]), updateCategoryHandler);
 router.delete('/deleteCategory/:id', authMiddleware, roleMiddleware([HEAD_OFFICE]), deleteCategoryHandler);
 router.get('/:parentCategory', getSubcategoriesHandler);
 router.get('/getCategoryById/:id', getCategoryByIdHandler);

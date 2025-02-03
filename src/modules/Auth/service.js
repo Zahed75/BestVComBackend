@@ -108,7 +108,7 @@ const resendOTPbyPhone = async (phoneNumber) => {
 
   const otp = generateOTP();
   user.otp = otp;
-  user.otpExpiry = Date.now() + 10 * 60000; // Extend OTP expiry by 10 minutes
+  user.otpExpiry = Date.now() + 10 * 60000; 
   await user.save();
 
   await sendSMS(phoneNumber, `Your new OTP code is ${convertTo4Digit(otp)}`);
@@ -252,7 +252,7 @@ const signinUser = async (email, password) => {
     }
 
     // Shortened expiration for accessToken and refreshToken
-    const accessToken = jwt.sign({ userId: user._id }, 'SecretKey12345', { expiresIn: '1h' }); // 1 hour expiration
+    const accessToken = jwt.sign({ userId: user._id }, 'SecretKey12345', { expiresIn: '7d' }); // 7 days expiration
     const refreshToken = jwt.sign({ userId: user._id }, 'SecretKey12345', { expiresIn: '7d' }); // 7 days expiration
 
     // Save the refreshToken in the user document
