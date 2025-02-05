@@ -43,6 +43,7 @@ const updateInventoryQuantityHandler = asyncHandler(async (req, res) => {
 });
 
 
+
 const deleteInventoryProductHandler = asyncHandler(async (req, res) => {
     console.log("Request Params:", req.params);  // Debugging line
 
