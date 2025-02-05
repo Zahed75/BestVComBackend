@@ -374,6 +374,58 @@ const getProductWithOutletQuantities = async (id) => {
 }
 
 
+
+const getProductOutlets = async (productId) => {
+    try {
+        // Convert productId to ObjectId
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            return { error: 'Invalid product ID' };
+        }
+
+        // Find the product
+        const product = await Product.findById(productId);
+        if (!product) {
+            return { error: 'Product not found' };
+        }
+
+        // Find inventories that contain this product inside the products array
+        const inventories = await InventoryModel.find({ "products._id": productId })
+            .populate('outletId', 'outletName outletLocation');
+
+        if (!inventories.length) {
+            return { error: 'No inventory found for this product' };
+        }
+
+        // Transform the data
+        const outletQuantities = inventories.map(inv => {
+            // Find the specific product's quantity from the `products` array
+            const productData = inv.products.find(p => p._id.toString() === productId);
+
+            return {
+                _id: inv.outletId._id,
+                outletName: inv.outletId.outletName,
+                outletLocation: inv.outletId.outletLocation,
+                quantity: productData ? productData.quantity : 0
+            };
+        });
+
+        return {
+            product: product.productName,
+            outletQuantities
+        };
+
+    } catch (error) {
+        console.error(error);
+        return { error: 'Internal server error' };
+    }
+};
+
+
+
+
+
+
+
 module.exports = {
     addProduct,
     updateProductById,
@@ -389,7 +441,8 @@ module.exports = {
     changeProductSpecifications,
     getFilteredProducts,
     getAllProductsByAllowedCategoryIdsService,
-    getProductWithOutletQuantities
+    getProductWithOutletQuantities,
+    getProductOutlets
 
 
 }

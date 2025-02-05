@@ -84,6 +84,7 @@ const updateInventoryProductQuantity = async (outletId, productId, newQuantity) 
     }
 };
 
+
 // Function to delete a product from inventory by productId for a specific outlet
 const deleteInventoryProductById = async (outletId, productId) => {
     try {
