@@ -262,7 +262,7 @@ const getProductOutlets = async (req, res) => {
 
 
 
-router.get('/:productId/outlets',getProductOutlets);
+router.get('/check-quantity/:productId',getProductOutlets);
 
 router.get('/getProductByproductStatus', getProductByproductStatusHandler);
 router.post('/addProduct', authMiddleware, roleMiddleware([HEAD_OFFICE, BRANCH_ADMIN]), addProductHandler);
