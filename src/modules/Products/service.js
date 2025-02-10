@@ -8,11 +8,75 @@ const InventoryModel = require('../Inventory/model');
 
 
 // addProducts
+// const addProduct = async (productData) => {
+//     try {
+//         const {productName} = productData;
+//         let productSlug = generateSlug(productName);
+//         const existingProduct = await Product.findOne({productSlug});
+
+//         if (existingProduct) {
+//             let counter = 2;
+//             let newSlug;
+//             do {
+//                 newSlug = `${productSlug}-${counter}`;
+//                 counter++;
+//             } while (await Product.findOne({productSlug: newSlug}));
+
+//             productSlug = newSlug;
+//         }
+
+//         const productCode = await generateProductCode(Product);
+
+//         // Create the product with Mongoose, `createdAt` will be automatically set
+//         const newProduct = await Product.create({...productData, productCode, productSlug});
+
+//         if (!newProduct) {
+//             throw new Error('Could not create product');
+//         }
+//         return newProduct;
+//     } catch (error) {
+//         console.error("Error adding product:", error);
+//         throw new Error('Failed to add product');
+//     }
+// };
+
+
 const addProduct = async (productData) => {
     try {
-        const {productName} = productData;
-        let productSlug = generateSlug(productName);
-        const existingProduct = await Product.findOne({productSlug});
+        // Required fields check with meaningful error messages
+        const requiredFields = {
+            productName: "Product Name is required.",
+            productBrand: "Product Brand is required.",
+            categoryId: "At least one Category ID is required.",
+            productStatus: "Product Status (Published/Draft) is required.",
+            "general.regularPrice": "Regular Price is required in the General section."
+        };
+
+        let missingFields = [];
+        for (const [field, message] of Object.entries(requiredFields)) {
+            const keys = field.split('.');
+            let value = productData;
+            for (const key of keys) {
+                value = value?.[key];
+                if (value === undefined || value === null) {
+                    missingFields.push(message);
+                    break;
+                }
+            }
+        }
+
+        if (missingFields.length > 0) {
+            throw new Error(missingFields.join(" "));
+        }
+
+        // Check if productName is valid
+        if (typeof productData.productName !== "string" || productData.productName.trim().length === 0) {
+            throw new Error("Product Name must be a non-empty string.");
+        }
+
+        // Generate unique slug
+        let productSlug = generateSlug(productData.productName);
+        const existingProduct = await Product.findOne({ productSlug });
 
         if (existingProduct) {
             let counter = 2;
@@ -20,25 +84,50 @@ const addProduct = async (productData) => {
             do {
                 newSlug = `${productSlug}-${counter}`;
                 counter++;
-            } while (await Product.findOne({productSlug: newSlug}));
+            } while (await Product.findOne({ productSlug: newSlug }));
 
             productSlug = newSlug;
         }
 
+        // Generate unique product code
         const productCode = await generateProductCode(Product);
 
-        // Create the product with Mongoose, `createdAt` will be automatically set
-        const newProduct = await Product.create({...productData, productCode, productSlug});
+        // Create product
+        const newProduct = await Product.create({
+            ...productData,
+            productCode,
+            productSlug
+        });
 
-        if (!newProduct) {
-            throw new Error('Could not create product');
-        }
         return newProduct;
     } catch (error) {
         console.error("Error adding product:", error);
-        throw new Error('Failed to add product');
+
+        // Handle missing required fields
+        if (error.message.includes("required")) {
+            throw new Error(error.message);
+        }
+
+        // Handle Mongoose validation errors
+        if (error.name === "ValidationError") {
+            const validationErrors = Object.values(error.errors).map(err => err.message);
+            throw new Error(`Validation failed: ${validationErrors.join(", ")}`);
+        }
+
+        // Handle duplicate key errors (e.g., unique constraint violations)
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyValue)[0];
+            throw new Error(`Duplicate value error: ${field} must be unique.`);
+        }
+
+        // Return detailed error message
+        throw new Error(`Unexpected error: ${error.message || "Failed to add product"}`);
     }
 };
+
+
+
+
 
 
 //Edit Product
