@@ -263,12 +263,11 @@ const getProductOutlets = async (req, res) => {
 
 
 router.get('/check-quantity/:productId',getProductOutlets);
-
 router.get('/getProductByproductStatus', getProductByproductStatusHandler);
-router.post('/addProduct', authMiddleware, roleMiddleware([HEAD_OFFICE, BRANCH_ADMIN]), addProductHandler);
+router.post('/addProduct', addProductHandler);
 router.put('/updateProduct/:id', updateProductByIdHandler);
 router.get('/getAllProducts', getAllProductsHandler)
-router.delete('/deleteProduct/:id', authMiddleware, roleMiddleware([HEAD_OFFICE, BRANCH_ADMIN]), deleteProductHandler);
+router.delete('/deleteProduct/:id', deleteProductHandler);
 router.get('/getProductById/:id', getProductByIdHandler);
 router.get('/getProductByCategoryId/:categoryId', getProductByCategoryIdHandler);
 router.get('/getProductBySlugHandler/:productSlug', getProductBySlugHandler);
@@ -279,6 +278,7 @@ router.put('/:productId/changeSpecifications', changeProductSpecificationsHandle
 router.get('/Productfilters', filterProducts);
 router.get('/get-AllProductsSlug', getAllProductsByAllowedCategoryIdsController)
 router.get('/quantity/:id', getProductDetailsController);
+
 
 
 module.exports = router;
