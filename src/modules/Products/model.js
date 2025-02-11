@@ -27,6 +27,7 @@ const ProductSchema = new Schema({
   productCode: {
     type: String
   },
+  
   productImage: {
     type: String
   },
@@ -47,11 +48,11 @@ const ProductSchema = new Schema({
   seo: {
     productTitle: {
       type: String,
-      maxlength: 100
+      maxlength: 1000
     },
     prodDescription: {
       type: String,
-      maxlength: 100
+      maxlength: 1000
     },
     productTags: [String],
     productNotes: {
