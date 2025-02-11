@@ -35,7 +35,7 @@ const ProductSchema = new Schema({
   productStatus: {
     type: String,
     enum: ['Published', 'Draft'],
-    required: true
+    // required: true
   },
   productDescription: {
     type: String
