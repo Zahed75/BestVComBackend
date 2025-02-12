@@ -235,7 +235,7 @@ const customerResendOTPHandler = async (req, res, next) => {
 
 
 router.post('/createCustomer',createCustomerhandler);
-router.get('/getCustomer',roleMiddleware([HEAD_OFFICE]),getAllCustomerhandler);
+router.get('/getCustomer',getAllCustomerhandler);
 router.post('/forgetCred',forgetCredentialshandler);
 router.post('/otpverify',otpVerifyHandler);
 router.post('/expiredOtp',expireOTP);
