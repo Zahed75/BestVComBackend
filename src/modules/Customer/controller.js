@@ -240,7 +240,7 @@ const deleteCustomerById=asyncHandler(async (req,res)=>{
 
 
 
-router.delete('/delteCustomer/:customerId',deleteCustomerById)
+router.delete('/deleteCustomer/:customerId',deleteCustomerById)
 router.post('/createCustomer',createCustomerhandler);
 router.get('/getCustomer',getAllCustomerhandler);
 router.post('/forgetCred',forgetCredentialshandler);
