@@ -231,9 +231,16 @@ const customerResendOTPHandler = async (req, res, next) => {
 
 
 
+const deleteCustomerById=asyncHandler(async (req,res)=>{
+  await customerService.deleteCustomerById(req.params.customerId);
+  return res.status(200).json({
+    message: "Customer delete succssfully",
+  })
+})
 
 
 
+router.delete('/delteCustomer/:customerId',deleteCustomerById)
 router.post('/createCustomer',createCustomerhandler);
 router.get('/getCustomer',getAllCustomerhandler);
 router.post('/forgetCred',forgetCredentialshandler);
