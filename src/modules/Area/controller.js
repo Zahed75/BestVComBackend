@@ -24,6 +24,8 @@ const updateAreaById = asyncHandler(async (req, res) => {
     return res.status(200).json(updatedArea);
 });
 
+
+
 // Delete area by ID
 const deleteAreaById = asyncHandler(async (req, res) => {
     await areaService.deleteAreaById(req.params.areaId);

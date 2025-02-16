@@ -17,6 +17,7 @@ const jwt = require("jsonwebtoken");
 const { CUSTOMER } = require("../../config/constants");
 
 const createToken = require("../../utility/createToken");
+const {response} = require("express");
 
 
 
@@ -179,27 +180,6 @@ const resetPass = async (email, newPassword) => {
   }
 };
 
-
-
-
-
-// const updateCustomerService = async (customerId, customerData) => {
-//   try {
-//     // Ensure that profilePicture is always a string
-//     if (!customerData.profilePicture || typeof customerData.profilePicture !== 'string') {
-//       customerData.profilePicture = '';
-//     }
-//
-//     const updatedCustomer = await customerModel.findByIdAndUpdate(
-//       customerId,
-//       customerData,
-//       { new: true }
-//     );
-//     return updatedCustomer;
-//   } catch (error) {
-//     throw error;
-//   }
-// };
 
 
 
@@ -438,6 +418,24 @@ const resendCustomerOTP = async (customer) => {
 
 
 
+const deleteCustomerById=async(customerId)=>{
+  try{
+    const customer =await customerModel.findOneAndDelete(customerId);
+    if(!customer){
+      return{status:404, message:"Customer Not Found"}
+    }
+    return {
+      status: 200,
+      message: "Customer deleted successfully"
+    };
+  } catch(error){
+    return {
+      status:500,message:"Failed to delete customer"
+    }
+  }
+
+}
+
 
 
 
@@ -454,6 +452,7 @@ module.exports = {
   registerCustomerByPhoneNumber,
   verifyCustomerOTP,
   loginCustomer,
-  resendCustomerOTP
+  resendCustomerOTP,
+  deleteCustomerById
 
 };
