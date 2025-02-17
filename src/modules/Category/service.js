@@ -42,95 +42,31 @@ const addCategory = async (categoryData) => {
 
 
 
-// const getAllCategory = async () => {
-//   try {
-//     // Fetch all categories and products
-//     const allCategories = await Category.find().exec();
-//     const allProducts = await productModel.find().exec();
-//     const categoryMap = {};
-
-//     // Create a map of all categories by their _id and initialize subCategories and products arrays
-//     allCategories.forEach((category) => {
-//       categoryMap[category._id] = {
-//         ...category.toObject(),
-//         subCategories: [],
-//         productCount: 0,
-//         products: [] // Initialize products array
-//       };
-//     });
-
-//     // Populate products into categories
-//     allProducts.forEach((product) => {
-//       product.categoryId.forEach((categoryId) => {
-//         if (categoryMap[categoryId]) {
-//           categoryMap[categoryId].productCount++;
-//           categoryMap[categoryId].products.push(product);
-//         }
-//       });
-//     });
-
-//     // Populate subCategories for each category
-//     allCategories.forEach((category) => {
-//       if (category.parentCategory && category.parentCategory !== "") {
-//         if (categoryMap[category.parentCategory]) {
-//           categoryMap[category.parentCategory].subCategories.push(categoryMap[category._id]);
-//         }
-//       }
-//     });
-
-//     // Create root categories (those without a parentCategory or with an empty parentCategory)
-//     const rootCategories = allCategories.filter(
-//         (category) => !category.parentCategory || category.parentCategory === ""
-//     );
-
-//     const result = rootCategories.map((category) => {
-//       const { slug, ...rest } = categoryMap[category._id];
-//       return { slug, ...rest };
-//     });
-
-//     return result;
-//   } catch (error) {
-//     console.error('Error fetching categories:', error);
-//     throw error;
-//   }
-// };
-
-
-
 const getAllCategory = async () => {
   try {
-    // Fetch all categories and products using lean() for better performance
-    const allCategories = await Category.find().lean().exec();
-    const allProducts = await productModel.find().lean().exec();
+    // Fetch all categories and products
+    const allCategories = await Category.find().exec();
+    const allProducts = await productModel.find().exec();
     const categoryMap = {};
 
     // Create a map of all categories by their _id and initialize subCategories and products arrays
     allCategories.forEach((category) => {
       categoryMap[category._id] = {
-        ...category,
+        ...category.toObject(),
         subCategories: [],
         productCount: 0,
         products: [] // Initialize products array
       };
     });
 
-    // Map products by categoryId for faster lookup
-    const productMap = {};
+    // Populate products into categories
     allProducts.forEach((product) => {
       product.categoryId.forEach((categoryId) => {
-        if (!productMap[categoryId]) {
-          productMap[categoryId] = [];
+        if (categoryMap[categoryId]) {
+          categoryMap[categoryId].productCount++;
+          categoryMap[categoryId].products.push(product);
         }
-        productMap[categoryId].push(product);
       });
-    });
-
-    // Populate products into categories
-    Object.keys(productMap).forEach((categoryId) => {
-      if (categoryMap[categoryId]) {
-        categoryMap[categoryId].products = productMap[categoryId];
-        categoryMap[categoryId].productCount = productMap[categoryId].length;
-      }
     });
 
     // Populate subCategories for each category
@@ -144,7 +80,7 @@ const getAllCategory = async () => {
 
     // Create root categories (those without a parentCategory or with an empty parentCategory)
     const rootCategories = allCategories.filter(
-      (category) => !category.parentCategory || category.parentCategory === ""
+        (category) => !category.parentCategory || category.parentCategory === ""
     );
 
     const result = rootCategories.map((category) => {
@@ -158,11 +94,6 @@ const getAllCategory = async () => {
     throw error;
   }
 };
-
-
-
-
-
 
 
 
