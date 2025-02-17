@@ -48,7 +48,7 @@ const deleteProductHandler = asyncHandler(async (req, res) => {
     const {id} = req.params;
     const deleteProduct = await productService.deleteProductById(id, req.body);
     res.status(200).json({
-        message: "Delete Category Successfully!",
+        message: "Delete Product Successfully!",
         deleteProduct
     })
 })
