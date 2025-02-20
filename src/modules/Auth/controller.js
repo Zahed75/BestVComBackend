@@ -241,7 +241,7 @@ router.post('/otpVerification', otpVerifyHandler);
 router.post('/otpResend', resendOTPHandler);
 router.post('/expireOTP', expireOTP);
 router.post('/signInAdmin', userSignInHandler)
-router.post('/userManage', authMiddleware, roleMiddleware([HEAD_OFFICE]), addUsersHandler);
+router.post('/userManage', authMiddleware, addUsersHandler);
 router.get('/managers', getAllManagers);
 router.get('/users/:id',getUserByIdHandler);
 router.delete('/users/:userId', deleteUserByIdHandler);
